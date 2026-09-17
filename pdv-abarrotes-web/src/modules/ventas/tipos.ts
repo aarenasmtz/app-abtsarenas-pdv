@@ -111,3 +111,42 @@ export interface MetodoPagoDto {
   requiereReferencia: boolean;
   activo: boolean;
 }
+
+export interface ItemTicketPendienteDto {
+  idProducto: number;
+  codigoBarras: string;
+  descripcion: string;
+  cantidad: number;
+  precioUnitario: number;
+  subtotal: number;
+  notas?: string;
+}
+
+export interface TicketPendienteDto {
+  idTicketPendiente: number;
+  idCaja: number;
+  idUsuario: number;
+  nombreUsuario: string;
+  idCliente: number;
+  identificadorCliente: string;
+  total: number;
+  cantidadArticulos: number;
+  fechaRegistro: string;
+  activo: boolean;
+  articulos: ItemTicketPendienteDto[];
+}
+
+export interface CrearTicketPendientePeticion {
+  idCaja?: number;
+  idCliente?: number;
+  identificadorCliente?: string;
+  articulos: {
+    idProducto: number;
+    codigoBarras: string;
+    descripcion: string;
+    cantidad: number;
+    precioUnitario: number;
+    subtotal: number;
+    notas?: string;
+  }[];
+}
