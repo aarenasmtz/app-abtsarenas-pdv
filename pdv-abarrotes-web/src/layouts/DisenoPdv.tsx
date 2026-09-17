@@ -7,12 +7,17 @@ import {
   ArrowLeft, 
   Search, 
   Plus, 
-  Minus
+  Minus,
+  Printer
 } from 'lucide-react';
 import { useStoreCarritoPdv } from '../modules/pdv/storeCarrito';
 import { useEscanerCodigoBarras } from '../hooks/useEscanerCodigoBarras';
 import { servicioProductos } from '../modules/productos/servicioProductos';
 import type { ResultadoBusquedaPdvDto } from '../modules/productos/tipos';
+import { ModalCobro } from '../modules/pdv/ModalCobro';
+import { ModalTicket } from '../modules/pdv/ModalTicket';
+import { ModalReimpresion } from '../modules/pdv/ModalReimpresion';
+import type { VentaRealizada } from '../modules/ventas/tipos';
 
 interface PropiedadesDisenoPdv {
   onVolverAAdmin: () => void;
@@ -41,6 +46,12 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
     obtenerCantidadArticulos,
   } = useStoreCarritoPdv();
 
+  // Estados para modales de cobro, tickets y reimpresión
+  const [mostrarModalCobro, setMostrarModalCobro] = useState(false);
+  const [mostrarModalTicket, setMostrarModalTicket] = useState(false);
+  const [mostrarModalReimpresion, setMostrarModalReimpresion] = useState(false);
+  const [ventaActual, setVentaActual] = useState<VentaRealizada | null>(null);
+
   // Escáner HID global
   useEscanerCodigoBarras({
     onCodigoEscaneado: (codigo) => {
@@ -52,6 +63,47 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  // Escuchar atajos de teclado globales (F12 Cobrar, F8 Reimprimir, F4 Limpiar)
+  useEffect(() => {
+    const manejarTeclasGlobales = (e: KeyboardEvent) => {
+      if (e.key === 'F12') {
+        e.preventDefault();
+        if (articulos.length > 0) {
+          setMostrarModalCobro(true);
+        }
+      } else if (e.key === 'F8') {
+        e.preventDefault();
+        setMostrarModalReimpresion(true);
+      } else if (e.key === 'F4') {
+        e.preventDefault();
+        if (articulos.length > 0) {
+          limpiarCarrito();
+        }
+      }
+    };
+    window.addEventListener('keydown', manejarTeclasGlobales);
+    return () => window.removeEventListener('keydown', manejarTeclasGlobales);
+  }, [articulos.length, limpiarCarrito]);
+
+  const handleVentaCompletada = (venta: VentaRealizada) => {
+    setMostrarModalCobro(false);
+    setVentaActual(venta);
+    setMostrarModalTicket(true);
+    limpiarCarrito();
+  };
+
+  const handleNuevaVenta = () => {
+    setMostrarModalTicket(false);
+    setVentaActual(null);
+    inputRef.current?.focus();
+  };
+
+  const handleSeleccionarParaReimprimir = (venta: VentaRealizada) => {
+    setMostrarModalReimpresion(false);
+    setVentaActual(venta);
+    setMostrarModalTicket(true);
+  };
 
   // Búsqueda predictiva con debounce mientras el cajero escribe
   useEffect(() => {
@@ -180,7 +232,17 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
           </h1>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <button 
+            className="btn btn-secundario" 
+            style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem', gap: '0.4rem' }}
+            onClick={() => setMostrarModalReimpresion(true)}
+            title="Consultar y reimprimir tickets recientes (F8)"
+          >
+            <Printer size={16} />
+            <span>Reimprimir (F8)</span>
+          </button>
+
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: 'var(--color-texto-secundario)' }}>
             <span>Cliente:</span>
             <strong style={{ color: '#ffffff' }}>{nombreCliente}</strong>
@@ -392,6 +454,8 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
                   className="btn btn-primario" 
                   style={{ padding: '1.1rem', fontSize: '1.15rem', gap: '0.75rem' }}
                   disabled={articulos.length === 0}
+                  onClick={() => setMostrarModalCobro(true)}
+                  title="Finalizar venta y cobrar (F12)"
                 >
                   <CreditCard size={22} />
                   <span>Cobrar (F12)</span>
@@ -411,9 +475,10 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
                   style={{ padding: '0.75rem', fontSize: '0.95rem' }}
                   disabled={articulos.length === 0}
                   onClick={limpiarCarrito}
+                  title="Limpiar carrito actual (F4)"
                 >
                   <Trash2 size={16} />
-                  <span>Cancelar Venta Actual</span>
+                  <span>Cancelar Venta Actual (F4)</span>
                 </button>
               </div>
             </div>
@@ -428,14 +493,58 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
               gridTemplateColumns: '1fr 1fr',
               gap: '0.5rem'
             }}>
-              <div><strong>F1:</strong> Buscar Producto</div>
-              <div><strong>F4:</strong> Cambiar Cliente</div>
-              <div><strong>F7:</strong> Ver Pendientes</div>
+              <div><strong>F4:</strong> Limpiar Venta</div>
+              <div><strong>F8:</strong> Reimprimir Ticket</div>
               <div><strong>F12:</strong> Finalizar Cobro</div>
+              <div><strong>Enter:</strong> Confirmar / Cobrar</div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Modal de Cobro Rápido */}
+      <ModalCobro
+        abierto={mostrarModalCobro}
+        total={totalVenta}
+        subtotal={totalVenta}
+        descuento={0}
+        articulos={articulos.map(a => ({
+          idProducto: a.idProducto,
+          codigoBarras: a.codigoBarras,
+          descripcion: a.descripcion,
+          cantidad: a.cantidad,
+          precioUnitario: a.precioUnitario,
+          descuento: 0,
+          subtotal: a.subtotal
+        }))}
+        onCerrar={() => {
+          setMostrarModalCobro(false);
+          inputRef.current?.focus();
+        }}
+        onVentaCompletada={handleVentaCompletada}
+      />
+
+      {/* Modal de Impresión de Ticket Térmico */}
+      <ModalTicket
+        abierto={mostrarModalTicket}
+        venta={ventaActual}
+        onNuevaVenta={handleNuevaVenta}
+        onCerrar={() => {
+          setMostrarModalTicket(false);
+          setVentaActual(null);
+          inputRef.current?.focus();
+        }}
+      />
+
+      {/* Modal de Reimpresión de Tickets */}
+      <ModalReimpresion
+        abierto={mostrarModalReimpresion}
+        onCerrar={() => {
+          setMostrarModalReimpresion(false);
+          inputRef.current?.focus();
+        }}
+        onSeleccionarParaReimprimir={handleSeleccionarParaReimprimir}
+      />
     </div>
   );
 };

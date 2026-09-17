@@ -37,11 +37,19 @@ public class ContextoPrincipal : DbContext, IContextoPrincipal
     public DbSet<TurnoCaja> TurnosCaja => Set<TurnoCaja>();
     public DbSet<CorteCaja> CortesCaja => Set<CorteCaja>();
     public DbSet<MovimientoCaja> MovimientosCaja => Set<MovimientoCaja>();
+    public DbSet<MetodoPago> MetodosPago => Set<MetodoPago>();
     public DbSet<BitacoraAuditoria> BitacoraAuditoria => Set<BitacoraAuditoria>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        // Mapeo Métodos de Pago
+        modelBuilder.Entity<MetodoPago>(entidad =>
+        {
+            entidad.ToTable("MetodosPago");
+            entidad.HasKey(e => e.IdMetodoPago);
+        });
 
         // Mapeo Producto
         modelBuilder.Entity<Producto>(entidad =>

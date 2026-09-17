@@ -32,4 +32,7 @@ public class RespuestaApi<T>
             Errores = errores ?? new List<string> { mensaje }
         };
     }
+
+    public static RespuestaApi<T> CrearExito(T datos, string mensaje = "Operación exitosa") => Satisfactorio(datos, mensaje);
+    public static RespuestaApi<T> CrearError(string mensaje, List<string>? errores = null) => Fallido(mensaje, errores);
 }
