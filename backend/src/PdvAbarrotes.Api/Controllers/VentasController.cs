@@ -78,6 +78,19 @@ public class VentasController : ControladorBase
         var resultado = await _servicioVentas.CancelarVentaAsync(id, solicitud?.Motivo ?? "Cancelación solicitada en caja", ct);
         return resultado.Exito ? Ok(resultado) : BadRequest(resultado);
     }
+
+    /// <summary>
+    /// Obtiene la lista de métodos de pago activos para cobro en caja (Efectivo, Tarjetas, Vales, Transferencias).
+    /// </summary>
+    /// <param name="ct">Token de cancelación.</param>
+    [HttpGet("metodos-pago")]
+    [Authorize(Roles = "Cajero,Supervisor,Administrador")]
+    [ProducesResponseType(typeof(RespuestaApi<List<MetodoPagoDto>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ObtenerMetodosPago(CancellationToken ct)
+    {
+        var resultado = await _servicioVentas.ObtenerMetodosPagoActivosAsync(ct);
+        return Ok(resultado);
+    }
 }
 
 /// <summary>

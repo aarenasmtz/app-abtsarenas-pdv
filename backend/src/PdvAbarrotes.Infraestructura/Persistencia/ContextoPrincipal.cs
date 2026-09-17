@@ -49,6 +49,8 @@ public class ContextoPrincipal : DbContext, IContextoPrincipal
         {
             entidad.ToTable("MetodosPago");
             entidad.HasKey(e => e.IdMetodoPago);
+            entidad.Property(e => e.CodigoMetodo).HasMaxLength(20).IsRequired();
+            entidad.Property(e => e.Descripcion).HasMaxLength(100).IsRequired();
         });
 
         // Mapeo Producto
@@ -259,6 +261,11 @@ public class ContextoPrincipal : DbContext, IContextoPrincipal
                 .WithMany(v => v.Pagos)
                 .HasForeignKey(e => e.IdVenta)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            entidad.HasOne(e => e.MetodoPago)
+                .WithMany()
+                .HasForeignKey(e => e.IdMetodoPago)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // Mapeo TicketsPendientes

@@ -103,3 +103,11 @@ export interface FiltroVentas {
   idCaja?: number;
   idUsuario?: number;
 }
+
+export interface MetodoPagoDto {
+  idMetodoPago: number;
+  codigoMetodo: string;
+  descripcion: string;
+  requiereReferencia: boolean;
+  activo: boolean;
+}

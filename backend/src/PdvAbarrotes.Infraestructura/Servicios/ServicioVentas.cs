@@ -137,16 +137,18 @@ public class ServicioVentas : IServicioVentas
         var gananciaTotal = partidasCalculadas.Sum(p => p.Ganancia) - descuentoGlobal;
         var numeroArticulos = partidasCalculadas.Sum(p => p.Solicitud.Cantidad);
 
-        // 6. Validar pagos
-        var pagosRegistrar = new List<VentaPagoDto>();
+        // 6. Validar pagos (Soporte integral de pagos simples y pagos mixtos)
+        var pagosSolicitados = new List<VentaPagoDto>();
         if (peticion.Pagos != null && peticion.Pagos.Any())
         {
-            pagosRegistrar.AddRange(peticion.Pagos.Where(p => p.Importe > 0));
+            pagosSolicitados.AddRange(peticion.Pagos.Where(p => p.Importe > 0));
         }
 
-        decimal sumaPagos = pagosRegistrar.Sum(p => p.Importe);
+        decimal importeRecibido;
+        decimal cambio;
+        var pagosRegistrar = new List<VentaPagoDto>();
 
-        if (!pagosRegistrar.Any())
+        if (!pagosSolicitados.Any())
         {
             // Pago en efectivo implícito si no se enviaron métodos desglosados
             if (peticion.ImporteRecibido < total)
@@ -154,24 +156,67 @@ public class ServicioVentas : IServicioVentas
                 return RespuestaApi<VentaRealizadaDto>.CrearError($"El importe recibido (${peticion.ImporteRecibido:N2}) es insuficiente para cubrir el total de ${total:N2}.");
             }
 
+            importeRecibido = peticion.ImporteRecibido;
+            cambio = Math.Max(0, importeRecibido - total);
+
             pagosRegistrar.Add(new VentaPagoDto
             {
                 IdMetodoPago = 1, // Efectivo
                 Importe = total,
                 Referencia = "Efectivo"
             });
-            sumaPagos = total;
         }
         else
         {
-            if (sumaPagos < total)
+            // Distinguir pagos en efectivo (IdMetodoPago == 1) y no efectivo
+            var pagosNoEfectivo = pagosSolicitados.Where(p => p.IdMetodoPago != 1).ToList();
+            var pagosEfectivo = pagosSolicitados.Where(p => p.IdMetodoPago == 1).ToList();
+
+            var sumaNoEfectivo = pagosNoEfectivo.Sum(p => p.Importe);
+            var sumaEfectivo = pagosEfectivo.Sum(p => p.Importe);
+
+            // Regla contable: Los métodos electrónicos/vales no pueden exceder el total de la venta
+            if (sumaNoEfectivo > total)
             {
-                return RespuestaApi<VentaRealizadaDto>.CrearError($"La suma de pagos (${sumaPagos:N2}) es insuficiente para cubrir el total de la venta (${total:N2}).");
+                return RespuestaApi<VentaRealizadaDto>.CrearError(
+                    $"Los métodos de pago no en efectivo (${sumaNoEfectivo:N2}) no pueden exceder el total de la venta (${total:N2}). No se permite cambio sobre tarjeta o vales.");
+            }
+
+            var sumaTotalRecibida = sumaNoEfectivo + sumaEfectivo;
+            if (sumaTotalRecibida < total)
+            {
+                var faltante = total - sumaTotalRecibida;
+                return RespuestaApi<VentaRealizadaDto>.CrearError(
+                    $"El total de pagos recibidos (${sumaTotalRecibida:N2}) es insuficiente para cubrir la venta (${total:N2}). Faltante: ${faltante:N2}.");
+            }
+
+            // El cambio solo proviene del excedente entregado en efectivo
+            var remanenteParaEfectivo = total - sumaNoEfectivo;
+            cambio = Math.Max(0, sumaEfectivo - remanenteParaEfectivo);
+            importeRecibido = sumaTotalRecibida;
+
+            // En dbo.VentaPagos se registran los pagos no efectivo con su importe exacto
+            foreach (var pne in pagosNoEfectivo)
+            {
+                pagosRegistrar.Add(new VentaPagoDto
+                {
+                    IdMetodoPago = pne.IdMetodoPago,
+                    Importe = pne.Importe,
+                    Referencia = pne.Referencia
+                });
+            }
+
+            // Y para el efectivo, se registra el importe neto que efectivamente cubrió la venta
+            if (remanenteParaEfectivo > 0)
+            {
+                pagosRegistrar.Add(new VentaPagoDto
+                {
+                    IdMetodoPago = 1,
+                    Importe = remanenteParaEfectivo,
+                    Referencia = pagosEfectivo.FirstOrDefault()?.Referencia ?? "Efectivo"
+                });
             }
         }
-
-        var importeRecibido = Math.Max(peticion.ImporteRecibido, sumaPagos);
-        var cambio = Math.Max(0, importeRecibido - total);
 
         // 7. Generar folio comercial único
         var ahora = DateTime.Now;
@@ -597,5 +642,25 @@ public class ServicioVentas : IServicioVentas
             _logger.LogError(ex, "Error al cancelar venta {IdVenta}", idVenta);
             return RespuestaApi<bool>.CrearError($"Error al cancelar la venta: {ex.Message}");
         }
+    }
+
+    /// <inheritdoc />
+    public async Task<RespuestaApi<List<MetodoPagoDto>>> ObtenerMetodosPagoActivosAsync(CancellationToken ct = default)
+    {
+        var metodos = await _contexto.MetodosPago
+            .AsNoTracking()
+            .Where(m => m.Activo)
+            .OrderBy(m => m.IdMetodoPago)
+            .Select(m => new MetodoPagoDto
+            {
+                IdMetodoPago = m.IdMetodoPago,
+                CodigoMetodo = m.CodigoMetodo,
+                Descripcion = m.Descripcion,
+                RequiereReferencia = m.RequiereReferencia,
+                Activo = m.Activo
+            })
+            .ToListAsync(ct);
+
+        return RespuestaApi<List<MetodoPagoDto>>.CrearExito(metodos);
     }
 }
