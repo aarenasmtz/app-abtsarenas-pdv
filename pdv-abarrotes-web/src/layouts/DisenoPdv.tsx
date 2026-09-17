@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { 
   Barcode, 
   Trash2, 
@@ -18,9 +18,11 @@ import { ModalCobro } from '../modules/pdv/ModalCobro';
 import { ModalTicket } from '../modules/pdv/ModalTicket';
 import { ModalReimpresion } from '../modules/pdv/ModalReimpresion';
 import { ModalPesajeGranel } from '../modules/pdv/ModalPesajeGranel';
+import { ModalTicketsPendientes } from '../modules/pdv/ModalTicketsPendientes';
+import { servicioTicketsPendientes } from '../modules/ventas/servicioTicketsPendientes';
 import { reproducirBeepExito, reproducirBeepError } from '../utils/sonidosPdv';
 import type { ProductoCobroDto } from '../modules/productos/tipos';
-import type { VentaRealizada } from '../modules/ventas/tipos';
+import type { VentaRealizada, TicketPendienteDto } from '../modules/ventas/tipos';
 
 interface PropiedadesDisenoPdv {
   onVolverAAdmin: () => void;
@@ -49,11 +51,15 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
     obtenerCantidadArticulos,
   } = useStoreCarritoPdv();
 
-  // Estados para modales de cobro, tickets y reimpresión
+  // Estados para modales de cobro, tickets, reimpresión y espera
   const [mostrarModalCobro, setMostrarModalCobro] = useState(false);
   const [mostrarModalTicket, setMostrarModalTicket] = useState(false);
   const [mostrarModalReimpresion, setMostrarModalReimpresion] = useState(false);
   const [mostrarModalGranel, setMostrarModalGranel] = useState(false);
+  const [mostrarModalTicketsPendientes, setMostrarModalTicketsPendientes] = useState(false);
+  const [mostrarDialogoPonerEnEspera, setMostrarDialogoPonerEnEspera] = useState(false);
+  const [identificadorClienteEspera, setIdentificadorClienteEspera] = useState('');
+  const [conteoTicketsPendientes, setConteoTicketsPendientes] = useState(0);
   const [productoGranelSeleccionado, setProductoGranelSeleccionado] = useState<ProductoCobroDto | null>(null);
   const [ventaActual, setVentaActual] = useState<VentaRealizada | null>(null);
 
@@ -69,7 +75,23 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
     inputRef.current?.focus();
   }, []);
 
-  // Escuchar atajos de teclado globales (F12 Cobrar, F8 Reimprimir, F4 Limpiar)
+  // Consultar conteo de tickets pendientes en espera
+  const refrescarConteoTicketsPendientes = useCallback(async () => {
+    try {
+      const resp = await servicioTicketsPendientes.obtenerActivos();
+      if (resp.exito && resp.datos) {
+        setConteoTicketsPendientes(resp.datos.length);
+      }
+    } catch {
+      // Silencioso
+    }
+  }, []);
+
+  useEffect(() => {
+    refrescarConteoTicketsPendientes();
+  }, [refrescarConteoTicketsPendientes]);
+
+  // Escuchar atajos de teclado globales (F12 Cobrar, F8 Reimprimir, F7 Pendientes, F6 En Espera, F4 Limpiar)
   useEffect(() => {
     const manejarTeclasGlobales = (e: KeyboardEvent) => {
       if (e.key === 'F12') {
@@ -80,6 +102,15 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
       } else if (e.key === 'F8') {
         e.preventDefault();
         setMostrarModalReimpresion(true);
+      } else if (e.key === 'F7') {
+        e.preventDefault();
+        setMostrarModalTicketsPendientes(true);
+      } else if (e.key === 'F6') {
+        e.preventDefault();
+        if (articulos.length > 0) {
+          setIdentificadorClienteEspera('');
+          setMostrarDialogoPonerEnEspera(true);
+        }
       } else if (e.key === 'F4') {
         e.preventDefault();
         if (articulos.length > 0) {
@@ -108,6 +139,76 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
     setMostrarModalReimpresion(false);
     setVentaActual(venta);
     setMostrarModalTicket(true);
+  };
+
+  const handleConfirmarPonerEnEspera = async () => {
+    if (articulos.length === 0) return;
+
+    try {
+      const resp = await servicioTicketsPendientes.guardar({
+        idCaja: 1,
+        identificadorCliente: identificadorClienteEspera.trim() || undefined,
+        articulos: articulos.map(a => ({
+          idProducto: a.idProducto,
+          codigoBarras: a.codigoBarras,
+          descripcion: a.descripcion,
+          cantidad: a.cantidad,
+          precioUnitario: a.precioUnitario,
+          subtotal: a.subtotal
+        }))
+      });
+
+      if (resp.exito && resp.datos) {
+        reproducirBeepExito();
+        setMensajeNotificacion({
+          tipo: 'exito',
+          texto: `✓ Venta puesta en espera (${resp.datos.identificadorCliente}). Caja disponible.`
+        });
+        limpiarCarrito();
+        setMostrarDialogoPonerEnEspera(false);
+        setIdentificadorClienteEspera('');
+        refrescarConteoTicketsPendientes();
+        inputRef.current?.focus();
+      } else {
+        reproducirBeepError();
+        setMensajeNotificacion({
+          tipo: 'error',
+          texto: `⚠️ Error al suspender venta: ${resp.mensaje}`
+        });
+      }
+    } catch {
+      reproducirBeepError();
+      setMensajeNotificacion({
+        tipo: 'error',
+        texto: '⚠️ Error de conexión al guardar ticket pendiente.'
+      });
+    } finally {
+      setTimeout(() => setMensajeNotificacion(null), 3000);
+    }
+  };
+
+  const handleRecuperarTicketPendiente = (ticket: TicketPendienteDto) => {
+    // Si ya hay artículos en el carrito, se agregan/combinan
+    ticket.articulos.forEach(art => {
+      agregarArticulo({
+        idProducto: art.idProducto,
+        codigoBarras: art.codigoBarras,
+        descripcion: art.descripcion,
+        cantidad: art.cantidad,
+        precioUnitario: art.precioUnitario,
+        permiteVentaFraccionada: art.cantidad % 1 !== 0,
+        existenciaDisponible: 999
+      });
+    });
+
+    reproducirBeepExito();
+    setMensajeNotificacion({
+      tipo: 'exito',
+      texto: `✓ Venta de '${ticket.identificadorCliente}' reanudada en caja ($${ticket.total.toFixed(2)})`
+    });
+    setTimeout(() => setMensajeNotificacion(null), 3000);
+    refrescarConteoTicketsPendientes();
+    inputRef.current?.focus();
   };
 
   // Búsqueda predictiva con debounce mientras el cajero escribe
@@ -304,7 +405,26 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
           </h1>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          {/* Botón de Tickets en Espera con contador reactivo */}
+          <button 
+            className="btn btn-secundario" 
+            style={{ 
+              padding: '0.4rem 0.75rem', 
+              fontSize: '0.85rem', 
+              gap: '0.4rem',
+              borderColor: conteoTicketsPendientes > 0 ? '#f59e0b' : undefined,
+              backgroundColor: conteoTicketsPendientes > 0 ? 'rgba(245, 158, 11, 0.15)' : undefined,
+              color: conteoTicketsPendientes > 0 ? '#fbbf24' : undefined,
+              fontWeight: conteoTicketsPendientes > 0 ? 700 : 500
+            }}
+            onClick={() => setMostrarModalTicketsPendientes(true)}
+            title="Consultar y reanudar ventas en espera (F7)"
+          >
+            <Clock size={16} />
+            <span>En Espera ({conteoTicketsPendientes}) (F7)</span>
+          </button>
+
           <button 
             className="btn btn-secundario" 
             style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem', gap: '0.4rem' }}
@@ -545,9 +665,14 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
                   className="btn btn-advertencia" 
                   style={{ padding: '0.85rem', fontSize: '1rem', gap: '0.6rem' }}
                   disabled={articulos.length === 0}
+                  onClick={() => {
+                    setIdentificadorClienteEspera('');
+                    setMostrarDialogoPonerEnEspera(true);
+                  }}
+                  title="Poner en espera la venta actual para atender a otro cliente (F6)"
                 >
                   <Clock size={18} />
-                  <span>Poner en Espera (Ticket Pendiente)</span>
+                  <span>Poner en Espera (F6)</span>
                 </button>
 
                 <button 
@@ -566,14 +691,16 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
             {/* Accesos rápidos de teclado */}
             <div style={{ 
               borderTop: '1px solid var(--color-borde)', 
-              paddingTop: '1rem', 
+              paddingTop: '0.85rem', 
               fontSize: '0.8rem', 
               color: 'var(--color-texto-secundario)',
               display: 'grid',
               gridTemplateColumns: '1fr 1fr',
-              gap: '0.5rem'
+              gap: '0.45rem'
             }}>
               <div><strong>F4:</strong> Limpiar Venta</div>
+              <div><strong>F6:</strong> Poner en Espera</div>
+              <div><strong>F7:</strong> Ver Pendientes</div>
               <div><strong>F8:</strong> Reimprimir Ticket</div>
               <div><strong>F12:</strong> Finalizar Cobro</div>
               <div><strong>Enter:</strong> Confirmar / Cobrar</div>
@@ -637,6 +764,112 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
           inputRef.current?.focus();
         }}
       />
+
+      {/* Modal de Tickets Pendientes en Espera */}
+      <ModalTicketsPendientes
+        abierto={mostrarModalTicketsPendientes}
+        onCerrar={() => {
+          setMostrarModalTicketsPendientes(false);
+          inputRef.current?.focus();
+        }}
+        onRecuperarTicket={handleRecuperarTicketPendiente}
+        alModificarTickets={refrescarConteoTicketsPendientes}
+      />
+
+      {/* Diálogo Rápido para Poner Venta en Espera */}
+      {mostrarDialogoPonerEnEspera && (
+        <div className="modal-overlay" style={{ zIndex: 1250 }}>
+          <div 
+            className="modal-contenido"
+            style={{ 
+              maxWidth: '440px', 
+              width: '90%', 
+              backgroundColor: '#111827', 
+              borderRadius: '12px',
+              border: '1px solid #374151',
+              padding: '1.5rem',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+              <Clock size={22} color="#f59e0b" />
+              <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#f3f4f6' }}>Poner Venta en Espera</h3>
+            </div>
+            
+            <p style={{ margin: '0 0 1rem', fontSize: '0.85rem', color: '#9ca3af' }}>
+              Total: <strong style={{ color: '#38bdf8' }}>${totalVenta.toFixed(2)}</strong> ({cantidadArticulos} artículo(s)).
+              Ingresa una referencia o nombre para reconocer al cliente cuando regrese.
+            </p>
+
+            <input
+              type="text"
+              autoFocus
+              value={identificadorClienteEspera}
+              onChange={(e) => setIdentificadorClienteEspera(e.target.value)}
+              placeholder="Ej. Don Pedro / Playera azul / Mesa 2"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleConfirmarPonerEnEspera();
+                } else if (e.key === 'Escape') {
+                  e.preventDefault();
+                  setMostrarDialogoPonerEnEspera(false);
+                  inputRef.current?.focus();
+                }
+              }}
+              style={{
+                width: '100%',
+                padding: '0.75rem 1rem',
+                borderRadius: '8px',
+                border: '1px solid #374151',
+                backgroundColor: '#1f2937',
+                color: '#fff',
+                fontSize: '0.95rem',
+                marginBottom: '1.25rem'
+              }}
+            />
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setMostrarDialogoPonerEnEspera(false);
+                  inputRef.current?.focus();
+                }}
+                style={{
+                  padding: '0.55rem 1rem',
+                  borderRadius: '6px',
+                  border: '1px solid #4b5563',
+                  backgroundColor: '#374151',
+                  color: '#d1d5db',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                Cancelar (Esc)
+              </button>
+
+              <button
+                type="button"
+                onClick={handleConfirmarPonerEnEspera}
+                style={{
+                  padding: '0.55rem 1.25rem',
+                  borderRadius: '6px',
+                  border: 'none',
+                  backgroundColor: '#f59e0b',
+                  color: '#000',
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                Guardar en Espera (Enter)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
