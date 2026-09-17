@@ -5,6 +5,7 @@ import { PantallaLogin } from './modules/autenticacion/PantallaLogin';
 import { PantallaUsuarios } from './modules/usuarios/PantallaUsuarios';
 import { PantallaAuditoria } from './modules/auditoria/PantallaAuditoria';
 import { PantallaProductos } from './modules/productos/PantallaProductos';
+import { PantallaInventario } from './modules/inventario/PantallaInventario';
 import { useStoreAutenticacion } from './modules/autenticacion/storeAutenticacion';
 import clienteApi from './api/clienteApi';
 import { CheckCircle, AlertTriangle, Database, TrendingUp, Package, Users } from 'lucide-react';
@@ -156,7 +157,9 @@ export function App() {
 
       {moduloActivo === 'productos' && <PantallaProductos />}
 
-      {moduloActivo !== 'dashboard' && moduloActivo !== 'productos' && moduloActivo !== 'usuarios' && moduloActivo !== 'auditoria' && (
+      {moduloActivo === 'inventario' && <PantallaInventario />}
+
+      {moduloActivo !== 'dashboard' && moduloActivo !== 'productos' && moduloActivo !== 'usuarios' && moduloActivo !== 'auditoria' && moduloActivo !== 'inventario' && (
         <div className="tarjeta" style={{ textAlign: 'center', padding: '4rem 1rem' }}>
           <AlertTriangle size={48} style={{ color: 'var(--color-advertencia)', marginBottom: '1rem', opacity: 0.8 }} />
           <h3>Módulo '{moduloActivo}' Preparado para Implementación en Fase Siguiente</h3>

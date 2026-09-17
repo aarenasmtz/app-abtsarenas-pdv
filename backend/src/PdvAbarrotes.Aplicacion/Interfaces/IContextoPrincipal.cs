@@ -14,6 +14,10 @@ public interface IContextoPrincipal
     DbSet<Marca> Marcas { get; }
     DbSet<UnidadMedida> UnidadesMedida { get; }
     DbSet<Inventario> Inventarios { get; }
+    DbSet<TipoMovimientoInventario> TiposMovimientoInventario { get; }
+    DbSet<MovimientoInventario> MovimientosInventario { get; }
+    DbSet<AjusteInventario> AjustesInventario { get; }
+    DbSet<DetalleAjusteInventario> DetalleAjustesInventario { get; }
     DbSet<Venta> Ventas { get; }
     DbSet<DetalleVenta> DetalleVentas { get; }
     DbSet<VentaPago> VentaPagos { get; }
