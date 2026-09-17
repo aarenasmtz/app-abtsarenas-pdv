@@ -8,7 +8,9 @@ import {
   Search, 
   Plus, 
   Minus,
-  Printer
+  Printer,
+  DollarSign,
+  Calculator
 } from 'lucide-react';
 import { useStoreCarritoPdv } from '../modules/pdv/storeCarrito';
 import { useEscanerCodigoBarras } from '../hooks/useEscanerCodigoBarras';
@@ -20,6 +22,11 @@ import { ModalReimpresion } from '../modules/pdv/ModalReimpresion';
 import { ModalPesajeGranel } from '../modules/pdv/ModalPesajeGranel';
 import { ModalTicketsPendientes } from '../modules/pdv/ModalTicketsPendientes';
 import { servicioTicketsPendientes } from '../modules/ventas/servicioTicketsPendientes';
+import { ModalAbrirTurno } from '../modules/caja/ModalAbrirTurno';
+import { ModalMovimientoCaja } from '../modules/caja/ModalMovimientoCaja';
+import { ModalCorteCaja } from '../modules/caja/ModalCorteCaja';
+import { servicioCaja } from '../modules/caja/servicioCaja';
+import type { TurnoCajaDto } from '../modules/caja/tiposCaja';
 import { reproducirBeepExito, reproducirBeepError } from '../utils/sonidosPdv';
 import type { ProductoCobroDto } from '../modules/productos/tipos';
 import type { VentaRealizada, TicketPendienteDto } from '../modules/ventas/tipos';
@@ -63,6 +70,12 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
   const [productoGranelSeleccionado, setProductoGranelSeleccionado] = useState<ProductoCobroDto | null>(null);
   const [ventaActual, setVentaActual] = useState<VentaRealizada | null>(null);
 
+  // Estados para Control de Caja y Turnos (Fase 10)
+  const [turnoActual, setTurnoActual] = useState<TurnoCajaDto | null>(null);
+  const [mostrarModalAbrirTurno, setMostrarModalAbrirTurno] = useState(false);
+  const [mostrarModalMovimientoCaja, setMostrarModalMovimientoCaja] = useState(false);
+  const [mostrarModalCorteCaja, setMostrarModalCorteCaja] = useState(false);
+
   // Escáner HID global
   useEscanerCodigoBarras({
     onCodigoEscaneado: (codigo) => {
@@ -87,17 +100,51 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
     }
   }, []);
 
+  // Consultar estado del turno de caja actual
+  const consultarTurnoActual = useCallback(async () => {
+    try {
+      const resp = await servicioCaja.obtenerTurnoActual();
+      if (resp.exito && resp.datos) {
+        setTurnoActual(resp.datos);
+      } else {
+        setTurnoActual(null);
+        setMostrarModalAbrirTurno(true);
+      }
+    } catch {
+      // Silencioso
+    }
+  }, []);
+
   useEffect(() => {
     refrescarConteoTicketsPendientes();
-  }, [refrescarConteoTicketsPendientes]);
+    consultarTurnoActual();
+  }, [refrescarConteoTicketsPendientes, consultarTurnoActual]);
 
-  // Escuchar atajos de teclado globales (F12 Cobrar, F8 Reimprimir, F7 Pendientes, F6 En Espera, F4 Limpiar)
+  // Escuchar atajos de teclado globales (F12 Cobrar, F10 Mov Caja, F9 Corte X/Z, F8 Reimprimir, F7 Pendientes, F6 En Espera, F4 Limpiar)
   useEffect(() => {
     const manejarTeclasGlobales = (e: KeyboardEvent) => {
       if (e.key === 'F12') {
         e.preventDefault();
+        if (!turnoActual) {
+          setMostrarModalAbrirTurno(true);
+          return;
+        }
         if (articulos.length > 0) {
           setMostrarModalCobro(true);
+        }
+      } else if (e.key === 'F10') {
+        e.preventDefault();
+        if (turnoActual) {
+          setMostrarModalMovimientoCaja(true);
+        } else {
+          setMostrarModalAbrirTurno(true);
+        }
+      } else if (e.key === 'F9') {
+        e.preventDefault();
+        if (turnoActual) {
+          setMostrarModalCorteCaja(true);
+        } else {
+          setMostrarModalAbrirTurno(true);
         }
       } else if (e.key === 'F8') {
         e.preventDefault();
@@ -120,7 +167,7 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
     };
     window.addEventListener('keydown', manejarTeclasGlobales);
     return () => window.removeEventListener('keydown', manejarTeclasGlobales);
-  }, [articulos.length, limpiarCarrito]);
+  }, [articulos.length, limpiarCarrito, turnoActual]);
 
   const handleVentaCompletada = (venta: VentaRealizada) => {
     setMostrarModalCobro(false);
@@ -401,11 +448,59 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
           
           <h1 style={{ fontSize: '1.15rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <span>PUNTO DE VENTA</span>
-            <span className="badge badge-exito" style={{ fontSize: '0.75rem' }}>Caja 1 - Turno Abierto</span>
+            {turnoActual ? (
+              <button
+                type="button"
+                onClick={() => setMostrarModalCorteCaja(true)}
+                className="badge badge-exito"
+                style={{ fontSize: '0.75rem', cursor: 'pointer', border: 'none' }}
+                title="Ver detalles contables o corte del turno (F9)"
+              >
+                {turnoActual.nombreCaja} • Turno #{turnoActual.idTurnoCaja} • Efectivo: ${turnoActual.efectivoActualEnCaja.toFixed(2)}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setMostrarModalAbrirTurno(true)}
+                className="badge badge-peligro"
+                style={{ fontSize: '0.75rem', cursor: 'pointer', border: 'none' }}
+                title="Haz clic para abrir el turno con fondo inicial"
+              >
+                Caja Cerrada (Abrir Turno)
+              </button>
+            )}
           </h1>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          {/* Botón Movimiento de Caja (Entrada/Salida) */}
+          <button 
+            className="btn btn-secundario" 
+            style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem', gap: '0.4rem' }}
+            onClick={() => {
+              if (turnoActual) setMostrarModalMovimientoCaja(true);
+              else setMostrarModalAbrirTurno(true);
+            }}
+            title="Entrada o salida manual de efectivo en caja (F10)"
+          >
+            <DollarSign size={16} />
+            <span>Mov. Caja (F10)</span>
+          </button>
+
+          {/* Botón Corte X/Z */}
+          <button 
+            className="btn btn-secundario" 
+            style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem', gap: '0.4rem' }}
+            onClick={() => {
+              if (turnoActual) setMostrarModalCorteCaja(true);
+              else setMostrarModalAbrirTurno(true);
+            }}
+            title="Corte X preliminar o Corte Z de cierre (F9)"
+          >
+            <Calculator size={16} />
+            <span>Corte X/Z (F9)</span>
+          </button>
+
           {/* Botón de Tickets en Espera con contador reactivo */}
           <button 
             className="btn btn-secundario" 
@@ -702,6 +797,8 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
               <div><strong>F6:</strong> Poner en Espera</div>
               <div><strong>F7:</strong> Ver Pendientes</div>
               <div><strong>F8:</strong> Reimprimir Ticket</div>
+              <div><strong>F9:</strong> Corte X / Z</div>
+              <div><strong>F10:</strong> Mov. Caja</div>
               <div><strong>F12:</strong> Finalizar Cobro</div>
               <div><strong>Enter:</strong> Confirmar / Cobrar</div>
             </div>
@@ -724,11 +821,16 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
           descuento: 0,
           subtotal: a.subtotal
         }))}
+        idCaja={turnoActual?.idCaja || 1}
+        idTurnoCaja={turnoActual?.idTurnoCaja || 1}
         onCerrar={() => {
           setMostrarModalCobro(false);
           inputRef.current?.focus();
         }}
-        onVentaCompletada={handleVentaCompletada}
+        onVentaCompletada={(venta) => {
+          handleVentaCompletada(venta);
+          consultarTurnoActual();
+        }}
       />
 
       {/* Modal de Impresión de Ticket Térmico */}
@@ -870,6 +972,45 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
           </div>
         </div>
       )}
+
+      {/* Modal de Apertura de Turno con Fondo Inicial */}
+      <ModalAbrirTurno
+        abierto={mostrarModalAbrirTurno}
+        onTurnoAbierto={(turno) => {
+          setTurnoActual(turno);
+          setMostrarModalAbrirTurno(false);
+          inputRef.current?.focus();
+        }}
+        onCancelar={() => setMostrarModalAbrirTurno(false)}
+      />
+
+      {/* Modal de Movimientos Manuales de Efectivo (Entrada/Salida) */}
+      <ModalMovimientoCaja
+        abierto={mostrarModalMovimientoCaja}
+        turno={turnoActual}
+        onCerrar={() => {
+          setMostrarModalMovimientoCaja(false);
+          inputRef.current?.focus();
+        }}
+        onMovimientoRegistrado={() => {
+          consultarTurnoActual();
+          inputRef.current?.focus();
+        }}
+      />
+
+      {/* Modal de Control de Cortes X y Z con Arqueo Ciego */}
+      <ModalCorteCaja
+        abierto={mostrarModalCorteCaja}
+        turno={turnoActual}
+        onCerrar={() => {
+          setMostrarModalCorteCaja(false);
+          inputRef.current?.focus();
+        }}
+        onTurnoCerrado={() => {
+          consultarTurnoActual();
+          inputRef.current?.focus();
+        }}
+      />
     </div>
   );
 };

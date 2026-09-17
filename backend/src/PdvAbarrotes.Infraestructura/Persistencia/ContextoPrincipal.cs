@@ -368,6 +368,7 @@ public class ContextoPrincipal : DbContext, IContextoPrincipal
         {
             entidad.ToTable("CortesCaja");
             entidad.HasKey(e => e.IdCorteCaja);
+            entidad.Property(e => e.TipoCorte).HasMaxLength(10).IsRequired();
             entidad.Property(e => e.MontoInicial).HasPrecision(18, 2);
             entidad.Property(e => e.VentasEfectivo).HasPrecision(18, 2);
             entidad.Property(e => e.VentasTarjeta).HasPrecision(18, 2);

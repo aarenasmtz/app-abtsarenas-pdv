@@ -22,6 +22,8 @@ interface PropiedadesModalCobro {
   subtotal: number;
   descuento: number;
   articulos: ItemVenta[];
+  idCaja?: number;
+  idTurnoCaja?: number;
   onCerrar: () => void;
   onVentaCompletada: (venta: VentaRealizada) => void;
 }
@@ -41,6 +43,8 @@ export const ModalCobro: React.FC<PropiedadesModalCobro> = ({
   subtotal,
   descuento,
   articulos,
+  idCaja = 1,
+  idTurnoCaja = 1,
   onCerrar,
   onVentaCompletada
 }) => {
@@ -298,8 +302,8 @@ export const ModalCobro: React.FC<PropiedadesModalCobro> = ({
     const peticion: RegistrarVentaPeticion = {
       tokenIdempotencia,
       idCliente: 1, // Venta en mostrador
-      idCaja: 1,
-      idTurnoCaja: 1,
+      idCaja,
+      idTurnoCaja,
       descuentoGlobal: descuento,
       importeRecibido: importeRecibidoTotal,
       notas: modoCobro === 'mixto' ? 'Pago Mixto' : (referenciaRapida ? `Ref: ${referenciaRapida}` : undefined),

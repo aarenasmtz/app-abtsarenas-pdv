@@ -4,6 +4,34 @@ Todas las modificaciones notables a este proyecto serán documentadas en este ar
 
 ---
 
+## [Fase 10] - 2026-09-17
+### Agregado
+- Control de Caja y Cortes Contables X/Z:
+  - Backend .NET 9 Web API:
+    - Columna `TipoCorte` VARCHAR(10) en `dbo.CortesCaja` (script `scripts_sql/15_agregar_tipocorte_cortescaja.sql`) y mapeo en entidad `CorteCaja.cs` y `ContextoPrincipal.cs`.
+    - DTOs en español en `PdvAbarrotes.Aplicacion.DTOs.Caja`: `CajaDto`, `TurnoCajaDto`, `AbrirTurnoDto`, `CerrarTurnoDto`, `MovimientoCajaDto`, `RegistrarMovimientoCajaDto`, `ResumenCorteDto` y `CorteCajaDto`.
+    - Interfaz `IServicioCaja` e implementación `ServicioCaja`:
+      - `AbrirTurnoAsync`: apertura formal de turno de caja con validación de terminal única, estatus `ABIERTO` y registro de movimiento de fondo inicial en efectivo.
+      - `ObtenerTurnoActualAsync`: cálculo en vivo de totales de turno (fondo inicial, ventas en efectivo, entradas, salidas y efectivo en cajón).
+      - `RegistrarMovimientoAsync`: registro de entradas y salidas manuales de efectivo con validación de saldo disponible para evitar retiros excesivos.
+      - `CalcularCorteXAsync`: lectura financiera acumulada en vivo desglosada por método de pago (Efectivo, Tarjeta, Vales, Transferencias, Crédito), dinero esperado en cajón y conteo de transacciones, sin cerrar el turno.
+      - `CerrarTurnoCorteZAsync`: cierre definitivo de turno de caja, arqueo ciego con cálculo de diferencia (cuadrado, sobrante o faltante), registro en `dbo.CortesCaja` (`TipoCorte = 'Z'`), actualización de `dbo.TurnosCaja` a `CERRADO` y registro en `BitacoraAuditoria`.
+      - `ObtenerHistorialCortesAsync`: histórico de cortes realizados con filtros por caja y rango de fechas.
+    - Controlador `CajasController` (`/api/v1/cajas`) con endpoints para apertura de turno, registro de movimientos, cálculo de Corte X, cierre de Corte Z e historial de cortes.
+    - 6 nuevas pruebas unitarias en `PruebasCaja.cs`. Suite de pruebas unitarias al 100% (44 de 44 pruebas aprobadas).
+  - Frontend React 19 / TypeScript / Vite:
+    - Módulo `src/modules/caja/`:
+      - Tipos de TypeScript en `tiposCaja.ts` y cliente HTTP en `servicioCaja.ts`.
+      - Componente `ModalAbrirTurno.tsx`: apertura guiada con selector de caja física, fondo inicial rápido (+ $50, $100, $200, $500) e inicio instantáneo de turno.
+      - Componente `ModalMovimientoCaja.tsx`: registro de entradas y salidas manuales de efectivo con verificación de efectivo disponible en cajón.
+      - Componente `ModalCorteCaja.tsx`: panel con doble pestaña para lectura en vivo de Corte X y cierre definitivo Corte Z con calculadora de arqueo físico por denominaciones de billetes y monedas, cálculo en tiempo real de diferencia contable y campo de observaciones.
+      - Componente `TiraCorteTermico.tsx`: plantilla de impresión de tira térmica térmica (58mm / 80mm) con membrete de Abarrotes Arenas, desglose contable, arqueo y firmas para cajero y supervisor.
+    - Integración en `DisenoPdv.tsx`:
+      - Detección automática al cargar el PDV: si no hay turno abierto, se solicita la apertura con fondo inicial antes de permitir ventas.
+      - Badge interactivo en cabecera con estado de caja (`Turno #N • Caja Principal • Efectivo: $XXX.XX`).
+      - Botones directos y atajos de teclado: `F10` para Movimientos de Caja y `F9` para Cortes X/Z.
+      - Inclusión automática de `idTurnoCaja` e `idCaja` en las ventas para garantizar trazabilidad contable perfecta.
+
 ## [Fase 9] - 2026-09-17
 ### Agregado
 - Tickets en Espera / Pendientes:
