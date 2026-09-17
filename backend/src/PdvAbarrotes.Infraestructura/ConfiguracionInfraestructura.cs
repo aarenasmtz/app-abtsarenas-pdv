@@ -31,6 +31,9 @@ public static class ConfiguracionInfraestructura
 
         servicios.AddScoped<IServicioUsuarioActual, ServicioUsuarioActual>();
         servicios.AddScoped<IServicioAuditoria, ServicioAuditoria>();
+        servicios.AddScoped<IServicioGeneradorJwt, ServicioGeneradorJwt>();
+        servicios.AddScoped<IServicioAutenticacion, ServicioAutenticacion>();
+        servicios.AddScoped<IServicioUsuarios, ServicioUsuarios>();
         servicios.AddScoped<IProveedorRecargas, ProveedorRecargasPendiente>();
         servicios.AddScoped<IProveedorServicios, ProveedorServiciosPendiente>();
 

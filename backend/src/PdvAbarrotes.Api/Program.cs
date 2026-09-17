@@ -1,6 +1,10 @@
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using PdvAbarrotes.Api.Middlewares;
 using PdvAbarrotes.Infraestructura;
+using PdvAbarrotes.Infraestructura.Persistencia;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,7 +13,37 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddHttpContextAccessor();
 
-// 2. Configuración de Swagger en español
+// 2. Configuración de Autenticación JWT Bearer
+var claveSecreta = builder.Configuration["Jwt:ClaveSecreta"] 
+    ?? "PdvAbarrotesArenas_SuperClaveSecretaSegura2026_JWT_Token_Key_987654321";
+var emisor = builder.Configuration["Jwt:Emisor"] ?? "PdvAbarrotesApi";
+var audiencia = builder.Configuration["Jwt:Audiencia"] ?? "PdvAbarrotesWeb";
+
+builder.Services.AddAuthentication(opciones =>
+{
+    opciones.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    opciones.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(opciones =>
+{
+    opciones.RequireHttpsMetadata = false;
+    opciones.SaveToken = true;
+    opciones.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(claveSecreta)),
+        ValidateIssuer = true,
+        ValidIssuer = emisor,
+        ValidateAudience = true,
+        ValidAudience = audiencia,
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero
+    };
+});
+
+builder.Services.AddAuthorization();
+
+// 3. Configuración de Swagger en español
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
@@ -44,10 +78,10 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// 3. Capa de Infraestructura (EF Core 9, SQL Server, Dapper, Servicios)
+// 4. Capa de Infraestructura (EF Core 9, SQL Server, Dapper, Servicios)
 builder.Services.AgregarInfraestructura(builder.Configuration);
 
-// 4. Política CORS para el frontend React Vite
+// 5. Política CORS para el frontend React Vite
 builder.Services.AddCors(opciones =>
 {
     opciones.AddPolicy("PoliticaPdvWeb", politica =>
@@ -61,10 +95,25 @@ builder.Services.AddCors(opciones =>
 
 var app = builder.Build();
 
-// 5. Middleware de excepciones global
+// 6. Inicialización automática de datos base (Roles y credenciales iniciales)
+using (var alcance = app.Services.CreateScope())
+{
+    try
+    {
+        var contexto = alcance.ServiceProvider.GetRequiredService<ContextoPrincipal>();
+        await InicializadorDatos.InicializarAsync(contexto);
+    }
+    catch (Exception ex)
+    {
+        var logger = alcance.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Error durante la inicialización de datos base.");
+    }
+}
+
+// 7. Middleware de excepciones global
 app.UseMiddleware<ManejadorExcepcionesMiddleware>();
 
-// 6. Pipeline HTTP
+// 8. Pipeline HTTP
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

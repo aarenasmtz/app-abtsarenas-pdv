@@ -4,8 +4,8 @@
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | **Fase 1: Auditoría y Repositorio** | ✅ | ✅ | ✅ | ✅ | **Completado** |
 | **Fase 2: Arquitectura Base .NET 9 + React**| ✅ | ✅ | ✅ | ✅ | **Completado** |
-| **Fase 3: Autenticación, Roles y Auditoría** | ✅ | ⏳ | ⏳ | ⏳ | Siguiente Fase |
-| **Fase 4: Catálogos, Productos y Buscador** | ✅ | ⏳ | ⏳ | ⏳ | Pendiente |
+| **Fase 3: Autenticación, Roles y Auditoría** | ✅ | ✅ | ✅ | ✅ | **Completado** |
+| **Fase 4: Catálogos, Productos y Buscador** | ✅ | ⏳ | ⏳ | ⏳ | Siguiente Fase |
 | **Fase 5: Inventario y Kardex** | ✅ | ⏳ | ⏳ | ⏳ | Pendiente |
 | **Fase 6: PDV Central (Cobro básico)** | ✅ | ⏳ | ⏳ | ⏳ | Pendiente |
 | **Fase 7: Escáner de Código de Barras HID** | ✅ | ⏳ | ⏳ | ⏳ | Pendiente |

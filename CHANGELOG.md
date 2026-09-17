@@ -19,6 +19,23 @@ Todas las modificaciones notables a este proyecto serán documentadas en este ar
 - Inicialización de repositorio Git con ramas `main`, `develop` y `feature/fase2-arquitectura-base`.
 - Archivo `AI_CONTEXT.md` para orientación de contexto ágil.
 
+## [Fase 3] - 2026-09-17
+### Agregado
+- Módulo completo de Autenticación y Seguridad en .NET 9 y React 19:
+  - Generador de tokens JWT (`ServicioGeneradorJwt`) con claims `IdUsuario`, `NombreUsuario`, `NombreCompleto` y `Rol`.
+  - Hashing seguro de contraseñas con BCrypt (`BCrypt.Net-Next`) y migración automática de credenciales Eleventa.
+  - Endpoints en `AutenticacionController`: `POST /api/v1/autenticacion/login`, `POST /api/v1/autenticacion/cambiar-clave`, `GET /api/v1/autenticacion/perfil`.
+  - Endpoints en `UsuariosController`: ABC completo de usuarios con paginación server-side (25/50/100) y protección por rol `Administrador`.
+  - Endpoints en `AuditoriaController`: consulta paginada de la bitácora con filtros por tabla, acción, usuario y fechas.
+  - Servicio de auditoría granular (`ServicioAuditoria`) registrando automáticamente cada inicio de sesión y modificación en `dbo.BitacoraAuditoria`.
+  - Inicializador automático de datos base (`InicializadorDatos`) sembrando roles (`Administrador`, `Cajero`, `Supervisor`) y credenciales seguras.
+  - Pruebas unitarias de emisión de tokens JWT y hashing BCrypt en `PruebasAutenticacion.cs` (12/12 pruebas exitosas).
+- Módulos Frontend en React + TypeScript:
+  - `PantallaLogin`: formulario estilizado con manejo de errores, interceptor Axios y accesos directos para desarrollo.
+  - `PantallaUsuarios`: listado paginado server-side, filtros y modal para registro de nuevos cajeros.
+  - `PantallaAuditoria`: visor detallado de cambios con diferencias entre `ValorAnterior` y `ValorNuevo`.
+  - Store Zustand `useStoreAutenticacion` y protección de rutas en `App.tsx`.
+
 ---
 
 ## [Fase 2] - 2026-09-16

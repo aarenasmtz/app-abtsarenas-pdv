@@ -42,4 +42,6 @@
 
 ## 5. Estado Actual
 * **Fase 1:** Auditoría completada y documentada. Esquema SQL auditado y actualizado (46 tablas base + 5 mejoras aplicadas: `BitacoraAuditoria`, `TicketsPendientes`, `DetalleTicketsPendientes`, `ImagenUrl`, `PedidosSugeridos`, `TokenIdempotencia`).
-* **Fase 2 (En Progreso):** Creación de solución .NET 9 en español, scaffolding de React + TypeScript + Vite, configuración de dependencias y middlewares base.
+* **Fase 2:** Creación de solución .NET 9 en español, scaffolding de React + TypeScript + Vite, configuración de dependencias y middlewares base.
+* **Fase 3:** Autenticación JWT Bearer, hashing de claves con BCrypt, administración de usuarios y cajeros (ABC) y registro de auditoría granular en `dbo.BitacoraAuditoria` funcionando y verificado end-to-end.
+* **Fase 4 (Siguiente):** Módulo de Catálogos (Productos, Categorías, Marcas, UnidadesMedida), buscador rápido y subida de imágenes para admin.
