@@ -4,6 +4,26 @@ Todas las modificaciones notables a este proyecto serán documentadas en este ar
 
 ---
 
+## [Fase 9] - 2026-09-17
+### Agregado
+- Tickets en Espera / Pendientes:
+  - Suspensión y reanudación rápida de ventas para agilizar el flujo de clientes en caja:
+    - Entidades `TicketPendiente` y `DetalleTicketPendiente` mapeadas a `dbo.TicketsPendientes` y `dbo.DetalleTicketsPendientes`.
+    - DTOs en español `CrearTicketPendienteDto`, `ItemTicketPendienteDto` y `TicketPendienteDto`.
+    - Servicio `IServicioTicketsPendientes` / `ServicioTicketsPendientes` con auditoría de acciones:
+      - `GuardarTicketPendienteAsync`: pone en espera los artículos del carrito con referencia de cliente.
+      - `ObtenerTicketsPendientesActivosAsync`: consulta tickets activos ordenados cronológicamente.
+      - `RecuperarTicketPendienteAsync`: desactiva el ticket de la cola y extrae las partidas para montarlas en caja.
+      - `DescartarTicketPendienteAsync`: anula un ticket si el cliente no regresó.
+    - Controlador API `TicketsPendientesController` con endpoints RESTful protegidos por JWT.
+    - 5 pruebas unitarias en `PruebasTicketsPendientes.cs` verificando guardado, recuperación, descarte y filtros de activos. Suite de backend con 38 pruebas unitarias superadas (100% de éxito).
+  - Frontend React 19:
+    - Componente `ModalTicketsPendientes.tsx` para explorar, desglosar partidas y reanudar o descartar ventas en espera.
+    - Integración en `DisenoPdv.tsx`:
+      - Atajo `F6` y botón "Poner en Espera" con diálogo rápido para ingresar nombre/referencia de reconocimiento del cliente.
+      - Atajo `F7` y botón con contador reactivo en la barra superior `En Espera (N) (F7)` resaltado en ámbar cuando hay tickets pendientes.
+      - Carga atómica de artículos al carrito con retroalimentación sonora (`reproducirBeepExito`).
+
 ## [Fase 8] - 2026-09-17
 ### Agregado
 - Pagos Mixtos y Catálogo de Métodos de Pago:

@@ -10,8 +10,8 @@
 | **Fase 6: PDV Central (Cobro básico)** | ✅ | ✅ | ✅ | ✅ | **Completado** |
 | **Fase 7: Escáner de Código de Barras HID y Granel** | ✅ | ✅ | ✅ | ✅ | **Completado** |
 | **Fase 8: Pagos Mixtos** | ✅ | ✅ | ✅ | ✅ | **Completado** |
-| **Fase 9: Tickets en Espera / Pendientes** | ✅ | ⏳ | ⏳ | ⏳ | Siguiente Fase |
-| **Fase 10: Control de Caja y Cortes X/Z** | ✅ | ⏳ | ⏳ | ⏳ | Pendiente |
+| **Fase 9: Tickets en Espera / Pendientes** | ✅ | ✅ | ✅ | ✅ | **Completado** |
+| **Fase 10: Control de Caja y Cortes X/Z** | ✅ | ⏳ | ⏳ | ⏳ | Siguiente Fase |
 | **Fase 11: Proveedores y Compras** | ✅ | ⏳ | ⏳ | ⏳ | Pendiente |
 | **Fase 12: Dashboard y Reportes Gerenciales** | ✅ | ⏳ | ⏳ | ⏳ | Pendiente |
 | **Fase 13: Pedido Sugerido Dominical** | ✅ | ⏳ | ⏳ | ⏳ | Pendiente |
