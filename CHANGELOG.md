@@ -19,6 +19,26 @@ Todas las modificaciones notables a este proyecto serán documentadas en este ar
 - Inicialización de repositorio Git con ramas `main`, `develop` y `feature/fase2-arquitectura-base`.
 - Archivo `AI_CONTEXT.md` para orientación de contexto ágil.
 
+## [Fase 4] - 2026-09-17
+### Agregado
+- Módulo Maestro de Catálogos (Productos, Categorías, Marcas, Unidades de Medida) y Buscador PDV:
+  - DTOs especializados en español: `ProductoAdminDto` (vista administrativa con costos e imagen), `ProductoCobroDto` (ultraligero sin imágenes ni costos), `ResultadoBusquedaPdvDto` (predictivo para caja), `CrearProductoDto`, `ActualizarProductoDto`, `FiltroProductosDto`, `CategoriaDto`, `MarcaDto`, `UnidadMedidaDto`.
+  - Servicio de Catálogos (`ServicioCatalogos` / `IServicioCatalogos`): consulta eficiente con conteo de productos asociados y mantenimiento ABC con auditoría granular.
+  - Servicio de Productos (`ServicioProductos` / `IServicioProductos`):
+    - Paginación server-side con opciones validadas (25/50/100 registros), filtros dinámicos por categoría, marca, estado y bajo stock.
+    - Detección y registro específico de auditoría `CAMBIO_PRECIO` cuando se modifican costos o precios de venta, indicando valores anteriores y nuevos.
+    - Cálculo automático de margen de utilidad en tiempo real.
+    - Carga y almacenamiento local de fotografías en `wwwroot/imagenes/productos/` mediante `POST /api/v1/productos/{id}/imagen`.
+    - Escáner de caja ultrarrápido `<50ms` mediante `GET /api/v1/productos/codigo-barras/{codigo}` con `AsNoTracking()` y proyección estricta sin imágenes.
+    - Buscador predictivo optimizado para caja mediante `GET /api/v1/productos/buscar-pdv?termino={query}` (límite 15 coincidencias, sin imágenes).
+  - Controladores API: `CatalogosController` y `ProductosController` con autorización basada en roles (Cajero/Supervisor para venta, Administrador para gestión).
+  - Pruebas unitarias en `PruebasProductos.cs`: cálculo de márgenes, auditoría de precios, ausencia estricta de imágenes en modelo de cobro y buscador, y validación de productos inactivos (17/17 pruebas exitosas).
+- Frontend en React 19 + TypeScript:
+  - `PantallaProductos.tsx`: tabla administrativa moderna con paginación server-side, filtros reactivos, modal para creación/edición con cálculo de margen en vivo y modal para subida/previsualización de fotografías.
+  - `servicioProductos.ts` y `servicioCatalogos.ts`: clientes HTTP tipados con Axios.
+  - `DisenoPdv.tsx`: integración en tiempo real del lector de código de barras físico/manual contra el endpoint `/productos/codigo-barras/{codigo}` y menú desplegable predictivo mientras el cajero escribe, sin sobrecargar la memoria con imágenes.
+- Verificación end-to-end con 2,913 productos reales migrados en SQL Server `AAM`.
+
 ## [Fase 3] - 2026-09-17
 ### Agregado
 - Módulo completo de Autenticación y Seguridad en .NET 9 y React 19:

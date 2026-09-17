@@ -44,4 +44,5 @@
 * **Fase 1:** Auditoría completada y documentada. Esquema SQL auditado y actualizado (46 tablas base + 5 mejoras aplicadas: `BitacoraAuditoria`, `TicketsPendientes`, `DetalleTicketsPendientes`, `ImagenUrl`, `PedidosSugeridos`, `TokenIdempotencia`).
 * **Fase 2:** Creación de solución .NET 9 en español, scaffolding de React + TypeScript + Vite, configuración de dependencias y middlewares base.
 * **Fase 3:** Autenticación JWT Bearer, hashing de claves con BCrypt, administración de usuarios y cajeros (ABC) y registro de auditoría granular en `dbo.BitacoraAuditoria` funcionando y verificado end-to-end.
-* **Fase 4 (Siguiente):** Módulo de Catálogos (Productos, Categorías, Marcas, UnidadesMedida), buscador rápido y subida de imágenes para admin.
+* **Fase 4:** Catálogo Maestro de Productos, Categorías, Marcas, Unidades de Medida, subida y almacenamiento de imágenes administrativas, paginación server-side (25/50/100), auditoría de cambio de precios, buscador predictivo ultrarrápido y escáner de caja en PDV con regla estricta de cero imágenes en cobro. Verificado con 17 pruebas unitarias y queries reales en SQL Server `AAM`.
+* **Fase 5 (Siguiente):** Módulo de Inventario y Kardex (Entradas, Salidas, Ajustes de Stock, Historial de Movimientos y Alertas de Reorden).
