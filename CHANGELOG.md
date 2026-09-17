@@ -19,6 +19,25 @@ Todas las modificaciones notables a este proyecto serán documentadas en este ar
 - Inicialización de repositorio Git con ramas `main`, `develop` y `feature/fase2-arquitectura-base`.
 - Archivo `AI_CONTEXT.md` para orientación de contexto ágil.
 
+## [Fase 6] - 2026-09-17
+### Agregado
+- Núcleo del Punto de Venta (PDV Central, Cobro Básico, Tickets Térmicos y Transacciones Atómicas):
+  - Entidad `MetodoPago` en `PdvAbarrotes.Dominio/Entidades` mapeada a `dbo.MetodosPago`.
+  - DTOs especializados en español: `ItemVentaDto`, `RegistrarVentaDto`, `VentaPagoDto`, `VentaRealizadaDto`, `TicketVentaDto`, `FiltroVentasDto`, `VentaResumenDto`.
+  - Servicio central de ventas (`ServicioVentas` / `IServicioVentas`):
+    - Transacción SQL atómica: inserción en `dbo.Ventas`, `dbo.DetalleVentas`, `dbo.VentaPagos`, deducción de existencias en `dbo.Inventario`, inserción de salida en `dbo.MovimientosInventario` (Tipo: Venta) y registro en `dbo.BitacoraAuditoria`.
+    - Blindaje de Idempotencia: el envío duplicado del mismo `TokenIdempotencia` (UUID generado por el cliente) recupera la venta previa sin duplicar inventario ni cargos.
+    - Generación de folio comercial legible y correlativo (`V-YYYYMMDD-XXXX`).
+    - Soporte completo de comprobante térmico estándar para tiras de 58mm y 80mm con desglose de partidas, formas de pago, cambio y pie de página comercial.
+    - Cancelación de ventas con reversión atómica de inventario al stock disponible y trazabilidad en bitácora.
+  - Controlador API `VentasController`: `POST /api/v1/ventas`, `GET /api/v1/ventas/{id}/ticket`, `GET /api/v1/ventas/recientes`, `POST /api/v1/ventas/{id}/cancelar`.
+  - Pruebas unitarias completas en `PruebasVentas.cs`: cobro en efectivo con cálculo de cambio y descuento de existencias, idempotencia comprobada, pagos insuficientes, carrito vacío y estructura de ticket (27/27 pruebas unitarias superadas en la solución .NET 9).
+  - Componentes Frontend en React 19 + TypeScript:
+    - `ModalCobro.tsx`: modal de alta velocidad con totalizador gigante, botones de efectivo rápido ($50, $100, $200, $500, Exacto), cálculo de cambio en tiempo real, teclado numérico táctil y escucha de atajos de teclado (`Enter` para cobrar, `Esc` para cancelar).
+    - `ModalTicket.tsx`: previsualización de ticket térmico, impresión con `window.print()` y botón de "Nueva Venta (Enter)" con reinicio automático de caja.
+    - `ModalReimpresion.tsx`: explorador de últimas ventas de la caja para reimpresión instantánea en 1 clic.
+    - Integración en `DisenoPdv.tsx`: conexión del botón `Cobrar (F12)`, atajo `F4` para limpiar carrito, atajo `F8` para reimprimir y botón directo en la cabecera.
+
 ## [Fase 5] - 2026-09-17
 ### Agregado
 - Módulo de Control de Inventario, Kardex Histórico y Alertas de Reorden:

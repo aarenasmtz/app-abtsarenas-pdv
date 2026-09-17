@@ -7,8 +7,8 @@
 | **Fase 3: Autenticación, Roles y Auditoría** | ✅ | ✅ | ✅ | ✅ | **Completado** |
 | **Fase 4: Catálogos, Productos y Buscador** | ✅ | ✅ | ✅ | ✅ | **Completado** |
 | **Fase 5: Inventario y Kardex** | ✅ | ✅ | ✅ | ✅ | **Completado** |
-| **Fase 6: PDV Central (Cobro básico)** | ✅ | ⏳ | ⏳ | ⏳ | Siguiente Fase |
-| **Fase 7: Escáner de Código de Barras HID** | ✅ | ⏳ | ⏳ | ⏳ | Pendiente |
+| **Fase 6: PDV Central (Cobro básico)** | ✅ | ✅ | ✅ | ✅ | **Completado** |
+| **Fase 7: Escáner de Código de Barras HID** | ✅ | ⏳ | ⏳ | ⏳ | Siguiente Fase |
 | **Fase 8: Pagos Mixtos** | ✅ | ⏳ | ⏳ | ⏳ | Pendiente |
 | **Fase 9: Tickets en Espera / Pendientes** | ✅ | ⏳ | ⏳ | ⏳ | Pendiente |
 | **Fase 10: Control de Caja y Cortes X/Z** | ✅ | ⏳ | ⏳ | ⏳ | Pendiente |

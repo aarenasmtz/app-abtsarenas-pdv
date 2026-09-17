@@ -43,6 +43,7 @@
 ## 5. Estado Actual
 * **Fase 1:** Auditoría completada y documentada. Esquema SQL auditado y actualizado (46 tablas base + 5 mejoras aplicadas: `BitacoraAuditoria`, `TicketsPendientes`, `DetalleTicketsPendientes`, `ImagenUrl`, `PedidosSugeridos`, `TokenIdempotencia`).
 * **Fase 2:** Creación de solución .NET 9 en español, scaffolding de React + TypeScript + Vite, configuración de dependencias y middlewares base.
-* **Fase 3:** Autenticación JWT Bearer, hashing de claves con BCrypt, administración de usuarios y cajeros (ABC) y registro de auditoría granular en `dbo.BitacoraAuditoria` funcionando y verificado end-to-end.
-* **Fase 5:** Módulo de Control de Inventario, Kardex Histórico (486k movimientos) y Alertas de Reorden completado. Transacciones atómicas de ajuste de inventario, auditoría granular, semáforo de existencias y pruebas unitarias (22/22 exitosas).
-* **Fase 6 (Siguiente):** Módulo PDV Central (Cobro básico, tickets, totalizadores, teclado numérico/touch, persistencia de ventas y registro atómico de movimientos de salida por venta).
+* **Fase 4:** Catálogo Maestro de Productos, Categorías, Marcas, Unidades de Medida, subida y almacenamiento de imágenes administrativas, paginación server-side (25/50/100), auditoría de cambio de precios, buscador predictivo ultrarrápido y escáner de caja en PDV sin imágenes.
+* **Fase 5:** Módulo de Control de Inventario, Kardex Histórico (486k movimientos) y Alertas de Reorden completado. Transacciones atómicas de ajuste de inventario, auditoría granular y semáforo de existencias.
+* **Fase 6:** Núcleo del PDV completado. Cobro rápido con teclado táctil y denominaciones ($50, $100, $200, $500, Exacto), cálculo de cambio en tiempo real, transacción SQL atómica con deducción de existencias y registro en Kardex, blindaje de idempotencia (UUID), tickets térmicos imprimibles y panel de reimpresión de tickets. (27/27 pruebas unitarias superadas).
+* **Fase 7 (Siguiente):** Escáner de Código de Barras HID (Buffer de teclado de alta velocidad <30ms, prevención de pérdida de foco, soporte para códigos de barras múltiples e identificación automática de productos pesables/a granel).
