@@ -16,7 +16,7 @@ interface PropiedadesTablaPaginada<T> {
   onCambiarRegistrosPorPagina: (tamano: 25 | 50 | 100) => void;
 }
 
-export function TablaPaginada<T extends { [key: string]: unknown }>({
+export function TablaPaginada<T>({
   columnas,
   resultado,
   cargando = false,
@@ -52,10 +52,10 @@ export function TablaPaginada<T extends { [key: string]: unknown }>({
             </tr>
           ) : (
             elementos.map((item, index) => (
-              <tr key={(item.id as React.Key) || index}>
+              <tr key={((item as any).id || (item as any).idProducto || (item as any).idUsuario || index) as React.Key}>
                 {columnas.map((col) => (
                   <td key={col.clave}>
-                    {col.renderizar ? col.renderizar(item) : (item[col.clave] as React.ReactNode)}
+                    {col.renderizar ? col.renderizar(item) : ((item as any)[col.clave] as React.ReactNode)}
                   </td>
                 ))}
               </tr>

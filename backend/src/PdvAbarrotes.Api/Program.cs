@@ -126,6 +126,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("PoliticaPdvWeb");
 
+app.UseStaticFiles();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
