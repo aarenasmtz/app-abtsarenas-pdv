@@ -56,8 +56,8 @@ public class PruebasVentas
         if (!contexto.MetodosPago.Any())
         {
             contexto.MetodosPago.AddRange(
-                new MetodoPago { IdMetodoPago = 1, Codigo = "EFECTIVO", Descripcion = "Efectivo", Activo = true },
-                new MetodoPago { IdMetodoPago = 2, Codigo = "TARJETA_DEBITO", Descripcion = "Tarjeta de Débito", Activo = true }
+                new MetodoPago { IdMetodoPago = 1, CodigoMetodo = "EFECTIVO", Descripcion = "Efectivo", Activo = true },
+                new MetodoPago { IdMetodoPago = 2, CodigoMetodo = "TARJETA_DEBITO", Descripcion = "Tarjeta de Débito", Activo = true }
             );
         }
 

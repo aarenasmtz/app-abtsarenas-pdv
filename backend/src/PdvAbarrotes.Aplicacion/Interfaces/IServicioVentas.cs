@@ -27,4 +27,9 @@ public interface IServicioVentas
     /// Cancela una venta registrada revirtiendo atómicamente el inventario y registrando la auditoría correspondiente.
     /// </summary>
     Task<RespuestaApi<bool>> CancelarVentaAsync(int idVenta, string motivo, CancellationToken ct = default);
+
+    /// <summary>
+    /// Obtiene el catálogo de métodos de pago activos habilitados para cobro en terminales de venta.
+    /// </summary>
+    Task<RespuestaApi<List<MetodoPagoDto>>> ObtenerMetodosPagoActivosAsync(CancellationToken ct = default);
 }

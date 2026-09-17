@@ -1,9 +1,9 @@
-namespace PdvAbarrotes.Dominio.Entidades;
+namespace PdvAbarrotes.Aplicacion.DTOs.Ventas;
 
 /// <summary>
-/// Catálogo de métodos de pago. Mapea a dbo.MetodosPago.
+/// Catálogo de método de pago disponible para cobro en terminales de venta (efectivo, tarjetas, vales, transferencia).
 /// </summary>
-public class MetodoPago
+public class MetodoPagoDto
 {
     public int IdMetodoPago { get; set; }
     public string CodigoMetodo { get; set; } = string.Empty;

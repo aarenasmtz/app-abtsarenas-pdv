@@ -7,10 +7,14 @@ import {
   X, 
   Loader2, 
   AlertCircle,
-  Delete
+  Delete,
+  Layers,
+  Plus,
+  Trash2
 } from 'lucide-react';
-import type { ItemVenta, RegistrarVentaPeticion, VentaRealizada } from '../ventas/tipos';
+import type { ItemVenta, RegistrarVentaPeticion, VentaRealizada, VentaPago, MetodoPagoDto } from '../ventas/tipos';
 import servicioVentas from '../ventas/servicioVentas';
+import { reproducirBeepExito, reproducirBeepError } from '../../utils/sonidosPdv';
 
 interface PropiedadesModalCobro {
   abierto: boolean;
@@ -22,6 +26,15 @@ interface PropiedadesModalCobro {
   onVentaCompletada: (venta: VentaRealizada) => void;
 }
 
+interface PartidaPagoMixto {
+  idTemporal: string;
+  idMetodoPago: number;
+  nombreMetodo: string;
+  importe: number;
+  referencia?: string;
+  esEfectivo: boolean;
+}
+
 export const ModalCobro: React.FC<PropiedadesModalCobro> = ({
   abierto,
   total,
@@ -31,73 +44,225 @@ export const ModalCobro: React.FC<PropiedadesModalCobro> = ({
   onCerrar,
   onVentaCompletada
 }) => {
-  const [metodoPago, setMetodoPago] = useState<number>(1); // 1: Efectivo, 2: Tarjeta, 5: Transferencia
+  // Modo de cobro: 'rapido' (un solo método, flujo ultra veloz) o 'mixto' (múltiples métodos combinados)
+  const [modoCobro, setModoCobro] = useState<'rapido' | 'mixto'>('rapido');
+
+  // Estado modo rápido
+  const [metodoPagoRapido, setMetodoPagoRapido] = useState<number>(1); // 1: Efectivo, 2: Tarjeta, 5: Transferencia
   const [montoRecibidoTexto, setMontoRecibidoTexto] = useState<string>('');
-  const [referencia, setReferencia] = useState<string>('');
+  const [referenciaRapida, setReferenciaRapida] = useState<string>('');
+
+  // Estado modo mixto
+  const [metodosDisponibles, setMetodosDisponibles] = useState<MetodoPagoDto[]>([]);
+  const [pagosMixtos, setPagosMixtos] = useState<PartidaPagoMixto[]>([]);
+  const [metodoMixtoSeleccionado, setMetodoMixtoSeleccionado] = useState<number>(1);
+  const [montoMixtoTexto, setMontoMixtoTexto] = useState<string>('');
+  const [referenciaMixta, setReferenciaMixta] = useState<string>('');
+
+  // Estados generales
   const [cargando, setCargando] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [tokenIdempotencia, setTokenIdempotencia] = useState<string>('');
 
+  // Cargar catálogo de métodos de pago activos al montar
+  useEffect(() => {
+    async function cargarMetodos() {
+      try {
+        const respuesta = await servicioVentas.obtenerMetodosPago();
+        if (respuesta.exito && respuesta.datos && respuesta.datos.length > 0) {
+          setMetodosDisponibles(respuesta.datos);
+        } else {
+          // Defaults estándar
+          setMetodosDisponibles([
+            { idMetodoPago: 1, codigoMetodo: 'EFECTIVO', descripcion: 'Efectivo', requiereReferencia: false, activo: true },
+            { idMetodoPago: 2, codigoMetodo: 'TARJETA', descripcion: 'Tarjeta Débito / Crédito', requiereReferencia: true, activo: true },
+            { idMetodoPago: 3, codigoMetodo: 'VALES', descripcion: 'Vales de Despensa', requiereReferencia: true, activo: true },
+            { idMetodoPago: 5, codigoMetodo: 'TRANSFERENCIA', descripcion: 'Transferencia Electrónica', requiereReferencia: true, activo: true }
+          ]);
+        }
+      } catch {
+        setMetodosDisponibles([
+          { idMetodoPago: 1, codigoMetodo: 'EFECTIVO', descripcion: 'Efectivo', requiereReferencia: false, activo: true },
+          { idMetodoPago: 2, codigoMetodo: 'TARJETA', descripcion: 'Tarjeta Débito / Crédito', requiereReferencia: true, activo: true },
+          { idMetodoPago: 3, codigoMetodo: 'VALES', descripcion: 'Vales de Despensa', requiereReferencia: true, activo: true },
+          { idMetodoPago: 5, codigoMetodo: 'TRANSFERENCIA', descripcion: 'Transferencia Electrónica', requiereReferencia: true, activo: true }
+        ]);
+      }
+    }
+    if (abierto) {
+      cargarMetodos();
+    }
+  }, [abierto]);
+
   // Inicializar estado cada vez que se abre el modal
   useEffect(() => {
     if (abierto) {
-      setMetodoPago(1);
+      setModoCobro('rapido');
+      setMetodoPagoRapido(1);
       setMontoRecibidoTexto('');
-      setReferencia('');
+      setReferenciaRapida('');
+      setPagosMixtos([]);
+      setMetodoMixtoSeleccionado(1);
+      setMontoMixtoTexto('');
+      setReferenciaMixta('');
       setError(null);
       setCargando(false);
-      // Generar token UUID único para blindar contra cobros dobles
       setTokenIdempotencia(crypto.randomUUID ? crypto.randomUUID() : `idemp-${Date.now()}`);
     }
   }, [abierto]);
 
-  // Convertir texto ingresado a número
-  const montoRecibido = useMemo(() => {
+  // Conversión numérica modo rápido
+  const montoRecibidoRapido = useMemo(() => {
     const parsed = parseFloat(montoRecibidoTexto);
     return isNaN(parsed) ? 0 : parsed;
   }, [montoRecibidoTexto]);
 
-  // Calcular cambio o saldo pendiente
-  const cambio = useMemo(() => {
-    if (metodoPago !== 1) return 0; // En tarjeta/transferencia se cobra el monto exacto
-    return Math.max(0, montoRecibido - total);
-  }, [montoRecibido, total, metodoPago]);
+  const cambioRapido = useMemo(() => {
+    if (metodoPagoRapido !== 1) return 0;
+    return Math.max(0, montoRecibidoRapido - total);
+  }, [montoRecibidoRapido, total, metodoPagoRapido]);
 
-  const saldoFaltante = useMemo(() => {
-    if (metodoPago !== 1) return 0;
-    return Math.max(0, total - montoRecibido);
-  }, [montoRecibido, total, metodoPago]);
+  const saldoFaltanteRapido = useMemo(() => {
+    if (metodoPagoRapido !== 1) return 0;
+    return Math.max(0, total - montoRecibidoRapido);
+  }, [montoRecibidoRapido, total, metodoPagoRapido]);
 
+  // Cálculos modo mixto
+  const sumaPagosMixtos = useMemo(() => {
+    return pagosMixtos.reduce((acc, p) => acc + p.importe, 0);
+  }, [pagosMixtos]);
+
+  const sumaPagosNoEfectivo = useMemo(() => {
+    return pagosMixtos.filter(p => !p.esEfectivo).reduce((acc, p) => acc + p.importe, 0);
+  }, [pagosMixtos]);
+
+  const sumaPagosEfectivo = useMemo(() => {
+    return pagosMixtos.filter(p => p.esEfectivo).reduce((acc, p) => acc + p.importe, 0);
+  }, [pagosMixtos]);
+
+  const saldoRestantePorCobrar = useMemo(() => {
+    return Math.max(0, Math.round((total - sumaPagosMixtos) * 100) / 100);
+  }, [total, sumaPagosMixtos]);
+
+  const cambioMixto = useMemo(() => {
+    const remanenteEfectivo = total - sumaPagosNoEfectivo;
+    if (remanenteEfectivo <= 0) return 0;
+    return Math.max(0, sumaPagosEfectivo - remanenteEfectivo);
+  }, [total, sumaPagosNoEfectivo, sumaPagosEfectivo]);
+
+  const porcentajeCubierto = useMemo(() => {
+    if (total <= 0) return 100;
+    return Math.min(100, Math.round((sumaPagosMixtos / total) * 100));
+  }, [sumaPagosMixtos, total]);
+
+  // Validaciones para cobrar
   const esValidoCobrar = useMemo(() => {
     if (cargando) return false;
     if (total <= 0) return false;
-    if (metodoPago === 1) {
-      return montoRecibido >= total;
-    }
-    return true; // Tarjeta o transferencia
-  }, [cargando, total, metodoPago, montoRecibido]);
 
-  // Manejar teclado en pantalla
+    if (modoCobro === 'rapido') {
+      if (metodoPagoRapido === 1) {
+        return montoRecibidoRapido >= total;
+      }
+      return true; // Tarjeta o transferencia directa
+    } else {
+      // Modo mixto
+      if (pagosMixtos.length === 0) return false;
+      if (sumaPagosNoEfectivo > total) return false;
+      return (sumaPagosEfectivo + sumaPagosNoEfectivo) >= total;
+    }
+  }, [cargando, total, modoCobro, metodoPagoRapido, montoRecibidoRapido, pagosMixtos, sumaPagosNoEfectivo, sumaPagosEfectivo]);
+
+  // Manejo de teclado en pantalla para el input activo
   const agregarDigito = (digito: string) => {
-    if (digito === '.' && montoRecibidoTexto.includes('.')) return;
-    setMontoRecibidoTexto(prev => prev + digito);
+    if (modoCobro === 'rapido') {
+      if (digito === '.' && montoRecibidoTexto.includes('.')) return;
+      setMontoRecibidoTexto(prev => prev + digito);
+    } else {
+      if (digito === '.' && montoMixtoTexto.includes('.')) return;
+      setMontoMixtoTexto(prev => prev + digito);
+    }
   };
 
   const borrarUltimoDigito = () => {
-    setMontoRecibidoTexto(prev => prev.slice(0, -1));
+    if (modoCobro === 'rapido') {
+      setMontoRecibidoTexto(prev => prev.slice(0, -1));
+    } else {
+      setMontoMixtoTexto(prev => prev.slice(0, -1));
+    }
   };
 
   const limpiarMonto = () => {
-    setMontoRecibidoTexto('');
+    if (modoCobro === 'rapido') {
+      setMontoRecibidoTexto('');
+    } else {
+      setMontoMixtoTexto('');
+    }
   };
 
-  // Botones de efectivo rápido
+  // Botones de efectivo rápido modo rápido
   const fijarMontoExacto = () => {
-    setMontoRecibidoTexto(total.toFixed(2));
+    if (modoCobro === 'rapido') {
+      setMontoRecibidoTexto(total.toFixed(2));
+    } else {
+      setMontoMixtoTexto(saldoRestantePorCobrar.toFixed(2));
+    }
   };
 
   const agregarBillete = (valor: number) => {
-    setMontoRecibidoTexto(valor.toFixed(2));
+    if (modoCobro === 'rapido') {
+      setMontoRecibidoTexto(valor.toFixed(2));
+    } else {
+      setMontoMixtoTexto(valor.toFixed(2));
+    }
+  };
+
+  // Acciones modo mixto
+  const handleAgregarPagoMixto = () => {
+    const parsed = parseFloat(montoMixtoTexto);
+    if (isNaN(parsed) || parsed <= 0) {
+      setError('Ingresa un importe válido mayor a $0.00');
+      reproducirBeepError();
+      return;
+    }
+
+    const metodo = metodosDisponibles.find(m => m.idMetodoPago === metodoMixtoSeleccionado) || {
+      idMetodoPago: metodoMixtoSeleccionado,
+      codigoMetodo: 'OTRO',
+      descripcion: 'Otro Método',
+      requiereReferencia: false,
+      activo: true
+    };
+
+    const esEfectivo = metodo.idMetodoPago === 1;
+
+    // Si no es efectivo, validar que no exceda el saldo por cubrir
+    if (!esEfectivo) {
+      const nuevoNoEfectivo = sumaPagosNoEfectivo + parsed;
+      if (nuevoNoEfectivo > total) {
+        setError(`Los métodos que no son efectivo no pueden exceder el total de la venta ($${total.toFixed(2)}).`);
+        reproducirBeepError();
+        return;
+      }
+    }
+
+    const nuevaPartida: PartidaPagoMixto = {
+      idTemporal: `pago-${Date.now()}-${Math.random()}`,
+      idMetodoPago: metodo.idMetodoPago,
+      nombreMetodo: metodo.descripcion,
+      importe: parsed,
+      referencia: referenciaMixta.trim() || undefined,
+      esEfectivo
+    };
+
+    setPagosMixtos(prev => [...prev, nuevaPartida]);
+    setMontoMixtoTexto('');
+    setReferenciaMixta('');
+    setError(null);
+  };
+
+  const handleEliminarPagoMixto = (idTemporal: string) => {
+    setPagosMixtos(prev => prev.filter(p => p.idTemporal !== idTemporal));
   };
 
   // Procesar venta
@@ -107,16 +272,37 @@ export const ModalCobro: React.FC<PropiedadesModalCobro> = ({
     setCargando(true);
     setError(null);
 
-    const importeFinal = metodoPago === 1 ? montoRecibido : total;
+    let pagosEnviar: VentaPago[] = [];
+    let importeRecibidoTotal = 0;
+
+    if (modoCobro === 'rapido') {
+      const importeFinal = metodoPagoRapido === 1 ? montoRecibidoRapido : total;
+      importeRecibidoTotal = importeFinal;
+      pagosEnviar = [
+        {
+          idMetodoPago: metodoPagoRapido,
+          importe: total,
+          referencia: referenciaRapida || undefined
+        }
+      ];
+    } else {
+      // Modo mixto
+      importeRecibidoTotal = sumaPagosMixtos;
+      pagosEnviar = pagosMixtos.map(p => ({
+        idMetodoPago: p.idMetodoPago,
+        importe: p.importe,
+        referencia: p.referencia
+      }));
+    }
 
     const peticion: RegistrarVentaPeticion = {
       tokenIdempotencia,
-      idCliente: 1, // Venta en mostrador / Público en General
+      idCliente: 1, // Venta en mostrador
       idCaja: 1,
       idTurnoCaja: 1,
       descuentoGlobal: descuento,
-      importeRecibido: importeFinal,
-      notas: referencia ? `Ref: ${referencia}` : undefined,
+      importeRecibido: importeRecibidoTotal,
+      notas: modoCobro === 'mixto' ? 'Pago Mixto' : (referenciaRapida ? `Ref: ${referenciaRapida}` : undefined),
       articulos: articulos.map(a => ({
         idProducto: a.idProducto,
         codigoBarras: a.codigoBarras,
@@ -126,29 +312,39 @@ export const ModalCobro: React.FC<PropiedadesModalCobro> = ({
         descuento: a.descuento,
         subtotal: a.subtotal
       })),
-      pagos: [
-        {
-          idMetodoPago: metodoPago,
-          importe: total,
-          referencia: referencia || undefined
-        }
-      ]
+      pagos: pagosEnviar
     };
 
     try {
       const respuesta = await servicioVentas.registrarVenta(peticion);
       if (respuesta.exito && respuesta.datos) {
+        reproducirBeepExito();
         onVentaCompletada(respuesta.datos);
       } else {
+        reproducirBeepError();
         setError(respuesta.mensaje || 'Ocurrió un error al procesar la venta.');
       }
     } catch (err: unknown) {
+      reproducirBeepError();
       const errObj = err as { response?: { data?: { mensaje?: string } }; message?: string };
       setError(errObj?.response?.data?.mensaje || errObj?.message || 'Error de conexión con el servidor.');
     } finally {
       setCargando(false);
     }
-  }, [esValidoCobrar, metodoPago, montoRecibido, total, tokenIdempotencia, descuento, referencia, articulos, onVentaCompletada]);
+  }, [
+    esValidoCobrar, 
+    modoCobro, 
+    metodoPagoRapido, 
+    montoRecibidoRapido, 
+    total, 
+    referenciaRapida, 
+    sumaPagosMixtos, 
+    pagosMixtos, 
+    tokenIdempotencia, 
+    descuento, 
+    articulos, 
+    onVentaCompletada
+  ]);
 
   // Manejo de atajos de teclado (Enter para cobrar, Esc para cerrar)
   useEffect(() => {
@@ -177,7 +373,7 @@ export const ModalCobro: React.FC<PropiedadesModalCobro> = ({
       <div 
         className="modal-contenido" 
         style={{ 
-          maxWidth: '750px', 
+          maxWidth: '820px', 
           width: '95%', 
           backgroundColor: '#111827', 
           borderRadius: '16px',
@@ -186,438 +382,632 @@ export const ModalCobro: React.FC<PropiedadesModalCobro> = ({
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)'
         }}
       >
-        {/* Cabecera del Modal */}
+        {/* Cabecera del Modal con Pestañas de Modo de Cobro */}
         <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center', 
-          padding: '1.25rem 1.5rem',
+          padding: '1rem 1.5rem',
           borderBottom: '1px solid #1f2937',
-          backgroundColor: '#1f2937'
+          backgroundColor: '#1f2937',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
         }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 700, color: '#f3f4f6' }}>
-              Finalizar Venta
+            <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#f3f4f6' }}>
+              Finalizar Venta y Cobro
             </h2>
             <span style={{ fontSize: '0.85rem', color: '#9ca3af' }}>
               {articulos.length} partida(s) • Subtotal: ${subtotal.toFixed(2)}
             </span>
           </div>
 
-          <button 
-            onClick={onCerrar}
-            style={{ 
-              background: 'transparent', 
-              border: 'none', 
-              color: '#9ca3af', 
-              cursor: 'pointer',
-              padding: '0.4rem',
-              borderRadius: '8px'
-            }}
-          >
-            <X size={24} />
-          </button>
+          {/* Selector de Modo: Rápido vs Mixto */}
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <div style={{ 
+              display: 'inline-flex', 
+              backgroundColor: '#0f172a', 
+              borderRadius: '8px', 
+              padding: '0.25rem', 
+              border: '1px solid #374151' 
+            }}>
+              <button
+                type="button"
+                onClick={() => setModoCobro('rapido')}
+                style={{
+                  padding: '0.45rem 0.9rem',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  borderRadius: '6px',
+                  border: 'none',
+                  backgroundColor: modoCobro === 'rapido' ? '#2563eb' : 'transparent',
+                  color: modoCobro === 'rapido' ? '#ffffff' : '#9ca3af',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem'
+                }}
+              >
+                <DollarSign size={16} />
+                <span>Cobro Directo</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setModoCobro('mixto')}
+                style={{
+                  padding: '0.45rem 0.9rem',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  borderRadius: '6px',
+                  border: 'none',
+                  backgroundColor: modoCobro === 'mixto' ? '#10b981' : 'transparent',
+                  color: modoCobro === 'mixto' ? '#ffffff' : '#9ca3af',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem'
+                }}
+              >
+                <Layers size={16} />
+                <span>Pago Mixto</span>
+              </button>
+            </div>
+
+            <button 
+              onClick={onCerrar}
+              style={{ 
+                background: 'transparent', 
+                border: 'none', 
+                color: '#9ca3af', 
+                cursor: 'pointer',
+                padding: '0.4rem',
+                borderRadius: '8px'
+              }}
+            >
+              <X size={22} />
+            </button>
+          </div>
         </div>
 
-        <div style={{ padding: '1.5rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-          {/* Columna Izquierda: Métodos de Pago y Total */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            {/* Total Gigante a Pagar */}
+        {/* Mensaje de error flotante */}
+        {error && (
+          <div style={{ 
+            backgroundColor: 'rgba(239, 68, 68, 0.15)', 
+            borderBottom: '1px solid #ef4444', 
+            padding: '0.65rem 1.5rem', 
+            color: '#f87171',
+            fontSize: '0.85rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}>
+            <AlertCircle size={18} />
+            <span>{error}</span>
+          </div>
+        )}
+
+        {/* Contenido Principal en 2 Columnas */}
+        <div style={{ padding: '1.25rem', display: 'grid', gridTemplateColumns: '1.05fr 0.95fr', gap: '1.25rem' }}>
+          
+          {/* ================= COLUMNA IZQUIERDA ================= */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {/* Total a Pagar Display */}
             <div style={{ 
               backgroundColor: '#0f172a', 
-              padding: '1.25rem', 
+              padding: '1.1rem', 
               borderRadius: '12px', 
               border: '2px solid #2563eb',
               textAlign: 'center' 
             }}>
-              <span style={{ fontSize: '0.85rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <span style={{ fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Total a Pagar
               </span>
-              <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#38bdf8', marginTop: '0.25rem' }}>
+              <div style={{ fontSize: '2.4rem', fontWeight: 800, color: '#38bdf8', marginTop: '0.2rem' }}>
                 ${total.toFixed(2)}
               </div>
             </div>
 
-            {/* Selector de Método de Pago */}
-            <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', color: '#9ca3af', marginBottom: '0.5rem' }}>
-                Método de Pago
-              </label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
-                <button
-                  type="button"
-                  onClick={() => setMetodoPago(1)}
-                  style={{
-                    padding: '0.75rem 0.5rem',
-                    borderRadius: '8px',
-                    border: metodoPago === 1 ? '2px solid #10b981' : '1px solid #374151',
-                    backgroundColor: metodoPago === 1 ? 'rgba(16, 185, 129, 0.15)' : '#1f2937',
-                    color: metodoPago === 1 ? '#34d399' : '#d1d5db',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '0.4rem',
-                    cursor: 'pointer',
-                    fontWeight: 600,
-                    fontSize: '0.85rem'
-                  }}
-                >
-                  <DollarSign size={20} />
-                  <span>Efectivo</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setMetodoPago(2)}
-                  style={{
-                    padding: '0.75rem 0.5rem',
-                    borderRadius: '8px',
-                    border: metodoPago === 2 ? '2px solid #3b82f6' : '1px solid #374151',
-                    backgroundColor: metodoPago === 2 ? 'rgba(59, 130, 246, 0.15)' : '#1f2937',
-                    color: metodoPago === 2 ? '#60a5fa' : '#d1d5db',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '0.4rem',
-                    cursor: 'pointer',
-                    fontWeight: 600,
-                    fontSize: '0.85rem'
-                  }}
-                >
-                  <CreditCard size={20} />
-                  <span>Tarjeta</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setMetodoPago(5)}
-                  style={{
-                    padding: '0.75rem 0.5rem',
-                    borderRadius: '8px',
-                    border: metodoPago === 5 ? '2px solid #8b5cf6' : '1px solid #374151',
-                    backgroundColor: metodoPago === 5 ? 'rgba(139, 92, 246, 0.15)' : '#1f2937',
-                    color: metodoPago === 5 ? '#a78bfa' : '#d1d5db',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '0.4rem',
-                    cursor: 'pointer',
-                    fontWeight: 600,
-                    fontSize: '0.85rem'
-                  }}
-                >
-                  <ArrowRightLeft size={20} />
-                  <span>Transf.</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Referencia si es tarjeta o transferencia */}
-            {metodoPago !== 1 && (
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', color: '#9ca3af', marginBottom: '0.4rem' }}>
-                  {metodoPago === 2 ? 'Últimos 4 dígitos o Autorización' : 'Folio de Transferencia'}
-                </label>
-                <input
-                  type="text"
-                  value={referencia}
-                  onChange={(e) => setReferencia(e.target.value)}
-                  placeholder={metodoPago === 2 ? 'Ej. 4523' : 'Ej. SPEI-89214'}
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem 1rem',
-                    borderRadius: '8px',
-                    border: '1px solid #374151',
-                    backgroundColor: '#1f2937',
-                    color: '#fff',
-                    fontSize: '1rem'
-                  }}
-                  autoFocus
-                />
-              </div>
-            )}
-
-            {/* Panel de Cambio en Efectivo */}
-            {metodoPago === 1 && (
-              <div style={{
-                padding: '1rem',
-                borderRadius: '10px',
-                backgroundColor: montoRecibido >= total ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
-                border: `1px solid ${montoRecibido >= total ? '#059669' : '#dc2626'}`,
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}>
+            {/* VISTA MODO RÁPIDO */}
+            {modoCobro === 'rapido' ? (
+              <>
+                {/* Selector de Método Rápido */}
                 <div>
-                  <span style={{ fontSize: '0.8rem', color: '#9ca3af', display: 'block' }}>
-                    {montoRecibido >= total ? 'CAMBIO A ENTREGAR' : 'FALTANTE POR COBRAR'}
-                  </span>
-                  <span style={{ 
-                    fontSize: '1.6rem', 
-                    fontWeight: 800, 
-                    color: montoRecibido >= total ? '#34d399' : '#f87171' 
-                  }}>
-                    ${montoRecibido >= total ? cambio.toFixed(2) : saldoFaltante.toFixed(2)}
-                  </span>
-                </div>
-
-                <div style={{ textAlign: 'right', fontSize: '0.85rem', color: '#9ca3af' }}>
-                  <span>Recibido: </span>
-                  <strong style={{ color: '#f3f4f6' }}>${montoRecibido.toFixed(2)}</strong>
-                </div>
-              </div>
-            )}
-
-            {error && (
-              <div style={{
-                padding: '0.75rem 1rem',
-                backgroundColor: 'rgba(239, 68, 68, 0.2)',
-                border: '1px solid #ef4444',
-                borderRadius: '8px',
-                color: '#fca5a5',
-                fontSize: '0.85rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem'
-              }}>
-                <AlertCircle size={18} />
-                <span>{error}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Columna Derecha: Teclado Numérico y Denominaciones de Efectivo */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {/* Input de Monto Recibido */}
-            {metodoPago === 1 ? (
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', color: '#9ca3af', marginBottom: '0.4rem' }}>
-                  Monto Recibido en Efectivo ($)
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <input
-                    type="text"
-                    value={montoRecibidoTexto}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/[^0-9.]/g, '');
-                      setMontoRecibidoTexto(val);
-                    }}
-                    placeholder="0.00"
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem 1rem',
-                      paddingRight: '3rem',
-                      fontSize: '1.4rem',
-                      fontWeight: 700,
-                      textAlign: 'right',
-                      borderRadius: '8px',
-                      border: '2px solid #3b82f6',
-                      backgroundColor: '#1f2937',
-                      color: '#60a5fa'
-                    }}
-                    autoFocus
-                  />
-                  {montoRecibidoTexto && (
+                  <label style={{ display: 'block', fontSize: '0.85rem', color: '#9ca3af', marginBottom: '0.4rem' }}>
+                    Forma de Pago
+                  </label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
                     <button
                       type="button"
-                      onClick={limpiarMonto}
+                      onClick={() => setMetodoPagoRapido(1)}
                       style={{
-                        position: 'absolute',
-                        right: '10px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        background: 'transparent',
-                        border: 'none',
-                        color: '#9ca3af',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <X size={20} />
-                    </button>
-                  )}
-                </div>
-
-                {/* Botones de Denominaciones Rápidas */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.4rem', marginTop: '0.5rem' }}>
-                  <button
-                    type="button"
-                    onClick={fijarMontoExacto}
-                    style={{
-                      padding: '0.5rem 0.25rem',
-                      borderRadius: '6px',
-                      border: '1px solid #10b981',
-                      backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                      color: '#34d399',
-                      fontSize: '0.75rem',
-                      fontWeight: 700,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Exacto
-                  </button>
-                  {[50, 100, 200, 500].map(billete => (
-                    <button
-                      key={billete}
-                      type="button"
-                      onClick={() => agregarBillete(billete)}
-                      style={{
-                        padding: '0.5rem 0.25rem',
-                        borderRadius: '6px',
-                        border: '1px solid #374151',
-                        backgroundColor: '#1f2937',
-                        color: '#d1d5db',
-                        fontSize: '0.8rem',
+                        padding: '0.7rem 0.4rem',
+                        borderRadius: '8px',
+                        border: metodoPagoRapido === 1 ? '2px solid #10b981' : '1px solid #374151',
+                        backgroundColor: metodoPagoRapido === 1 ? 'rgba(16, 185, 129, 0.15)' : '#1f2937',
+                        color: metodoPagoRapido === 1 ? '#34d399' : '#d1d5db',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '0.35rem',
+                        cursor: 'pointer',
                         fontWeight: 600,
-                        cursor: 'pointer'
+                        fontSize: '0.85rem'
                       }}
                     >
-                      ${billete}
+                      <DollarSign size={20} />
+                      <span>Efectivo</span>
                     </button>
-                  ))}
+
+                    <button
+                      type="button"
+                      onClick={() => setMetodoPagoRapido(2)}
+                      style={{
+                        padding: '0.7rem 0.4rem',
+                        borderRadius: '8px',
+                        border: metodoPagoRapido === 2 ? '2px solid #3b82f6' : '1px solid #374151',
+                        backgroundColor: metodoPagoRapido === 2 ? 'rgba(59, 130, 246, 0.15)' : '#1f2937',
+                        color: metodoPagoRapido === 2 ? '#60a5fa' : '#d1d5db',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '0.35rem',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        fontSize: '0.85rem'
+                      }}
+                    >
+                      <CreditCard size={20} />
+                      <span>Tarjeta</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setMetodoPagoRapido(5)}
+                      style={{
+                        padding: '0.7rem 0.4rem',
+                        borderRadius: '8px',
+                        border: metodoPagoRapido === 5 ? '2px solid #8b5cf6' : '1px solid #374151',
+                        backgroundColor: metodoPagoRapido === 5 ? 'rgba(139, 92, 246, 0.15)' : '#1f2937',
+                        color: metodoPagoRapido === 5 ? '#a78bfa' : '#d1d5db',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '0.35rem',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        fontSize: '0.85rem'
+                      }}
+                    >
+                      <ArrowRightLeft size={20} />
+                      <span>Transf.</span>
+                    </button>
+                  </div>
                 </div>
 
-                {/* Teclado Numérico Táctil */}
-                <div style={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: 'repeat(3, 1fr)', 
-                  gap: '0.4rem', 
-                  marginTop: '0.75rem' 
-                }}>
-                  {['7', '8', '9', '4', '5', '6', '1', '2', '3', '0', '00', '.'].map(tecla => (
-                    <button
-                      key={tecla}
-                      type="button"
-                      onClick={() => agregarDigito(tecla)}
+                {/* Referencia si es tarjeta o transferencia */}
+                {metodoPagoRapido !== 1 && (
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', color: '#9ca3af', marginBottom: '0.4rem' }}>
+                      {metodoPagoRapido === 2 ? 'Últimos 4 dígitos o Autorización' : 'Folio / Referencia'}
+                    </label>
+                    <input
+                      type="text"
+                      value={referenciaRapida}
+                      onChange={(e) => setReferenciaRapida(e.target.value)}
+                      placeholder={metodoPagoRapido === 2 ? 'Ej. 4523' : 'Ej. SPEI-89214'}
                       style={{
-                        padding: '0.85rem',
+                        width: '100%',
+                        padding: '0.65rem 0.9rem',
                         borderRadius: '8px',
                         border: '1px solid #374151',
                         backgroundColor: '#1f2937',
-                        color: '#f9fafb',
-                        fontSize: '1.2rem',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        transition: 'background-color 0.1s'
+                        color: '#fff',
+                        fontSize: '0.95rem'
                       }}
-                      onMouseDown={(e) => e.currentTarget.style.backgroundColor = '#374151'}
-                      onMouseUp={(e) => e.currentTarget.style.backgroundColor = '#1f2937'}
-                    >
-                      {tecla}
-                    </button>
-                  ))}
+                    />
+                  </div>
+                )}
+
+                {/* Resumen Cambio o Saldo Pendiente */}
+                {metodoPagoRapido === 1 && (
+                  <div style={{
+                    padding: '0.85rem 1rem',
+                    borderRadius: '10px',
+                    backgroundColor: montoRecibidoRapido >= total ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                    border: `1px solid ${montoRecibidoRapido >= total ? '#059669' : '#dc2626'}`,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}>
+                    <div>
+                      <span style={{ fontSize: '0.8rem', color: '#9ca3af', display: 'block' }}>
+                        {montoRecibidoRapido >= total ? 'Cambio a entregar:' : 'Faltante por cobrar:'}
+                      </span>
+                      <strong style={{ 
+                        fontSize: '1.5rem', 
+                        color: montoRecibidoRapido >= total ? '#34d399' : '#f87171' 
+                      }}>
+                        ${(montoRecibidoRapido >= total ? cambioRapido : saldoFaltanteRapido).toFixed(2)}
+                      </strong>
+                    </div>
+                    <span style={{ fontSize: '0.85rem', color: '#9ca3af' }}>
+                      Recibido: <strong style={{ color: '#fff' }}>${montoRecibidoRapido.toFixed(2)}</strong>
+                    </span>
+                  </div>
+                )}
+              </>
+            ) : (
+              /* VISTA MODO PAGO MIXTO */
+              <>
+                {/* Barra de progreso de cobertura */}
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.35rem' }}>
+                    <span style={{ color: '#9ca3af' }}>Cubierto: <strong>${sumaPagosMixtos.toFixed(2)}</strong></span>
+                    <span style={{ color: saldoRestantePorCobrar === 0 ? '#34d399' : '#f87171', fontWeight: 700 }}>
+                      {saldoRestantePorCobrar === 0 ? '✓ 100% Cubierto' : `Faltan: $${saldoRestantePorCobrar.toFixed(2)}`}
+                    </span>
+                  </div>
+                  <div style={{ height: '8px', backgroundColor: '#1f2937', borderRadius: '4px', overflow: 'hidden' }}>
+                    <div style={{ 
+                      height: '100%', 
+                      width: `${porcentajeCubierto}%`, 
+                      backgroundColor: saldoRestantePorCobrar === 0 ? '#10b981' : '#f59e0b',
+                      transition: 'width 0.3s ease'
+                    }} />
+                  </div>
+                </div>
+
+                {/* Lista de Pagos Aplicados */}
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', fontSize: '0.85rem', color: '#9ca3af', marginBottom: '0.4rem' }}>
+                    Desglose de Pagos Combinados ({pagosMixtos.length})
+                  </label>
+                  <div style={{ 
+                    backgroundColor: '#1f2937', 
+                    borderRadius: '8px', 
+                    border: '1px solid #374151',
+                    maxHeight: '160px',
+                    overflowY: 'auto',
+                    padding: '0.4rem'
+                  }}>
+                    {pagosMixtos.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '1.5rem 0.5rem', color: '#6b7280', fontSize: '0.85rem' }}>
+                        No hay pagos agregados. Selecciona un método y agrega importes a la derecha.
+                      </div>
+                    ) : (
+                      pagosMixtos.map((p) => (
+                        <div 
+                          key={p.idTemporal}
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '0.5rem 0.75rem',
+                            borderBottom: '1px solid #374151'
+                          }}
+                        >
+                          <div>
+                            <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#f3f4f6' }}>
+                              {p.nombreMetodo}
+                            </div>
+                            {p.referencia && (
+                              <div style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
+                                Ref: {p.referencia}
+                              </div>
+                            )}
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                            <span style={{ fontWeight: 700, fontSize: '1rem', color: '#38bdf8' }}>
+                              ${p.importe.toFixed(2)}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleEliminarPagoMixto(p.idTemporal)}
+                              style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: '#ef4444',
+                                cursor: 'pointer',
+                                padding: '0.2rem'
+                              }}
+                              title="Eliminar este pago"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* Cambio si el efectivo excedió el remanente */}
+                {cambioMixto > 0 && (
+                  <div style={{
+                    padding: '0.65rem 0.9rem',
+                    borderRadius: '8px',
+                    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                    border: '1px solid #10b981',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}>
+                    <span style={{ fontSize: '0.85rem', color: '#a7f3d0' }}>Cambio en efectivo:</span>
+                    <strong style={{ fontSize: '1.25rem', color: '#34d399' }}>${cambioMixto.toFixed(2)}</strong>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* ================= COLUMNA DERECHA ================= */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            {/* Input de Monto */}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                <label style={{ fontSize: '0.85rem', color: '#9ca3af' }}>
+                  {modoCobro === 'rapido' ? 'Monto Recibido' : 'Importe de este Pago'}
+                </label>
+                {modoCobro === 'mixto' && saldoRestantePorCobrar > 0 && (
                   <button
                     type="button"
-                    onClick={borrarUltimoDigito}
+                    onClick={() => setMontoMixtoTexto(saldoRestantePorCobrar.toFixed(2))}
                     style={{
-                      gridColumn: 'span 3',
-                      padding: '0.7rem',
-                      borderRadius: '8px',
-                      border: '1px solid #374151',
-                      backgroundColor: '#374151',
-                      color: '#9ca3af',
-                      fontSize: '0.9rem',
+                      background: 'none',
+                      border: 'none',
+                      color: '#38bdf8',
+                      fontSize: '0.75rem',
                       fontWeight: 600,
+                      cursor: 'pointer',
+                      padding: 0
+                    }}
+                  >
+                    Asignar Restante (${saldoRestantePorCobrar.toFixed(2)})
+                  </button>
+                )}
+              </div>
+
+              <div style={{ position: 'relative' }}>
+                <span style={{
+                  position: 'absolute',
+                  left: '14px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: '#9ca3af',
+                  fontSize: '1.25rem',
+                  fontWeight: 600
+                }}>$</span>
+                <input
+                  type="text"
+                  readOnly
+                  value={modoCobro === 'rapido' ? montoRecibidoTexto : montoMixtoTexto}
+                  placeholder="0.00"
+                  style={{
+                    width: '100%',
+                    padding: '0.65rem 1rem',
+                    paddingLeft: '32px',
+                    fontSize: '1.4rem',
+                    fontWeight: 700,
+                    borderRadius: '8px',
+                    border: '1px solid #374151',
+                    backgroundColor: '#1f2937',
+                    color: '#f9fafb',
+                    textAlign: 'right'
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* En Modo Mixto: Selector del método a agregar y referencia */}
+            {modoCobro === 'mixto' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.35rem' }}>
+                  {metodosDisponibles.map(m => (
+                    <button
+                      key={m.idMetodoPago}
+                      type="button"
+                      onClick={() => setMetodoMixtoSeleccionado(m.idMetodoPago)}
+                      style={{
+                        padding: '0.45rem 0.2rem',
+                        borderRadius: '6px',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        border: metodoMixtoSeleccionado === m.idMetodoPago ? '2px solid #10b981' : '1px solid #374151',
+                        backgroundColor: metodoMixtoSeleccionado === m.idMetodoPago ? 'rgba(16, 185, 129, 0.2)' : '#1f2937',
+                        color: metodoMixtoSeleccionado === m.idMetodoPago ? '#34d399' : '#d1d5db',
+                        cursor: 'pointer',
+                        textAlign: 'center'
+                      }}
+                    >
+                      {m.codigoMetodo}
+                    </button>
+                  ))}
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                  <input
+                    type="text"
+                    value={referenciaMixta}
+                    onChange={(e) => setReferenciaMixta(e.target.value)}
+                    placeholder="Ref/Autorización (opcional)"
+                    style={{
+                      flex: 1,
+                      padding: '0.5rem 0.75rem',
+                      borderRadius: '6px',
+                      border: '1px solid #374151',
+                      backgroundColor: '#1f2937',
+                      color: '#fff',
+                      fontSize: '0.85rem'
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAgregarPagoMixto}
+                    style={{
+                      padding: '0.5rem 0.9rem',
+                      borderRadius: '6px',
+                      border: 'none',
+                      backgroundColor: '#10b981',
+                      color: '#ffffff',
+                      fontWeight: 700,
+                      fontSize: '0.85rem',
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '0.4rem'
+                      gap: '0.3rem'
                     }}
                   >
-                    <Delete size={18} />
-                    <span>Borrar</span>
+                    <Plus size={16} />
+                    <span>Agregar</span>
                   </button>
                 </div>
               </div>
-            ) : (
-              <div style={{ 
-                height: '100%', 
-                display: 'flex', 
-                flexDirection: 'column', 
-                justifyContent: 'center', 
-                alignItems: 'center',
-                backgroundColor: '#1f2937',
-                borderRadius: '12px',
-                padding: '2rem',
-                textAlign: 'center'
-              }}>
-                <div style={{ 
-                  padding: '1.25rem', 
-                  borderRadius: '50%', 
-                  backgroundColor: 'rgba(59, 130, 246, 0.1)', 
-                  color: '#60a5fa',
-                  marginBottom: '1rem'
-                }}>
-                  {metodoPago === 2 ? <CreditCard size={48} /> : <ArrowRightLeft size={48} />}
-                </div>
-                <h4 style={{ margin: 0, fontSize: '1.1rem', color: '#f3f4f6' }}>
-                  {metodoPago === 2 ? 'Cobro con Tarjeta' : 'Transferencia Electrónica'}
-                </h4>
-                <p style={{ color: '#9ca3af', fontSize: '0.85rem', marginTop: '0.5rem' }}>
-                  Solicite al cliente ingresar su tarjeta en la terminal bancaria o realizar la transferencia por ${total.toFixed(2)}.
-                </p>
-              </div>
             )}
+
+            {/* Billetes rápidos */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.35rem' }}>
+              {[
+                { etiqueta: 'Exacto', accion: fijarMontoExacto },
+                { etiqueta: '$50', valor: 50 },
+                { etiqueta: '$100', valor: 100 },
+                { etiqueta: '$200', valor: 200 },
+                { etiqueta: '$500', valor: 500 },
+              ].map((btn, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => btn.accion ? btn.accion() : agregarBillete(btn.valor!)}
+                  style={{
+                    padding: '0.45rem 0.2rem',
+                    borderRadius: '6px',
+                    border: '1px solid #374151',
+                    backgroundColor: '#1f2937',
+                    color: '#e5e7eb',
+                    fontWeight: 600,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {btn.etiqueta}
+                </button>
+              ))}
+            </div>
+
+            {/* Teclado Numérico */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.35rem' }}>
+              {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '.'].map((tecla) => (
+                <button
+                  key={tecla}
+                  type="button"
+                  onClick={() => {
+                    if (tecla === 'C') limpiarMonto();
+                    else agregarDigito(tecla);
+                  }}
+                  style={{
+                    padding: '0.65rem 0',
+                    borderRadius: '8px',
+                    border: '1px solid #374151',
+                    backgroundColor: tecla === 'C' ? '#374151' : '#1f2937',
+                    color: tecla === 'C' ? '#f87171' : '#f9fafb',
+                    fontSize: '1.15rem',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  {tecla}
+                </button>
+              ))}
+            </div>
+
+            {/* Botón Borrar 1 Carácter */}
+            <button
+              type="button"
+              onClick={borrarUltimoDigito}
+              style={{
+                padding: '0.45rem',
+                borderRadius: '6px',
+                border: '1px solid #374151',
+                backgroundColor: '#1f2937',
+                color: '#9ca3af',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: '0.35rem'
+              }}
+            >
+              <Delete size={16} />
+              <span>Borrar Dígito</span>
+            </button>
           </div>
         </div>
 
-        {/* Botones de Acción */}
-        <div style={{ 
-          padding: '1.25rem 1.5rem', 
-          borderTop: '1px solid #1f2937', 
-          display: 'flex', 
-          justifyContent: 'flex-end', 
-          gap: '1rem',
-          backgroundColor: '#1f2937'
+        {/* Pie del Modal con Botones de Acción */}
+        <div style={{
+          padding: '1rem 1.5rem',
+          backgroundColor: '#1f2937',
+          borderTop: '1px solid #374151',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
         }}>
-          <button
-            type="button"
-            onClick={onCerrar}
-            disabled={cargando}
-            style={{
-              padding: '0.75rem 1.5rem',
-              borderRadius: '8px',
-              border: '1px solid #4b5563',
-              backgroundColor: '#374151',
-              color: '#d1d5db',
-              fontWeight: 600,
-              cursor: 'pointer'
-            }}
-          >
-            Cancelar (Esc)
-          </button>
+          <div style={{ fontSize: '0.8rem', color: '#9ca3af' }}>
+            <span>Atajos: </span>
+            <strong>Enter:</strong> Cobrar • <strong>Esc:</strong> Cancelar
+          </div>
 
-          <button
-            type="button"
-            onClick={handleCobrar}
-            disabled={!esValidoCobrar || cargando}
-            style={{
-              padding: '0.75rem 2rem',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: esValidoCobrar ? '#10b981' : '#4b5563',
-              color: '#ffffff',
-              fontWeight: 700,
-              fontSize: '1rem',
-              cursor: esValidoCobrar ? 'pointer' : 'not-allowed',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.6rem',
-              boxShadow: esValidoCobrar ? '0 4px 14px 0 rgba(16, 185, 129, 0.4)' : 'none'
-            }}
-          >
-            {cargando ? (
-              <>
-                <Loader2 size={20} className="spinner" />
-                <span>Procesando Venta...</span>
-              </>
-            ) : (
-              <>
-                <Check size={20} />
-                <span>Cobrar Ticket (Enter)</span>
-              </>
-            )}
-          </button>
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <button
+              type="button"
+              onClick={onCerrar}
+              disabled={cargando}
+              style={{
+                padding: '0.65rem 1.25rem',
+                borderRadius: '8px',
+                border: '1px solid #4b5563',
+                backgroundColor: '#374151',
+                color: '#d1d5db',
+                fontWeight: 600,
+                fontSize: '0.95rem',
+                cursor: 'pointer'
+              }}
+            >
+              Cancelar (Esc)
+            </button>
+
+            <button
+              type="button"
+              onClick={handleCobrar}
+              disabled={!esValidoCobrar || cargando}
+              style={{
+                padding: '0.65rem 1.75rem',
+                borderRadius: '8px',
+                border: 'none',
+                backgroundColor: esValidoCobrar && !cargando ? '#10b981' : '#4b5563',
+                color: '#ffffff',
+                fontWeight: 700,
+                fontSize: '1rem',
+                cursor: esValidoCobrar && !cargando ? 'pointer' : 'not-allowed',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                boxShadow: esValidoCobrar && !cargando ? '0 4px 14px rgba(16, 185, 129, 0.4)' : 'none'
+              }}
+            >
+              {cargando ? (
+                <>
+                  <Loader2 size={18} className="spinner" />
+                  <span>Procesando...</span>
+                </>
+              ) : (
+                <>
+                  <Check size={18} />
+                  <span>{modoCobro === 'mixto' ? 'Confirmar Pago Mixto (Enter)' : 'Confirmar Cobro (Enter)'}</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>

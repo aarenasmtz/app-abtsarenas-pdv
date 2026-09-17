@@ -13,4 +13,5 @@ public class VentaPago
     public DateTime FechaRegistro { get; set; }
 
     public virtual Venta? Venta { get; set; }
+    public virtual MetodoPago? MetodoPago { get; set; }
 }

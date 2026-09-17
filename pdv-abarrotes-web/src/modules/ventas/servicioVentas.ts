@@ -5,7 +5,8 @@ import type {
   VentaRealizada, 
   TicketVenta, 
   VentaResumen, 
-  FiltroVentas 
+  FiltroVentas,
+  MetodoPagoDto 
 } from './tipos';
 
 /**
@@ -51,6 +52,14 @@ export const servicioVentas = {
    */
   async cancelarVenta(idVenta: number, motivo: string): Promise<RespuestaApi<boolean>> {
     const respuesta = await clienteApi.post<RespuestaApi<boolean>>(`/ventas/${idVenta}/cancelar`, { motivo });
+    return respuesta.data;
+  },
+
+  /**
+   * Obtiene el catálogo de métodos de pago activos habilitados para cobro en terminales de venta.
+   */
+  async obtenerMetodosPago(): Promise<RespuestaApi<MetodoPagoDto[]>> {
+    const respuesta = await clienteApi.get<RespuestaApi<MetodoPagoDto[]>>('/ventas/metodos-pago');
     return respuesta.data;
   }
 };
