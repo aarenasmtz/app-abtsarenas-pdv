@@ -19,6 +19,26 @@ Todas las modificaciones notables a este proyecto serán documentadas en este ar
 - Inicialización de repositorio Git con ramas `main`, `develop` y `feature/fase2-arquitectura-base`.
 - Archivo `AI_CONTEXT.md` para orientación de contexto ágil.
 
+## [Fase 5] - 2026-09-17
+### Agregado
+- Módulo de Control de Inventario, Kardex Histórico y Alertas de Reorden:
+  - Entidades de dominio en español: `TipoMovimientoInventario`, `MovimientoInventario`, `AjusteInventario`, `DetalleAjusteInventario`.
+  - Mapeo EF Core 9 en `ContextoPrincipal` con claves foráneas explícitas y navegación optimizada para `dbo.Inventario`, `dbo.MovimientosInventario` (más de 486,000 registros históricos) y tablas de ajustes.
+  - DTOs en español: `StockProductoDto`, `MovimientoKardexDto`, `FiltroInventarioDto`, `FiltroKardexDto`, `RegistrarAjusteStockDto`, `AlertaStockDto`, `TipoMovimientoInventarioDto`.
+  - Servicio de Inventario (`ServicioInventario` / `IServicioInventario`):
+    - Consulta de stock con paginación server-side (25/50/100 registros), filtros por texto/código de barras, categoría y alertas de nivel (Agotado, Bajo, Óptimo, Exceso).
+    - Kardex cronológico paginado ultra-eficiente con índices compuestos y sin tracking de memoria.
+    - Ajuste atómico de inventario en transacción SQL: cálculo automático de diferencia, actualización del stock en `dbo.Inventario`, inserción del movimiento en `dbo.MovimientosInventario`, registro de cabecera/detalle de ajuste y asiento en `dbo.BitacoraAuditoria` con `ValorAnterior` y `ValorNuevo`.
+    - Detección de alertas de reorden prioritarias (crítico, advertencia) según stock mínimo y punto de reorden configurado.
+  - Controlador API `InventarioController`: endpoints seguros con autorización basada en roles (Cajeros con lectura, Administradores y Supervisores con permisos de ajuste).
+  - Pruebas unitarias completas en `PruebasInventario.cs` (22/22 pruebas unitarias totales superadas en la solución .NET 9).
+  - Interfaz gráfica en React 19 + TypeScript (`PantallaInventario.tsx`):
+    - Pestaña de Existencias: semaforización de stock (Agotado, Bajo, Óptimo, Exceso), paginación 25/50/100, filtros instantáneos y botón de ajuste rápido.
+    - Pestaña de Kardex: explorador de historial con filtro por producto, tipo de movimiento, fechas y visualización clara de entradas (verde) y salidas (rojo).
+    - Pestaña de Alertas de Reorden: panel prioritario para gestión de compras y abastecimiento de abarrotes.
+    - Modal interactivo de ajuste de stock con previsualización en vivo de la diferencia resultante antes de confirmar.
+    - Conexión e integración completa en `App.tsx` y `DisenoAdmin.tsx`.
+
 ## [Fase 4] - 2026-09-17
 ### Agregado
 - Módulo Maestro de Catálogos (Productos, Categorías, Marcas, Unidades de Medida) y Buscador PDV:
