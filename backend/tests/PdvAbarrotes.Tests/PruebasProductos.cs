@@ -228,4 +228,69 @@ public class PruebasProductos
         // Act & Assert
         await Assert.ThrowsAsync<ExcepcionNoEncontrado>(() => servicio.BuscarPorCodigoBarrasAsync("9999"));
     }
+
+    [Fact]
+    public async Task BuscarPorCodigoBarrasAsync_CodigoBasculaEan13_ExtraePesoYProductoCorrecto()
+    {
+        // Arrange
+        using var contexto = CrearContextoEnMemoria("BdTest_CodigoBascula");
+        var auditoria = new ServicioAuditoriaSimulado();
+        var configuracion = new ConfigurationBuilder().Build();
+        var servicio = new ServicioProductos(contexto, auditoria, configuracion);
+
+        // Crear producto fraccionado/a granel (PLU: 00125 = Jamón de Pavo)
+        await servicio.CrearAsync(new CrearProductoDto
+        {
+            CodigoProducto = "00125",
+            CodigoBarras = "00125",
+            Descripcion = "Jamón de Pavo FUD kg",
+            PrecioVenta = 160.00m,
+            PermiteVentaFraccionada = true
+        });
+
+        // Código de barras generado por báscula:
+        // Prefijo: 20
+        // PLU: 00125
+        // Peso: 00450 (450 gramos = 0.450 kg)
+        // Dígito verificador: 5
+        var codigoBascula = "2000125004505";
+
+        // Act
+        var resultado = await servicio.BuscarPorCodigoBarrasAsync(codigoBascula);
+
+        // Assert
+        Assert.NotNull(resultado);
+        Assert.Equal("Jamón de Pavo FUD kg", resultado.Descripcion);
+        Assert.True(resultado.EsPesableConCodigo);
+        Assert.True(resultado.PermiteVentaFraccionada);
+        Assert.Equal(0.450m, resultado.CantidadSugerida);
+        Assert.Equal(codigoBascula, resultado.CodigoBarras);
+    }
+
+    [Fact]
+    public async Task BuscarPorCodigoBarrasAsync_ProductoUnitario_RetornaCantidadSugeridaUno()
+    {
+        // Arrange
+        using var contexto = CrearContextoEnMemoria("BdTest_CodigoUnitario");
+        var auditoria = new ServicioAuditoriaSimulado();
+        var configuracion = new ConfigurationBuilder().Build();
+        var servicio = new ServicioProductos(contexto, auditoria, configuracion);
+
+        await servicio.CrearAsync(new CrearProductoDto
+        {
+            CodigoBarras = "7501000111222",
+            Descripcion = "Galletas Chokis 76g",
+            PrecioVenta = 20.00m,
+            PermiteVentaFraccionada = false
+        });
+
+        // Act
+        var resultado = await servicio.BuscarPorCodigoBarrasAsync("7501000111222");
+
+        // Assert
+        Assert.NotNull(resultado);
+        Assert.Equal(1.0m, resultado.CantidadSugerida);
+        Assert.False(resultado.EsPesableConCodigo);
+        Assert.False(resultado.PermiteVentaFraccionada);
+    }
 }

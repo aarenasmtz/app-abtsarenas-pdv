@@ -15,4 +15,6 @@ public class ProductoCobroDto
     public bool PermiteVentaFraccionada { get; set; }
     public bool ManejaInventario { get; set; }
     public decimal ExistenciaActual { get; set; }
+    public decimal CantidadSugerida { get; set; } = 1.0m;
+    public bool EsPesableConCodigo { get; set; }
 }
