@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using PdvAbarrotes.Dominio.Entidades;
 
 namespace PdvAbarrotes.Aplicacion.Interfaces;
@@ -32,7 +33,10 @@ public interface IContextoPrincipal
     DbSet<TurnoCaja> TurnosCaja { get; }
     DbSet<CorteCaja> CortesCaja { get; }
     DbSet<MovimientoCaja> MovimientosCaja { get; }
+    DbSet<MetodoPago> MetodosPago { get; }
     DbSet<BitacoraAuditoria> BitacoraAuditoria { get; }
+
+    DatabaseFacade Database { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
