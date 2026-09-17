@@ -1,0 +1,346 @@
+{
+  "pks": {
+    "ABONOS": [
+      "ID"
+    ],
+    "ABONOS_ARTICULOS": [
+      "ID"
+    ],
+    "ABONOS_VENTAS": [
+      "ID"
+    ],
+    "ABONO_TICKETS": [
+      "ID"
+    ],
+    "ALMACENES": [
+      "ID"
+    ],
+    "ARTICULOS_DE_OC": [
+      "ID"
+    ],
+    "CACHE": [
+      "ID"
+    ],
+    "CAJAS": [
+      "ID"
+    ],
+    "CLIENTES": [
+      "NUMERO"
+    ],
+    "CLIENTESV2": [
+      "ID"
+    ],
+    "CLIENTESV2_CREDITO": [
+      "CLIENTESV2_ID"
+    ],
+    "CLIENTESV2_FACTURACION": [
+      "CLIENTESV2_ID"
+    ],
+    "COMISIONES_TARJETA": [
+      "ID"
+    ],
+    "CONCILIACION_PAGO_SERVICIOS": [
+      "ID"
+    ],
+    "CONFIGURACION": [
+      "ID"
+    ],
+    "CORTE_IMPUESTOS_COBRADOS": [
+      "ID"
+    ],
+    "CORTE_IMP_COBRADOS_OPERACION": [
+      "ID"
+    ],
+    "CORTE_MOVIMIENTOS": [
+      "ID"
+    ],
+    "CORTE_OPERACIONES": [
+      "ID"
+    ],
+    "CORTE_VENTAS_DEPTO_OPERACIONES": [
+      "ID"
+    ],
+    "CORTE_VENTAS_POR_DEPTO": [
+      "ID"
+    ],
+    "CREDITOS_ABONOS": [
+      "ID"
+    ],
+    "CREDITOS_ABONOS_ARTICULOS": [
+      "ID"
+    ],
+    "CREDITOS_ABONOS_IMPUESTOS": [
+      "ID"
+    ],
+    "CREDITOS_ABONOS_PAGOS": [
+      "ID"
+    ],
+    "CREDITOS_ABONOS_VENTAS": [
+      "ID"
+    ],
+    "CREDITOS_ARTICULOS_IMPUESTOS": [
+      "ID"
+    ],
+    "CREDITOS_TRANSACCIONES": [
+      "ID"
+    ],
+    "DEPARTAMENTOS": [
+      "ID"
+    ],
+    "DEVOLUCIONES": [
+      "ID"
+    ],
+    "DEVOLUCIONES_ARTICULOS": [
+      "ID"
+    ],
+    "FACTURACION_CERTIFICADOS": [
+      "ID"
+    ],
+    "FACTURACION_CLIENTES": [
+      "ID"
+    ],
+    "FACTURACION_EMISORES": [
+      "ID"
+    ],
+    "FACTURACION_FOLIOS": [
+      "ID"
+    ],
+    "FACTURAS": [
+      "ID"
+    ],
+    "FACTURAS_ABONOS": [
+      "FACTURA_ID",
+      "ABONO_ID",
+      "FACTURA_PADRE_ID"
+    ],
+    "HISTORIAL_INVENTARIO": [
+      "ID"
+    ],
+    "IMPUESTOS": [
+      "ID"
+    ],
+    "IMPUESTOS_REGLAS": [
+      "ID"
+    ],
+    "INVENTARIO_AJUSTES": [
+      "ID"
+    ],
+    "INVENTARIO_HISTORIAL": [
+      "ID"
+    ],
+    "INVENTARIO_RECIBOS": [
+      "ID"
+    ],
+    "LISTA_DE_COMPRA": [
+      "ID"
+    ],
+    "MEDIDAS": [
+      "ID"
+    ],
+    "MOVIMIENTOS": [
+      "ID"
+    ],
+    "OPERACIONES": [
+      "ID"
+    ],
+    "ORDENES_DE_COMPRA": [
+      "ID"
+    ],
+    "PAGOS_MIXTOS": [
+      "ID"
+    ],
+    "PRODUCTOS": [
+      "ID"
+    ],
+    "PRODUCTOS_BASE": [
+      "CODIGO"
+    ],
+    "PRODUCTOS_CFDI": [
+      "ID"
+    ],
+    "PRODUCTOS_UDF_RECARGAS": [
+      "PRODUCTO_CODIGO"
+    ],
+    "PRODUCTOS_UDF_SERVICIOS": [
+      "PRODUCTO_CODIGO"
+    ],
+    "PROMOCIONES_POR_CANTIDAD": [
+      "ID"
+    ],
+    "PROVEEDORES": [
+      "ID"
+    ],
+    "PROVEEDORES_BASE": [
+      "ID"
+    ],
+    "REPORTE_ABONO_SERVICIOS": [
+      "ID_TRANSACCION"
+    ],
+    "SINCRONIZACION_NUBE": [
+      "ID"
+    ],
+    "SINCRONIZACION_VENTAS": [
+      "VENTA_ID"
+    ],
+    "TURNOS": [
+      "ID"
+    ],
+    "USUARIOS": [
+      "ID"
+    ],
+    "VENTATICKETS": [
+      "ID"
+    ],
+    "VENTATICKETS_ARTICULOS": [
+      "ID"
+    ],
+    "VENTATICKETS_IMPUESTOS": [
+      "ID"
+    ],
+    "VENTA_DE_RECARGAS": [
+      "ID"
+    ],
+    "VENTA_RECARGA": [
+      "ID"
+    ],
+    "VENTA_SERVICIO": [
+      "ID"
+    ]
+  },
+  "fks": {
+    "INVENTARIO_APARTADO": [
+      [
+        "PRODUCTO_ID",
+        "PRODUCTOS",
+        "ID"
+      ]
+    ],
+    "INVENTARIO_BALANCES": [
+      [
+        "ALMACEN_ID",
+        "ALMACENES",
+        "ID"
+      ],
+      [
+        "PRODUCTO_ID",
+        "PRODUCTOS",
+        "ID"
+      ]
+    ],
+    "INVENTARIO_HISTORIAL": [
+      [
+        "ALMACEN_ID",
+        "ALMACENES",
+        "ID"
+      ],
+      [
+        "PRODUCTO_ID",
+        "PRODUCTOS",
+        "ID"
+      ]
+    ],
+    "INVENTARIO_RECIBOS": [
+      [
+        "ALMACEN_ID",
+        "ALMACENES",
+        "ID"
+      ]
+    ],
+    "INVENTARIO_RECIBOS_DETALLE": [
+      [
+        "PRODUCTO_ID",
+        "PRODUCTOS",
+        "ID"
+      ]
+    ]
+  },
+  "productos": {
+    "total": 3586,
+    "distintos_codigos": 3586,
+    "activos": 2913,
+    "eliminados": 673,
+    "sin_codigo": 0,
+    "duplicados_count": 0,
+    "ejemplos_duplicados": [],
+    "tventas": [
+      [
+        "D",
+        41
+      ],
+      [
+        "U",
+        3545
+      ]
+    ],
+    "huerfanos_depto": 0
+  },
+  "departamentos": {
+    "total": 170,
+    "distintos_nombres": 170
+  },
+  "inventario": {
+    "balances_total": 3584,
+    "balances_negativos": 0,
+    "balances_huerfanos": 0,
+    "historial_total": 486950,
+    "historial_min_fecha": "2023-10-20 20:08:24",
+    "historial_max_fecha": "2026-09-15 22:33:51",
+    "historial_huerfanos_prod": 0
+  },
+  "ventas": {
+    "tickets_total": 238424,
+    "tickets_min_creado": "2023-10-20 20:16:36.687000",
+    "tickets_max_creado": "2026-09-15 22:33:52.289000",
+    "tickets_min_vendido": "2023-10-20 20:19:12",
+    "tickets_max_vendido": "2026-09-15 22:33:51",
+    "tickets_cancelados": [
+      [
+        "f",
+        238165,
+        10677315.963
+      ],
+      [
+        "t",
+        259,
+        30245.944
+      ]
+    ],
+    "tickets_formas_pago": [
+      [
+        "None",
+        7,
+        0.0
+      ],
+      [
+        "e         ",
+        235453,
+        10506847.0958
+      ],
+      [
+        "t         ",
+        2,
+        149.1
+      ],
+      [
+        "v         ",
+        2962,
+        200565.7112
+      ]
+    ],
+    "articulos_total": 478521,
+    "articulos_huerfanos_ticket": 0,
+    "tickets_sin_articulos": 2,
+    "articulos_codigo_no_en_productos": 3928
+  },
+  "otros": {
+    "clientesv2": 4,
+    "clientes_v1": 0,
+    "clientesv2_credito": 2,
+    "proveedores": 48,
+    "usuarios": 5,
+    "cajas": 1,
+    "turnos": 2002,
+    "corte_operaciones": 1003,
+    "corte_movimientos": 8177
+  }
+}

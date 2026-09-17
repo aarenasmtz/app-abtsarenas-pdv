@@ -1,0 +1,2381 @@
+# PROYECTO: PDV ABARROTES
+
+Quiero construir un sistema completo de **Punto de Venta para una tienda de abarrotes**.
+
+Ya existe la base de datos en **SQL Server**.
+
+A partir de este momento quiero desarrollar EN PARALELO:
+
+1. Backend / API REST en **.NET 9**.
+2. Sistema PDV y administrativo en **React + TypeScript**.
+
+El proyecto puede tomar como referencia técnica algunas buenas prácticas utilizadas anteriormente en el proyecto **PDV Lambrin**, especialmente:
+
+* Arquitectura React → API .NET → SQL Server.
+* API como única capa que accede a SQL Server.
+* Paginación server-side.
+* Auditoría.
+* Bitácora.
+* Seguridad.
+* DTOs.
+* Respuestas estandarizadas.
+* Async/Await.
+* Manejo global de errores.
+* Documentación.
+* Git por ramas.
+* CHANGELOG.
+* Pruebas.
+* Paginación 25/50/100.
+* Reportes optimizados.
+* Separación frontend/backend.
+
+IMPORTANTE:
+
+**NO COPIAR LAS REGLAS DE NEGOCIO DE LAMBRIN.**
+
+Este proyecto es diferente.
+
+Este proyecto está enfocado exclusivamente en un:
+
+# PDV DE ABARROTES
+
+El sistema tendrá una carga operativa considerable debido a que puede existir una venta:
+
+* Cada 5 minutos.
+* Cada 2 minutos.
+* Incluso cada 1 minuto en horarios de alta demanda.
+
+Por ello el rendimiento, concurrencia, estabilidad, búsquedas rápidas y transacciones son requisitos principales.
+
+---
+
+# 1. STACK TECNOLÓGICO
+
+## Backend
+
+Utilizar:
+
+```text
+.NET 9
+ASP.NET Core Web API
+Entity Framework Core 9
+SQL Server
+JWT
+Swagger / OpenAPI
+Async / Await
+Dependency Injection
+LINQ
+Health Checks
+```
+
+## Frontend
+
+Utilizar:
+
+```text
+React
+TypeScript
+Vite
+React Router
+```
+
+Utilizar una arquitectura modular.
+
+NO realizar acceso directo desde React hacia SQL Server.
+
+Siempre:
+
+```text
+React
+   ↓
+API .NET 9
+   ↓
+SQL Server
+```
+
+---
+
+# 2. BASE DE DATOS EXISTENTE
+
+La base ya existe en SQL Server.
+
+Primero analiza:
+
+* Tablas.
+* Columnas.
+* PK.
+* FK.
+* Índices.
+* Identity.
+* Relaciones.
+* Catálogos.
+* Tablas transaccionales.
+
+Los IDs principales utilizan:
+
+```sql
+INT IDENTITY(1,1)
+```
+
+Ejemplo:
+
+```sql
+IdProducto INT IDENTITY(1,1)
+```
+
+En C#:
+
+```csharp
+public int IdProducto { get; set; }
+```
+
+NO cambiar IDs existentes por GUID.
+
+NO utilizar:
+
+```text
+MAX(Id) + 1
+```
+
+SQL Server deberá continuar generando los identificadores.
+
+---
+
+# 3. MODIFICACIONES DE BASE
+
+No modificar arbitrariamente la estructura actual.
+
+Sin embargo, si alguna funcionalidad nueva requiere:
+
+* Nueva tabla.
+* Nueva columna.
+* Nuevo índice.
+* Nueva FK.
+* Nuevo catálogo.
+
+Primero documentar:
+
+```text
+CAMBIO REQUERIDO EN BASE DE DATOS
+```
+
+indicando:
+
+* Motivo.
+* Tabla.
+* Columnas.
+* Impacto.
+* Script SQL.
+* Dependencias.
+
+Todos los nuevos objetos SQL deberán estar en español.
+
+Las nuevas PK también deberán utilizar:
+
+```sql
+INT IDENTITY(1,1)
+```
+
+NO modificar información histórica existente.
+
+---
+
+# 4. ARQUITECTURA BACKEND
+
+Utilizar:
+
+```text
+PdvAbarrotes.sln
+
+src/
+
+PdvAbarrotes.Api
+PdvAbarrotes.Aplicacion
+PdvAbarrotes.Dominio
+PdvAbarrotes.Infraestructura
+
+tests/
+
+PdvAbarrotes.Tests
+```
+
+---
+
+# 5. ARQUITECTURA FRONTEND
+
+Crear:
+
+```text
+pdv-abarrotes-web/
+```
+
+con organización modular.
+
+Ejemplo:
+
+```text
+src/
+
+api/
+components/
+hooks/
+layouts/
+routes/
+types/
+utils/
+
+modules/
+    autenticacion/
+    pdv/
+    productos/
+    categorias/
+    inventario/
+    proveedores/
+    compras/
+    clientes/
+    usuarios/
+    caja/
+    reportes/
+    dashboard/
+    auditoria/
+    configuracion/
+    servicios/
+```
+
+No colocar toda la aplicación dentro de componentes gigantes.
+
+---
+
+# 6. DESARROLLO BACKEND Y FRONTEND EN PARALELO
+
+NO terminar primero toda la API para después iniciar React.
+
+Construir por módulo.
+
+Ejemplo:
+
+```text
+PRODUCTOS
+
+1. Entidad / configuración EF
+2. DTO
+3. Servicio
+4. Endpoint
+5. Swagger
+6. Servicio React
+7. Pantalla React
+8. Validaciones
+9. Pruebas
+10. Documentación
+11. Commit
+```
+
+Después continuar con el siguiente módulo.
+
+---
+
+# 7. MÓDULOS PRINCIPALES
+
+El sistema deberá contemplar progresivamente:
+
+```text
+Autenticacion
+Usuarios
+Roles
+Permisos
+
+Productos
+Categorias
+Marcas
+UnidadesMedida
+
+Inventario
+MovimientosInventario
+
+Proveedores
+Compras
+
+PDV
+Ventas
+DetalleVentas
+Pagos
+
+Caja
+Aperturas
+Cortes
+MovimientosCaja
+
+TicketsPendientes
+
+Clientes
+
+Recargas
+PagoServicios
+
+Dashboard
+
+Reportes
+
+Auditoria
+
+Configuracion
+```
+
+Implementar únicamente conforme exista soporte en la base o mediante cambios de base previamente documentados.
+
+---
+
+# 8. ABC DE LOS MÓDULOS
+
+Preparar progresivamente los módulos administrativos para soportar:
+
+```text
+ALTA
+BAJA
+CAMBIO
+CONSULTA
+```
+
+ABC.
+
+Preferentemente utilizar baja lógica cuando exista:
+
+```text
+Activo
+```
+
+No eliminar físicamente información histórica relacionada con:
+
+* Ventas.
+* Inventarios.
+* Caja.
+* Compras.
+* Auditoría.
+
+---
+
+# 9. PRODUCTOS
+
+El módulo Productos deberá permitir:
+
+* Alta.
+* Edición.
+* Baja lógica.
+* Consulta.
+* Categoría.
+* Código interno.
+* Código de barras.
+* Precio.
+* Costo.
+* Unidad.
+* Existencias.
+* Existencia mínima.
+* Estado.
+* Imagen.
+
+---
+
+# 10. IMAGEN DEL PRODUCTO
+
+Agregar soporte para:
+
+```text
+ImagenProducto
+```
+
+o estructura equivalente.
+
+IMPORTANTE:
+
+La imagen solamente será visible en:
+
+# MÓDULO ADMINISTRATIVO DE PRODUCTOS
+
+NO mostrar las imágenes de productos dentro del PDV.
+
+Esto es intencional para mantener el PDV rápido.
+
+NO cargar imágenes al consultar productos desde el cajero.
+
+Si se utiliza almacenamiento externo o archivos, abstraerlo mediante un servicio.
+
+No guardar BLOB pesados directamente en SQL Server sin justificarlo.
+
+---
+
+# 11. ESCÁNER DE CÓDIGO DE BARRAS
+
+El escáner es una funcionalidad principal del PDV.
+
+Debe soportarse prioritariamente escáner físico USB/Bluetooth que funciona como teclado HID.
+
+Flujo:
+
+```text
+Escanear
+   ↓
+Leer codigo
+   ↓
+Buscar producto
+   ↓
+Encontrar coincidencia exacta
+   ↓
+Agregar automáticamente
+   ↓
+Incrementar cantidad si ya existe
+   ↓
+Mantener foco listo para siguiente producto
+```
+
+Debe funcionar sin necesidad de utilizar mouse.
+
+Si el lector envía ENTER después del código, utilizarlo para ejecutar automáticamente la búsqueda.
+
+La consulta por código de barras debe ser extremadamente rápida.
+
+Crear endpoint similar a:
+
+```http
+GET /api/v1/productos/codigo-barras/{codigo}
+```
+
+Buscar directamente en SQL.
+
+NO:
+
+```text
+Cargar productos
+→ filtrarlos en React
+```
+
+---
+
+# 12. BUSCADOR DEL PDV
+
+Quiero un buscador de productos muy preciso.
+
+Ejemplo:
+
+Si el cajero escribe:
+
+```text
+coca
+```
+
+deben aparecer resultados como:
+
+```text
+Coca Cola 600 ml
+Coca Cola 1 L
+Coca Cola 2 L
+Coca Cola 3 L
+Coca Cola Sin Azucar 600 ml
+Coca Cola Lata
+```
+
+La búsqueda deberá analizar:
+
+* Código de barras.
+* Código interno.
+* Descripción.
+* Marca.
+* Categoría cuando corresponda.
+
+Prioridad aproximada:
+
+```text
+1. Codigo de barras exacto
+2. Codigo interno exacto
+3. Descripcion exacta
+4. Descripcion que inicia con búsqueda
+5. Palabras coincidentes
+6. Descripcion que contiene búsqueda
+```
+
+Normalizar:
+
+* Mayúsculas/minúsculas.
+* Espacios.
+* Acentos cuando sea posible.
+
+Ejemplos:
+
+```text
+coca
+coca cola
+coca 600
+coca sin azucar
+```
+
+deben producir resultados útiles.
+
+En React utilizar:
+
+```text
+debounce
+```
+
+aproximadamente 300-500 ms para búsqueda escrita.
+
+Cancelar consultas anteriores cuando el usuario continúe escribiendo.
+
+Evitar solicitudes duplicadas.
+
+El filtrado principal debe ejecutarse en SQL Server, NO en memoria de React.
+
+---
+
+# 13. PDV OPTIMIZADO
+
+La pantalla de caja debe estar diseñada para velocidad.
+
+Priorizar:
+
+* Escáner.
+* Teclado.
+* Búsqueda.
+* Cantidad.
+* Eliminación.
+* Cambio de cantidad.
+* Pagos.
+* Total.
+* Tickets pendientes.
+
+NO agregar elementos visuales innecesarios.
+
+La prioridad es:
+
+```text
+VELOCIDAD
+ESTABILIDAD
+FACILIDAD DE USO
+```
+
+---
+
+# 14. CLIENTE DE VENTA EN MOSTRADOR
+
+El negocio prácticamente no utiliza clientes individuales para las ventas normales.
+
+Todas las ventas realizadas desde el PDV deberán asignarse a un cliente genérico:
+
+```text
+VENTA EN MOSTRADOR
+```
+
+No mostrar selector de clientes en el flujo normal del cajero.
+
+La API deberá obtener el:
+
+```text
+IdClienteVentaMostrador
+```
+
+desde configuración o estructura existente.
+
+NO hardcodear el ID directamente dentro del código.
+
+---
+
+# 15. MÓDULO CLIENTES
+
+El módulo Clientes será un módulo independiente.
+
+Debe poder tener ABC administrativo si la base lo permite.
+
+Pero:
+
+**NO deberá interferir con el flujo normal de venta.**
+
+Las ventas normales seguirán asignándose a:
+
+```text
+Venta en mostrador
+```
+
+Hasta que se defina una regla diferente.
+
+---
+
+# 16. PAGOS MIXTOS
+
+Eleventa actualmente no cubre adecuadamente esta necesidad.
+
+El nuevo sistema debe soportar:
+
+# PAGOS MIXTOS
+
+Ejemplo:
+
+Venta:
+
+```text
+$850
+```
+
+Pago:
+
+```text
+$300 efectivo
+$400 tarjeta
+$150 transferencia
+```
+
+Debe permitirse combinar diferentes métodos de pago.
+
+Tabla conceptual:
+
+```text
+VentaPagos
+
+IdVentaPago
+IdVenta
+IdMetodoPago
+Importe
+Referencia
+FechaRegistro
+```
+
+Todos los pagos deberán pertenecer a la misma venta.
+
+Validar:
+
+```text
+SUM(Pagos) >= TotalVenta
+```
+
+El cambio únicamente deberá calcularse correctamente según las reglas relacionadas con efectivo.
+
+No permitir finalizar una venta si el monto pagado es insuficiente.
+
+---
+
+# 17. TRANSACCIÓN DE VENTA
+
+Registrar toda la operación en UNA transacción.
+
+Dentro de ella:
+
+```text
+Venta
+DetalleVenta
+Pagos
+Inventario
+MovimientosInventario
+Caja
+Auditoria
+```
+
+Ejemplo:
+
+```csharp
+await using var transaction =
+    await dbContext.Database.BeginTransactionAsync();
+```
+
+Si algo falla:
+
+```text
+ROLLBACK
+```
+
+Nunca dejar:
+
+```text
+Venta creada
+pero
+Inventario sin descontar
+```
+
+o viceversa.
+
+---
+
+# 18. IDEMPOTENCIA
+
+Una venta NO debe registrarse dos veces porque:
+
+* El cajero hizo doble clic.
+* La red tardó.
+* React reintentó.
+* Existió timeout.
+* Usuario volvió a presionar cobrar.
+
+Implementar mecanismo de idempotencia para operaciones críticas.
+
+Principalmente:
+
+```text
+Ventas
+Pagos
+Compras
+Abonos
+Recargas
+Servicios
+```
+
+---
+
+# 19. TICKETS / VENTAS EN ESPERA
+
+Crear una funcionalidad:
+
+# TICKETS PENDIENTES
+
+La finalidad es atender situaciones donde se acumula gente.
+
+Ejemplo:
+
+```text
+Cliente A
+→ están escaneando
+
+Cliente A necesita buscar otro producto.
+
+Cajero:
+Guardar Ticket 1
+
+Atiende Cliente B
+
+Guarda Ticket 2
+
+Regresa al Ticket 1
+```
+
+Cada ticket pendiente debe conservar:
+
+* Productos.
+* Cantidades.
+* Precios calculados.
+* Hora.
+* Cajero.
+* Caja.
+* Total provisional.
+* Identificador.
+
+Permitir:
+
+```text
+Guardar ticket
+Recuperar ticket
+Continuar venta
+Cancelar ticket pendiente
+```
+
+Los tickets deben mantenerse independientes.
+
+No mezclar artículos entre clientes.
+
+Preferentemente persistirlos en backend para evitar perderlos si React se actualiza o el navegador se cierra.
+
+---
+
+# 20. IMPRESIÓN DE TICKET
+
+Actualmente el negocio casi no imprime tickets.
+
+Por lo tanto:
+
+# LA IMPRESIÓN QUEDA PENDIENTE POR DEFINIR
+
+No realizar todavía una implementación compleja.
+
+Preparar la arquitectura para añadir posteriormente:
+
+```text
+Imprimir
+No imprimir
+Reimprimir
+Ticket digital
+```
+
+pero marcarlo en documentación como:
+
+```text
+PENDIENTE DEFINICION NEGOCIO
+```
+
+---
+
+# 21. RECARGAS
+
+Preparar módulo:
+
+```text
+Recargas
+```
+
+para posteriormente integrar proveedores externos de:
+
+* Tiempo aire.
+* Paquetes.
+* Recargas telefónicas.
+
+El proveedor todavía:
+
+# QUEDA PENDIENTE
+
+Por lo tanto NO acoplar la aplicación a un proveedor específico.
+
+Crear abstracción como:
+
+```text
+IProveedorRecargas
+```
+
+Posteriormente se podrá implementar:
+
+```text
+ProveedorXRecargas
+ProveedorYRecargas
+```
+
+---
+
+# 22. PAGO DE SERVICIOS
+
+Preparar también:
+
+```text
+PagoServicios
+```
+
+Ejemplos futuros:
+
+* Luz.
+* Agua.
+* Teléfono.
+* Internet.
+* Otros servicios.
+
+El proveedor:
+
+# QUEDA PENDIENTE
+
+Crear una arquitectura mediante adaptadores/interfaces.
+
+NO inventar endpoints de proveedores externos.
+
+---
+
+# 23. PAGINACIÓN SERVER-SIDE
+
+La paginación es OBLIGATORIA.
+
+Especialmente para:
+
+* Productos.
+* Ventas.
+* Inventario.
+* Movimientos.
+* Compras.
+* Auditoría.
+* Caja.
+* Reportes.
+
+Por defecto:
+
+```text
+25 registros
+```
+
+Permitir:
+
+```text
+25
+50
+100
+```
+
+Máximo API:
+
+```text
+100
+```
+
+Formato:
+
+```http
+?page=1&pageSize=25
+```
+
+La API debe ejecutar:
+
+```text
+Filtros
+↓
+Ordenamiento
+↓
+Count
+↓
+Skip
+↓
+Take
+```
+
+NO:
+
+```text
+SELECT toda la tabla
+→ paginar en React
+```
+
+---
+
+# 24. RESPUESTA PAGINADA
+
+Crear:
+
+```csharp
+PagedResult<T>
+```
+
+o equivalente.
+
+Ejemplo:
+
+```json
+{
+    "pagina": 1,
+    "tamanioPagina": 25,
+    "totalRegistros": 8250,
+    "totalPaginas": 330,
+    "datos": []
+}
+```
+
+---
+
+# 25. REACT Y PAGINACIÓN
+
+Crear un componente reutilizable:
+
+```text
+Pagination
+```
+
+o:
+
+```text
+TablePagination
+```
+
+Utilizarlo en todos los módulos.
+
+Al cambiar:
+
+* Filtro.
+* Búsqueda.
+* Ordenamiento.
+* PageSize.
+
+volver a:
+
+```text
+Pagina 1
+```
+
+---
+
+# 26. REPORTES
+
+Crear módulo:
+
+# REPORTES
+
+Inicialmente deberá incluir:
+
+## Ventas
+
+Filtros:
+
+```text
+Fecha inicio
+Fecha fin
+Dia
+Semana
+Mes
+Categoria
+Producto
+Metodo de pago
+Cajero
+Caja
+```
+
+Resultados:
+
+* Número de ventas.
+* Productos vendidos.
+* Unidades.
+* Total vendido.
+* Costo.
+* Utilidad.
+* Porcentaje de ganancia.
+* Ticket promedio.
+* Métodos de pago.
+
+---
+
+# 27. UTILIDAD Y PORCENTAJE DE GANANCIA
+
+La fórmula utilizada deberá estar explícitamente documentada.
+
+No mezclar:
+
+```text
+Margen
+```
+
+con:
+
+```text
+Markup
+```
+
+Mostrar al menos:
+
+```text
+Venta neta
+Costo
+Utilidad
+% Ganancia
+```
+
+Definir formalmente la fórmula antes de implementar el reporte definitivo.
+
+---
+
+# 28. REPORTES NO DEBEN AFECTAR AL PDV
+
+Este requisito es crítico.
+
+Una persona puede estar ejecutando un reporte mensual al mismo tiempo que un cajero está vendiendo.
+
+La consulta del reporte NO deberá bloquear:
+
+* Escaneo.
+* Búsqueda.
+* Venta.
+* Inventario.
+* Caja.
+
+Optimizar mediante:
+
+* Índices.
+* Proyecciones.
+* Filtros SQL.
+* Paginación.
+* AsNoTracking.
+* Consultas eficientes.
+* Rangos de fechas obligatorios cuando corresponda.
+
+Evitar consultas gigantes.
+
+---
+
+# 29. EXPORTACIÓN DE REPORTES
+
+Preparar para:
+
+```text
+Excel
+PDF
+```
+
+Cuando se exporte:
+
+La exportación deberá respetar todos los filtros seleccionados.
+
+Ejemplo:
+
+```text
+Categoria = Refrescos
+Periodo = Septiembre
+```
+
+El archivo deberá contener todo el resultado filtrado correspondiente.
+
+NO solamente los 25 registros visibles de la página actual.
+
+---
+
+# 30. DASHBOARD
+
+Crear módulo:
+
+# DASHBOARD
+
+Debe mostrar principalmente:
+
+* Ventas del día.
+* Ventas de la semana.
+* Ventas del mes.
+* Número de ventas.
+* Ticket promedio.
+* Utilidad.
+* Productos más vendidos.
+* Categorías más vendidas.
+
+---
+
+# 31. PRODUCTOS MÁS VENDIDOS
+
+Crear indicador semanal.
+
+Periodo:
+
+```text
+Lunes
+a
+Domingo
+```
+
+Mostrar:
+
+```text
+Producto
+Cantidad vendida
+Monto vendido
+Costo
+Utilidad
+Ranking
+```
+
+Ejemplo:
+
+```text
+1 Coca Cola 600 ml
+2 Sabritas Original
+3 Leche 1 L
+...
+```
+
+---
+
+# 32. PEDIDO SUGERIDO AUTOMÁTICO
+
+Cada domingo el sistema deberá generar automáticamente un:
+
+# PEDIDO SUGERIDO
+
+El proceso analizará las ventas:
+
+```text
+Lunes → Domingo
+```
+
+y determinará los productos con mayor movimiento.
+
+Considerar cuando sea posible:
+
+* Cantidad vendida.
+* Existencia actual.
+* Existencia mínima.
+* Presentación.
+* Inventario disponible.
+
+El sistema solamente debe:
+
+```text
+GENERAR SUGERENCIA
+```
+
+NO realizar automáticamente una compra al proveedor.
+
+Ejemplo:
+
+```text
+Producto             Vendido    Stock    Sugerido
+
+Coca Cola 600 ml       84        12        72
+Sabritas Original      60        18        42
+Leche Entera           45         5        40
+```
+
+La fórmula deberá quedar documentada y podrá evolucionar posteriormente.
+
+---
+
+# 33. EJECUCIÓN DOMINICAL
+
+El cálculo deberá ejecutarse:
+
+```text
+DOMINGO
+```
+
+de manera automática.
+
+La hora deberá quedar configurable.
+
+No hardcodearla innecesariamente.
+
+Guardar el resultado para poder consultar:
+
+```text
+Pedidos sugeridos anteriores
+```
+
+Si se requieren nuevas tablas para esto, generar y documentar primero los scripts SQL.
+
+---
+
+# 34. AUDITORÍA — REQUISITO CRÍTICO
+
+Toda modificación administrativa importante deberá quedar registrada.
+
+Crear o utilizar:
+
+```text
+BitacoraAuditoria
+```
+
+Registrar:
+
+```text
+IdBitacora
+IdUsuario
+Usuario
+Modulo
+Accion
+Entidad
+IdEntidad
+FechaHora
+ValorAnterior
+ValorNuevo
+DireccionIp cuando corresponda
+```
+
+---
+
+# 35. QUÉ DEBE AUDITARSE
+
+Como mínimo:
+
+```text
+LOGIN
+
+PRODUCTOS
+Alta
+Cambio
+Baja
+Cambio de precio
+Cambio de costo
+Cambio de categoria
+
+INVENTARIO
+Entrada
+Salida
+Ajuste
+Merma
+
+VENTAS
+Crear
+Cancelar
+
+CAJA
+Abrir
+Cerrar
+Ingreso
+Retiro
+Corte
+
+USUARIOS
+Crear
+Modificar
+Cambiar permisos
+
+PROVEEDORES
+Crear
+Modificar
+
+COMPRAS
+Crear
+Cancelar
+
+CONFIGURACION
+Cambios
+```
+
+---
+
+# 36. AUDITORÍA DE CAMBIOS
+
+Ejemplo:
+
+```text
+Usuario:
+Aaron
+
+Modulo:
+Productos
+
+Accion:
+MODIFICAR
+
+Producto:
+Coca Cola 600ml
+
+Anterior:
+PrecioVenta = 18
+
+Nuevo:
+PrecioVenta = 20
+
+Fecha:
+2026-09-16 14:42:51
+```
+
+Debe ser posible responder:
+
+```text
+¿Quién hizo el cambio?
+¿Qué cambió?
+¿Cuándo?
+¿Sobre qué registro?
+¿Cuál era el valor anterior?
+¿Cuál quedó después?
+```
+
+---
+
+# 37. BITÁCORA INMUTABLE
+
+Los usuarios normales NO deberán poder editar la bitácora.
+
+No utilizar la auditoría como una tabla que cualquiera pueda modificar.
+
+---
+
+# 38. USUARIO AUTENTICADO
+
+Nunca confiar en:
+
+```text
+IdUsuario enviado por React
+```
+
+para auditoría.
+
+Obtener la identidad del:
+
+```text
+JWT
+```
+
+y registrar al usuario autenticado desde backend.
+
+---
+
+# 39. API ASÍNCRONA
+
+Todo acceso SQL debe utilizar:
+
+```text
+Async
+Await
+CancellationToken
+```
+
+Ejemplos:
+
+```csharp
+ToListAsync()
+FirstOrDefaultAsync()
+SaveChangesAsync()
+CountAsync()
+```
+
+---
+
+# 40. CONSULTAS
+
+Para consultas de lectura:
+
+```csharp
+AsNoTracking()
+```
+
+Siempre que corresponda.
+
+Proyectar directamente hacia DTO.
+
+Evitar:
+
+```text
+N+1
+```
+
+---
+
+# 41. DTOs
+
+NO exponer directamente entidades EF.
+
+Utilizar:
+
+```text
+ProductoDto
+CrearProductoDto
+ActualizarProductoDto
+
+VentaDto
+CrearVentaDto
+
+ReporteVentaDto
+```
+
+---
+
+# 42. RENDIMIENTO
+
+La aplicación será utilizada como sistema operativo diario.
+
+Por ello:
+
+NO aceptar:
+
+* Consultas completas innecesarias.
+* N+1.
+* Loops con consultas SQL.
+* Carga masiva en memoria.
+* Bloqueos extensos.
+* Transacciones excesivamente largas.
+* Imágenes cargándose en el PDV.
+* Reportes sin filtros.
+* Búsquedas frontend sobre miles de registros.
+
+---
+
+# 43. ÍNDICES
+
+Analizar índices principalmente para:
+
+```text
+CodigoBarras
+CodigoProducto
+Descripcion
+IdProducto
+IdCategoria
+FechaVenta
+IdVenta
+IdCaja
+IdUsuario
+IdMetodoPago
+FechaMovimiento
+```
+
+NO crear índices indiscriminadamente.
+
+Analizar planes de ejecución cuando una consulta crítica sea lenta.
+
+---
+
+# 44. PRUEBAS DE CARGA Y ESTRÉS
+
+Este requisito es PRINCIPAL.
+
+La aplicación debe poder operar incluso durante periodos de alta actividad.
+
+Crear proyecto o carpeta:
+
+```text
+tests/load/
+```
+
+Utilizar una herramienta como:
+
+```text
+k6
+```
+
+para pruebas de carga.
+
+---
+
+# 45. ESCENARIOS DE PRUEBAS DE CARGA
+
+Probar por separado:
+
+## Escaneo
+
+Muchas búsquedas consecutivas de códigos de barras.
+
+## Búsqueda
+
+Búsquedas simultáneas:
+
+```text
+coca
+sabritas
+leche
+agua
+```
+
+## Ventas
+
+Creación repetida de:
+
+```text
+Venta
+Detalles
+Pagos
+Inventario
+Caja
+Auditoria
+```
+
+## Pagos mixtos
+
+Ventas con múltiples métodos.
+
+## Tickets pendientes
+
+Guardar y recuperar varios tickets.
+
+## Reportes
+
+Usuarios consultando reportes al mismo tiempo que existen ventas.
+
+## Dashboard
+
+Consultas simultáneas del dashboard.
+
+---
+
+# 46. NIVELES DE CARGA
+
+No probar únicamente el volumen normal.
+
+Probar escenarios progresivos.
+
+Ejemplo:
+
+```text
+1 usuario
+5 usuarios
+10 usuarios
+25 usuarios
+50 usuarios concurrentes
+```
+
+Medir:
+
+```text
+Tiempo respuesta promedio
+P95
+P99
+Errores
+Timeout
+CPU
+RAM
+SQL
+Connection Pool
+Locks
+Deadlocks
+```
+
+Encontrar el punto de degradación.
+
+---
+
+# 47. OBJETIVO PRINCIPAL DE LAS PRUEBAS
+
+Demostrar que:
+
+```text
+UN REPORTE NO BLOQUEA UNA VENTA
+```
+
+y:
+
+```text
+VARIAS CONSULTAS NO IMPIDEN ESCANEAR PRODUCTOS
+```
+
+y:
+
+```text
+VENTAS SIMULTANEAS NO CORROMPEN INVENTARIO
+```
+
+y:
+
+```text
+UN DOBLE CLIC NO DUPLICA LA VENTA
+```
+
+---
+
+# 48. ENTORNO DE ESTRÉS
+
+Nunca realizar pruebas destructivas contra producción.
+
+Utilizar:
+
+```text
+Development
+Testing
+Stress
+Production
+```
+
+según corresponda.
+
+El ambiente de pruebas deberá contener volumen de datos representativo.
+
+---
+
+# 49. CONCURRENCIA DE INVENTARIO
+
+Especial atención cuando dos ventas intentan vender simultáneamente el mismo producto.
+
+Evitar:
+
+```text
+Stock = 1
+
+Caja 1 vende 1
+Caja 2 vende 1
+
+Stock final = -1
+```
+
+Analizar estrategia transaccional apropiada.
+
+Documentar cualquier cambio requerido.
+
+---
+
+# 50. SEGURIDAD
+
+Implementar:
+
+```text
+JWT
+Roles
+Permisos
+```
+
+Utilizar:
+
+```csharp
+[Authorize]
+```
+
+cuando corresponda.
+
+Roles iniciales pueden incluir:
+
+```text
+Administrador
+Cajero
+Supervisor
+```
+
+pero primero validar los roles existentes en SQL.
+
+---
+
+# 51. PERMISOS
+
+Preparar permisos por módulo:
+
+```text
+Ver
+Crear
+Editar
+Eliminar
+Cancelar
+Exportar
+```
+
+Ejemplo:
+
+```text
+Productos.Editar
+Ventas.Cancelar
+Inventario.Ajustar
+Reportes.Exportar
+Usuarios.Editar
+```
+
+---
+
+# 52. CORTES DE CAJA
+
+Mantener soporte para:
+
+```text
+Apertura
+Ingresos
+Retiros
+Ventas
+Efectivo
+Tarjeta
+Transferencia
+Pagos mixtos
+Total esperado
+Total contado
+Diferencia
+Corte
+Cierre
+```
+
+---
+
+# 53. RESPONSIVE
+
+El administrativo React debe funcionar correctamente en:
+
+```text
+Desktop
+Laptop
+Tablet cuando corresponda
+```
+
+El PDV estará optimizado principalmente para escritorio.
+
+---
+
+# 54. MANEJO GLOBAL DE ERRORES
+
+Backend:
+
+```text
+MiddlewareExcepciones
+```
+
+Frontend:
+
+crear manejo estandarizado para:
+
+```text
+Loading
+Error
+Empty
+Success
+```
+
+No mostrar errores técnicos al usuario.
+
+---
+
+# 55. HEALTH CHECK
+
+Implementar:
+
+```http
+GET /health
+```
+
+Validar:
+
+```text
+API
+SQL Server
+```
+
+---
+
+# 56. GIT — REGLA OBLIGATORIA
+
+Todos los cambios deben realizarse mediante ramas.
+
+Estrategia:
+
+```text
+main
+develop
+feature/*
+fix/*
+hotfix/*
+```
+
+NO trabajar directamente sobre:
+
+```text
+main
+```
+
+---
+
+# 57. UNA RAMA POR CAMBIO
+
+Cada nueva funcionalidad debe tener su propia rama.
+
+Ejemplo:
+
+```text
+feature/productos-imagen
+feature/pagos-mixtos
+feature/tickets-pendientes
+feature/auditoria
+feature/reportes-ventas
+feature/buscador-pdv
+feature/pedido-sugerido
+```
+
+---
+
+# 58. CICLO DE UNA RAMA
+
+Antes de iniciar:
+
+```text
+actualizar develop
+crear nueva rama
+```
+
+Trabajar.
+
+Después:
+
+```text
+validar
+test
+build
+commit
+push
+merge
+```
+
+Una vez integrada:
+
+```text
+eliminar rama remota
+eliminar rama local
+```
+
+La rama ya NO deberá permanecer activa.
+
+---
+
+# 59. COMMITS
+
+Utilizar commits pequeños y descriptivos.
+
+Ejemplos:
+
+```text
+feat(pdv): agrega pagos mixtos
+
+feat(productos): agrega imagen administrativa
+
+feat(reportes): agrega filtros por categoria
+
+feat(auditoria): registra cambios de precio
+
+perf(pdv): optimiza busqueda por codigo de barras
+
+test(load): agrega prueba concurrente de ventas
+```
+
+---
+
+# 60. DOCUMENTACIÓN PARA CONTEXTO DE OTRAS IA
+
+Este requisito es muy importante.
+
+El proyecto puede posteriormente ser trabajado por otra IA.
+
+Por lo tanto quiero que la documentación permita que una nueva IA comprenda rápidamente el proyecto SIN tener que analizar todo el repositorio y gastar demasiados tokens.
+
+Crear:
+
+```text
+README.md
+
+CHANGELOG.md
+
+docs/
+    AI_CONTEXT.md
+    ARQUITECTURA.md
+    BASE_DATOS.md
+    API.md
+    FRONTEND.md
+    MODULOS.md
+    REGLAS_NEGOCIO.md
+    DECISIONES_TECNICAS.md
+    ESTADO_PROYECTO.md
+    PENDIENTES.md
+```
+
+---
+
+# 61. AI_CONTEXT.MD
+
+Este archivo deberá ser especialmente corto pero completo.
+
+Contener:
+
+```text
+Nombre proyecto
+Objetivo
+Stack
+Arquitectura
+Base de datos
+Convenciones
+Módulos existentes
+Endpoints importantes
+Reglas críticas
+Últimos cambios
+Pendientes
+Decisiones técnicas
+```
+
+No copiar código completo dentro de este archivo.
+
+Debe servir como:
+
+```text
+CONTEXTO RÁPIDO PARA IA
+```
+
+---
+
+# 62. ESTADO DEL PROYECTO
+
+Actualizar:
+
+```text
+docs/ESTADO_PROYECTO.md
+```
+
+Ejemplo:
+
+```text
+PRODUCTOS
+API        ✅
+React      ✅
+Tests      ✅
+
+PAGOS MIXTOS
+API        ✅
+React      🚧
+Tests      ❌
+
+RECARGAS
+Proveedor  PENDIENTE
+
+TICKETS
+Impresion  PENDIENTE
+```
+
+---
+
+# 63. CHANGELOG
+
+Cada cambio funcional importante deberá registrarse en:
+
+```text
+CHANGELOG.md
+```
+
+No depender únicamente de los commits.
+
+---
+
+# 64. MAPEO FRONTEND → API → SQL
+
+Documentar las funcionalidades importantes.
+
+Ejemplo:
+
+```text
+Pantalla:
+Productos
+
+React:
+ProductList.tsx
+
+Endpoint:
+GET /api/v1/productos
+
+DTO:
+ProductoDto
+
+Servicio:
+ProductoService
+
+Tabla:
+Productos
+```
+
+Esto ayudará enormemente para mantenimiento y futuras IA.
+
+---
+
+# 65. DASHBOARD Y REPORTES — PAGINACIÓN
+
+Los listados detallados del dashboard y reportes deben utilizar paginación.
+
+Las tarjetas KPI no necesitan paginación.
+
+Ejemplo:
+
+```text
+Ventas del dia: KPI
+Total: KPI
+Utilidad: KPI
+
+Detalle ventas:
+Paginado
+```
+
+---
+
+# 66. CACHE
+
+No aplicar caché indiscriminadamente sobre:
+
+```text
+Inventario
+Precio
+Ventas
+```
+
+porque son datos sensibles a cambios rápidos.
+
+Se puede evaluar caché para:
+
+```text
+Catalogos poco cambiantes
+```
+
+pero documentarlo.
+
+---
+
+# 67. SWAGGER
+
+Swagger debe contener:
+
+* Endpoints.
+* DTOs.
+* Ejemplos.
+* Status codes.
+* JWT Authorize.
+
+---
+
+# 68. ENDPOINTS VERSIONADOS
+
+Utilizar:
+
+```text
+/api/v1/
+```
+
+Ejemplos:
+
+```text
+/api/v1/productos
+/api/v1/ventas
+/api/v1/reportes
+/api/v1/inventario
+/api/v1/dashboard
+```
+
+---
+
+# 69. NO SOBREINGENIERIZAR
+
+Aplicar:
+
+```text
+SOLID
+DRY
+KISS
+```
+
+Pero evitar capas innecesarias.
+
+No crear:
+
+```text
+Repository
+Manager
+Handler
+Facade
+Processor
+```
+
+todos para ejecutar una consulta sencilla.
+
+---
+
+# 70. CONTROLADORES DELGADOS
+
+Controller:
+
+```text
+Recibe
+Valida
+Ejecuta caso de uso
+Responde
+```
+
+La lógica del negocio NO debe quedar dentro del controller.
+
+---
+
+# 71. FASES
+
+Trabajar por fases.
+
+## FASE 1
+
+Analizar SQL Server actual.
+
+## FASE 2
+
+Crear arquitectura .NET 9 + React.
+
+## FASE 3
+
+Autenticación, usuarios, roles y auditoría.
+
+## FASE 4
+
+Productos, categorías y buscador.
+
+## FASE 5
+
+Inventario.
+
+## FASE 6
+
+PDV básico.
+
+## FASE 7
+
+Escáner.
+
+## FASE 8
+
+Pagos mixtos.
+
+## FASE 9
+
+Tickets pendientes.
+
+## FASE 10
+
+Caja.
+
+## FASE 11
+
+Proveedores y compras.
+
+## FASE 12
+
+Dashboard y reportes.
+
+## FASE 13
+
+Pedido sugerido semanal.
+
+## FASE 14
+
+Recargas y servicios dejando proveedor pendiente.
+
+## FASE 15
+
+Pruebas de carga.
+
+## FASE 16
+
+Optimización.
+
+## FASE 17
+
+Documentación final.
+
+---
+
+# 72. DEFINITION OF DONE
+
+Una funcionalidad NO se considera terminada solamente porque la pantalla funciona.
+
+Para considerarla terminada deberá tener:
+
+```text
+Backend
+Frontend
+Validaciones
+Permisos
+Auditoria cuando corresponda
+Pruebas
+Swagger
+Sin errores de build
+Sin errores TypeScript
+Documentacion
+CHANGELOG
+Commit
+Push
+Merge
+Eliminacion de rama
+```
+
+---
+
+# 73. PRIORIDAD DEL SISTEMA
+
+La prioridad técnica deberá ser:
+
+```text
+1. Integridad de las ventas
+2. Velocidad del PDV
+3. Estabilidad
+4. Inventario correcto
+5. Auditoria
+6. Seguridad
+7. Busqueda de productos
+8. Pagos
+9. Reportes
+10. Funcionalidades administrativas
+```
+
+Un reporte nunca deberá tener prioridad técnica sobre una venta.
+
+---
+
+# 74. COSAS QUE QUEDAN PENDIENTES DE DEFINIR
+
+Documentar explícitamente:
+
+```text
+Proveedor de recargas
+Proveedor de pago de servicios
+Modelo definitivo de impresion de tickets
+```
+
+NO inventar estas decisiones.
+
+---
+
+# 75. PRIMERA TAREA
+
+Comienza exclusivamente con:
+
+# FASE 1 — AUDITORÍA DE BASE DE DATOS Y REPOSITORIO
+
+Antes de programar:
+
+1. Analiza toda la estructura SQL Server.
+2. Identifica tablas.
+3. Identifica PK.
+4. Identifica FK.
+5. Identifica Identity.
+6. Identifica índices.
+7. Identifica módulos existentes.
+8. Identifica tablas necesarias para auditoría.
+9. Identifica si ya existe soporte para pagos múltiples.
+10. Identifica si existe soporte para tickets pendientes.
+11. Identifica si existe soporte para imágenes.
+12. Identifica si existe soporte para recargas/servicios.
+13. Identifica qué cambios SQL serán necesarios.
+14. Revisa estructura Git.
+15. Revisa backend si ya existe.
+16. Revisa frontend si ya existe.
+17. Genera propuesta de arquitectura.
+18. Genera mapa React → API → SQL.
+19. Genera backlog técnico por fases.
+20. Identifica riesgos de rendimiento.
+
+NO modifiques todavía la base.
+
+---
+
+# 76. DESPUÉS DEL ANÁLISIS
+
+Una vez documentada la FASE 1, comenzar a construir progresivamente API y React en paralelo.
+
+Cada funcionalidad deberá cerrar el ciclo completo:
+
+```text
+SQL
+  ↓
+Entity Framework
+  ↓
+Servicio
+  ↓
+Endpoint
+  ↓
+Swagger
+  ↓
+React API Service
+  ↓
+Pantalla
+  ↓
+Validaciones
+  ↓
+Auditoria
+  ↓
+Tests
+  ↓
+Documentacion
+  ↓
+Git
+```
+
+---
+
+# 77. REGLAS INNEGOCIABLES
+
+1. Backend .NET 9.
+2. Frontend React + TypeScript.
+3. SQL Server.
+4. IDs `INT IDENTITY(1,1)`.
+5. API como única entrada a SQL.
+6. Paginación server-side.
+7. 25 registros por defecto.
+8. Opciones 25/50/100.
+9. Máximo 100 por página.
+10. Auditoría obligatoria.
+11. Usuario obtenido del JWT.
+12. Ventas transaccionales.
+13. Pagos mixtos.
+14. Idempotencia.
+15. Escáner de código de barras.
+16. Buscador rápido.
+17. Tickets pendientes.
+18. Producto con imagen administrativa.
+19. Imagen NO visible en PDV.
+20. Cliente predeterminado "Venta en mostrador".
+21. Dashboard semanal.
+22. Productos más vendidos.
+23. Pedido sugerido automático los domingos.
+24. Reportes optimizados.
+25. Reportes no deben bloquear ventas.
+26. Pruebas de estrés.
+27. Documentación actualizada.
+28. CHANGELOG actualizado.
+29. Una rama Git por cambio.
+30. No push directo a main.
+31. Eliminar rama después del merge.
+32. Mantener `AI_CONTEXT.md` actualizado.
+33. No inventar proveedor de recargas.
+34. No inventar proveedor de servicios.
+35. Impresión de ticket pendiente.
+36. No sobreingenierizar.
+37. No sacrificar rendimiento del PDV por módulos administrativos.
+
+# OBJETIVO FINAL
+
+Construir un PDV de abarrotes rápido, estable y escalable que pueda atender ventas continuas, utilizar escáner de código de barras, manejar pagos mixtos, mantener varios tickets en espera, controlar inventario, auditar cualquier modificación importante, ofrecer reportes y dashboard sin afectar al cajero, generar pedidos sugeridos semanalmente y permitir que el proyecto continúe creciendo mediante nuevos módulos ABC.
+
+Todo cambio debe ser trazable desde:
+
+```text
+REQUISITO
+→ REACT
+→ API
+→ REGLA NEGOCIO
+→ SQL
+→ AUDITORIA
+→ TEST
+→ DOCUMENTACION
+→ GIT
+```

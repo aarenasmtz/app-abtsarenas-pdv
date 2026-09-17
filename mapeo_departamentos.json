@@ -1,0 +1,1532 @@
+{
+  "1": {
+    "origen_id": 1,
+    "nombre_origen": "- Sin Departamento -",
+    "nombre_limpio": "- SIN DEPARTAMENTO -",
+    "categoria_normalizada": "GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 306
+  },
+  "2": {
+    "origen_id": 2,
+    "nombre_origen": "Productos Comunes",
+    "nombre_limpio": "PRODUCTOS COMUNES",
+    "categoria_normalizada": "GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "4": {
+    "origen_id": 4,
+    "nombre_origen": "ACEITES COMESTIBLES",
+    "nombre_limpio": "ACEITES COMESTIBLES",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 29
+  },
+  "5": {
+    "origen_id": 5,
+    "nombre_origen": "ACEITE AEROSOL Eliminado 21/12/2023 16:49:16",
+    "nombre_limpio": "ACEITE AEROSOL",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "6": {
+    "origen_id": 6,
+    "nombre_origen": "FRASCOS DE CAFE Eliminado 21/12/2023 16:53:35",
+    "nombre_limpio": "FRASCOS DE CAFE",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "7": {
+    "origen_id": 7,
+    "nombre_origen": "SOBRES CAFE Eliminado 21/12/2023 16:58:33",
+    "nombre_limpio": "SOBRES CAFE",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "8": {
+    "origen_id": 8,
+    "nombre_origen": "HIGIENE Eliminado 21/12/2023 16:53:59",
+    "nombre_limpio": "HIGIENE",
+    "categoria_normalizada": "CUIDADO PERSONAL",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "9": {
+    "origen_id": 9,
+    "nombre_origen": "NESTLE Eliminado 21/12/2023 16:56:14",
+    "nombre_limpio": "NESTLE",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": "NESTLE",
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "10": {
+    "origen_id": 10,
+    "nombre_origen": "COCA COLA REFRESCO",
+    "nombre_limpio": "COCA COLA REFRESCO",
+    "categoria_normalizada": "BEBIDAS Y REFRESCOS",
+    "marca_extraida": "COCA COLA",
+    "es_eliminado": false,
+    "productos_asociados": 137
+  },
+  "11": {
+    "origen_id": 11,
+    "nombre_origen": "ENLATADOS COSTEÑA Eliminado 21/12/2023 16:53:22",
+    "nombre_limpio": "ENLATADOS COSTEÑA",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "12": {
+    "origen_id": 12,
+    "nombre_origen": "ENCENDORES Eliminado 21/12/2023 16:51:33",
+    "nombre_limpio": "ENCENDORES",
+    "categoria_normalizada": "ARTICULOS DEL HOGAR",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "13": {
+    "origen_id": 13,
+    "nombre_origen": "FRIJOLES CONSERVADOS Eliminado 21/12/2023 16:53:42",
+    "nombre_limpio": "FRIJOLES CONSERVADOS",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "14": {
+    "origen_id": 14,
+    "nombre_origen": "NESTLE GERBER",
+    "nombre_limpio": "NESTLE GERBER",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": "NESTLE",
+    "es_eliminado": false,
+    "productos_asociados": 24
+  },
+  "15": {
+    "origen_id": 15,
+    "nombre_origen": "JUGO VIDRIO Eliminado 21/12/2023 16:55:05",
+    "nombre_limpio": "JUGO VIDRIO",
+    "categoria_normalizada": "BEBIDAS Y REFRESCOS",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "16": {
+    "origen_id": 16,
+    "nombre_origen": "JUGO CARTON Eliminado 21/12/2023 16:54:50",
+    "nombre_limpio": "JUGO CARTON",
+    "categoria_normalizada": "BEBIDAS Y REFRESCOS",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "17": {
+    "origen_id": 17,
+    "nombre_origen": "JUGO ENLATADO Eliminado 21/12/2023 16:54:55",
+    "nombre_limpio": "JUGO ENLATADO",
+    "categoria_normalizada": "BEBIDAS Y REFRESCOS",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "18": {
+    "origen_id": 18,
+    "nombre_origen": "LECHE POLVO NESTLE Eliminado 21/12/2023 16:55:16",
+    "nombre_limpio": "LECHE POLVO NESTLE",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": "NESTLE",
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "19": {
+    "origen_id": 19,
+    "nombre_origen": "FRUTA ENLATADA Eliminado 21/12/2023 16:53:46",
+    "nombre_limpio": "FRUTA ENLATADA",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "20": {
+    "origen_id": 20,
+    "nombre_origen": "ALUMINIOS Eliminado 21/12/2023 16:49:57",
+    "nombre_limpio": "ALUMINIOS",
+    "categoria_normalizada": "ARTICULOS DEL HOGAR",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "21": {
+    "origen_id": 21,
+    "nombre_origen": "PILAS Eliminado 21/12/2023 16:56:35",
+    "nombre_limpio": "PILAS",
+    "categoria_normalizada": "ARTICULOS DEL HOGAR",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "22": {
+    "origen_id": 22,
+    "nombre_origen": "ALIMENTOS PRECO Eliminado 21/12/2023 16:49:23",
+    "nombre_limpio": "ALIMENTOS PRECO",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "23": {
+    "origen_id": 23,
+    "nombre_origen": "POLVO HORNEAR Eliminado 21/12/2023 16:56:42",
+    "nombre_limpio": "POLVO HORNEAR",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "24": {
+    "origen_id": 24,
+    "nombre_origen": "SOBRE SHAMPOO Eliminado 21/12/2023 16:58:41",
+    "nombre_limpio": "SOBRE SHAMPOO",
+    "categoria_normalizada": "CUIDADO PERSONAL",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "25": {
+    "origen_id": 25,
+    "nombre_origen": "CONDIMENTOS Eliminado 21/12/2023 16:50:48",
+    "nombre_limpio": "CONDIMENTOS",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "26": {
+    "origen_id": 26,
+    "nombre_origen": "SOBRES TÉ Eliminado 21/12/2023 16:58:28",
+    "nombre_limpio": "SOBRES TÉ",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "27": {
+    "origen_id": 27,
+    "nombre_origen": "SOPA PRECALENTADA Eliminado 21/12/2023 16:58:23",
+    "nombre_limpio": "SOPA PRECALENTADA",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "28": {
+    "origen_id": 28,
+    "nombre_origen": "VELADORAS Eliminado 21/12/2023 16:58:16",
+    "nombre_limpio": "VELADORAS",
+    "categoria_normalizada": "ARTICULOS DEL HOGAR",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "29": {
+    "origen_id": 29,
+    "nombre_origen": "JABON BARRA Eliminado 21/12/2023 16:54:28",
+    "nombre_limpio": "JABON BARRA",
+    "categoria_normalizada": "CUIDADO PERSONAL",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "30": {
+    "origen_id": 30,
+    "nombre_origen": "DESECHABLE",
+    "nombre_limpio": "DESECHABLE",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 30
+  },
+  "31": {
+    "origen_id": 31,
+    "nombre_origen": "PEPSI REFRESCO",
+    "nombre_limpio": "PEPSI REFRESCO",
+    "categoria_normalizada": "BEBIDAS Y REFRESCOS",
+    "marca_extraida": "PEPSI",
+    "es_eliminado": false,
+    "productos_asociados": 57
+  },
+  "32": {
+    "origen_id": 32,
+    "nombre_origen": "PERFUMERIA",
+    "nombre_limpio": "PERFUMERIA",
+    "categoria_normalizada": "CUIDADO PERSONAL",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 261
+  },
+  "33": {
+    "origen_id": 33,
+    "nombre_origen": "ABARROTES",
+    "nombre_limpio": "ABARROTES",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 363
+  },
+  "34": {
+    "origen_id": 34,
+    "nombre_origen": "PEDIGREE",
+    "nombre_limpio": "PEDIGREE",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 18
+  },
+  "35": {
+    "origen_id": 35,
+    "nombre_origen": "POSTRES Eliminado 21/12/2023 16:56:46",
+    "nombre_limpio": "POSTRES",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "36": {
+    "origen_id": 36,
+    "nombre_origen": "SUAVISANTE ROPA",
+    "nombre_limpio": "SUAVISANTE ROPA",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 23
+  },
+  "37": {
+    "origen_id": 37,
+    "nombre_origen": "CIGARROS",
+    "nombre_limpio": "CIGARROS",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 34
+  },
+  "38": {
+    "origen_id": 38,
+    "nombre_origen": "MARINELA PASTEL",
+    "nombre_limpio": "MARINELA PASTEL",
+    "categoria_normalizada": "GALLETAS Y PAN",
+    "marca_extraida": "MARINELA",
+    "es_eliminado": false,
+    "productos_asociados": 25
+  },
+  "39": {
+    "origen_id": 39,
+    "nombre_origen": "JABON POLVO Eliminado 21/12/2023 16:54:33",
+    "nombre_limpio": "JABON POLVO",
+    "categoria_normalizada": "LIMPIEZA Y HOGAR",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "40": {
+    "origen_id": 40,
+    "nombre_origen": "GAMESA",
+    "nombre_limpio": "GAMESA",
+    "categoria_normalizada": "GALLETAS Y PAN",
+    "marca_extraida": "GAMESA",
+    "es_eliminado": false,
+    "productos_asociados": 109
+  },
+  "41": {
+    "origen_id": 41,
+    "nombre_origen": "SABRITAS",
+    "nombre_limpio": "SABRITAS",
+    "categoria_normalizada": "BOTANAS Y FRITURAS",
+    "marca_extraida": "SABRITAS",
+    "es_eliminado": false,
+    "productos_asociados": 191
+  },
+  "42": {
+    "origen_id": 42,
+    "nombre_origen": "BARCEL",
+    "nombre_limpio": "BARCEL",
+    "categoria_normalizada": "BOTANAS Y FRITURAS",
+    "marca_extraida": "BARCEL",
+    "es_eliminado": false,
+    "productos_asociados": 106
+  },
+  "43": {
+    "origen_id": 43,
+    "nombre_origen": "BIMBO PAN",
+    "nombre_limpio": "BIMBO PAN",
+    "categoria_normalizada": "GALLETAS Y PAN",
+    "marca_extraida": "BIMBO",
+    "es_eliminado": false,
+    "productos_asociados": 45
+  },
+  "44": {
+    "origen_id": 44,
+    "nombre_origen": "BIMBO PAN DULCE",
+    "nombre_limpio": "BIMBO PAN DULCE",
+    "categoria_normalizada": "GALLETAS Y PAN",
+    "marca_extraida": "BIMBO",
+    "es_eliminado": false,
+    "productos_asociados": 61
+  },
+  "45": {
+    "origen_id": 45,
+    "nombre_origen": "MARINELA GALLETA",
+    "nombre_limpio": "MARINELA GALLETA",
+    "categoria_normalizada": "GALLETAS Y PAN",
+    "marca_extraida": "MARINELA",
+    "es_eliminado": false,
+    "productos_asociados": 58
+  },
+  "46": {
+    "origen_id": 46,
+    "nombre_origen": "TIA ROSA",
+    "nombre_limpio": "TIA ROSA",
+    "categoria_normalizada": "GALLETAS Y PAN",
+    "marca_extraida": "TIA ROSA",
+    "es_eliminado": false,
+    "productos_asociados": 69
+  },
+  "47": {
+    "origen_id": 47,
+    "nombre_origen": "SAZONADORES Eliminado 21/12/2023 16:58:57",
+    "nombre_limpio": "SAZONADORES",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "48": {
+    "origen_id": 48,
+    "nombre_origen": "SALSAS EMBOTELLADAS",
+    "nombre_limpio": "SALSAS EMBOTELLADAS",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 45
+  },
+  "49": {
+    "origen_id": 49,
+    "nombre_origen": "PURE LIQUIDO Eliminado 21/12/2023 16:56:55",
+    "nombre_limpio": "PURE LIQUIDO",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "50": {
+    "origen_id": 50,
+    "nombre_origen": "SOPA",
+    "nombre_limpio": "SOPA",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 30
+  },
+  "51": {
+    "origen_id": 51,
+    "nombre_origen": "LACTEOS LALA",
+    "nombre_limpio": "LACTEOS LALA",
+    "categoria_normalizada": "LACTEOS Y DERIVADOS",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 40
+  },
+  "52": {
+    "origen_id": 52,
+    "nombre_origen": "AROMATIZANTE LIQ Eliminado 21/12/2023 16:50:01",
+    "nombre_limpio": "AROMATIZANTE LIQ",
+    "categoria_normalizada": "LIMPIEZA Y HOGAR",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "53": {
+    "origen_id": 53,
+    "nombre_origen": "QUITA MANCHAS ROPA Eliminado 21/12/2023 16:57:07",
+    "nombre_limpio": "QUITA MANCHAS ROPA",
+    "categoria_normalizada": "LIMPIEZA Y HOGAR",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "54": {
+    "origen_id": 54,
+    "nombre_origen": "DESINFECTANTES Eliminado 21/12/2023 16:50:52",
+    "nombre_limpio": "DESINFECTANTES",
+    "categoria_normalizada": "LIMPIEZA Y HOGAR",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "55": {
+    "origen_id": 55,
+    "nombre_origen": "DETERGENTE POLVO Eliminado 21/12/2023 16:51:22",
+    "nombre_limpio": "DETERGENTE POLVO",
+    "categoria_normalizada": "LIMPIEZA Y HOGAR",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "56": {
+    "origen_id": 56,
+    "nombre_origen": "COMIDA ENLATADA Eliminado 21/12/2023 16:50:44",
+    "nombre_limpio": "COMIDA ENLATADA",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "57": {
+    "origen_id": 57,
+    "nombre_origen": "ENLATADOS CLEMENTE Eliminado 21/12/2023 16:53:18",
+    "nombre_limpio": "ENLATADOS CLEMENTE",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "58": {
+    "origen_id": 58,
+    "nombre_origen": "ADEREZOS",
+    "nombre_limpio": "ADEREZOS",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 17
+  },
+  "59": {
+    "origen_id": 59,
+    "nombre_origen": "VINAGRE Eliminado 21/12/2023 16:58:12",
+    "nombre_limpio": "VINAGRE",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "60": {
+    "origen_id": 60,
+    "nombre_origen": "LECHE LIQUIDA CAFE Eliminado 21/12/2023 16:55:10",
+    "nombre_limpio": "LECHE LIQUIDA CAFE",
+    "categoria_normalizada": "LACTEOS Y DERIVADOS",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "61": {
+    "origen_id": 61,
+    "nombre_origen": "ENLATADOS MORENA Eliminado 21/12/2023 16:53:28",
+    "nombre_limpio": "ENLATADOS MORENA",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "62": {
+    "origen_id": 62,
+    "nombre_origen": "HARINAS Eliminado 21/12/2023 16:53:52",
+    "nombre_limpio": "HARINAS",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "63": {
+    "origen_id": 63,
+    "nombre_origen": "JABON ROPA LIQUIDO Eliminado 21/12/2023 16:54:37",
+    "nombre_limpio": "JABON ROPA LIQUIDO",
+    "categoria_normalizada": "LIMPIEZA Y HOGAR",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "64": {
+    "origen_id": 64,
+    "nombre_origen": "CHARRAS",
+    "nombre_limpio": "CHARRAS",
+    "categoria_normalizada": "TORTILLAS Y TOSTADAS",
+    "marca_extraida": "CHARRAS",
+    "es_eliminado": false,
+    "productos_asociados": 6
+  },
+  "65": {
+    "origen_id": 65,
+    "nombre_origen": "ALCOHOL",
+    "nombre_limpio": "ALCOHOL",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 33
+  },
+  "66": {
+    "origen_id": 66,
+    "nombre_origen": "BONAFONT",
+    "nombre_limpio": "BONAFONT",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 14
+  },
+  "67": {
+    "origen_id": 67,
+    "nombre_origen": "MEDICAMENTO",
+    "nombre_limpio": "MEDICAMENTO",
+    "categoria_normalizada": "FARMACIA",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 47
+  },
+  "68": {
+    "origen_id": 68,
+    "nombre_origen": "DANONE",
+    "nombre_limpio": "DANONE",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 42
+  },
+  "69": {
+    "origen_id": 69,
+    "nombre_origen": "KELLOGGS",
+    "nombre_limpio": "KELLOGGS",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 12
+  },
+  "70": {
+    "origen_id": 70,
+    "nombre_origen": "LACTEOS LEON",
+    "nombre_limpio": "LACTEOS LEON",
+    "categoria_normalizada": "LACTEOS Y DERIVADOS",
+    "marca_extraida": "LEON",
+    "es_eliminado": false,
+    "productos_asociados": 8
+  },
+  "71": {
+    "origen_id": 71,
+    "nombre_origen": "PAN",
+    "nombre_limpio": "PAN",
+    "categoria_normalizada": "GALLETAS Y PAN",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 12
+  },
+  "72": {
+    "origen_id": 72,
+    "nombre_origen": "TORTILLA",
+    "nombre_limpio": "TORTILLA",
+    "categoria_normalizada": "TORTILLAS Y TOSTADAS",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 5
+  },
+  "73": {
+    "origen_id": 73,
+    "nombre_origen": "PENAFIEL",
+    "nombre_limpio": "PENAFIEL",
+    "categoria_normalizada": "BEBIDAS Y REFRESCOS",
+    "marca_extraida": "PENAFIEL",
+    "es_eliminado": false,
+    "productos_asociados": 54
+  },
+  "74": {
+    "origen_id": 74,
+    "nombre_origen": "SENORIAL Eliminado 21/12/2023 16:58:49",
+    "nombre_limpio": "SENORIAL",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "75": {
+    "origen_id": 75,
+    "nombre_origen": "ELECTROLIT Eliminado 21/12/2023 16:51:28",
+    "nombre_limpio": "ELECTROLIT",
+    "categoria_normalizada": "BEBIDAS Y REFRESCOS",
+    "marca_extraida": "ELECTROLIT",
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "76": {
+    "origen_id": 76,
+    "nombre_origen": "CERVEZA Eliminado 21/12/2023 16:50:16",
+    "nombre_limpio": "CERVEZA",
+    "categoria_normalizada": "VINOS Y LICORES",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "77": {
+    "origen_id": 77,
+    "nombre_origen": "PAPEL HIGIENICO",
+    "nombre_limpio": "PAPEL HIGIENICO",
+    "categoria_normalizada": "CUIDADO PERSONAL",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 8
+  },
+  "78": {
+    "origen_id": 78,
+    "nombre_origen": "BOTANAS LEO",
+    "nombre_limpio": "BOTANAS LEO",
+    "categoria_normalizada": "BOTANAS Y FRITURAS",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 25
+  },
+  "79": {
+    "origen_id": 79,
+    "nombre_origen": "BOTANAS KIUBO",
+    "nombre_limpio": "BOTANAS KIUBO",
+    "categoria_normalizada": "BOTANAS Y FRITURAS",
+    "marca_extraida": "KIUBO",
+    "es_eliminado": false,
+    "productos_asociados": 7
+  },
+  "80": {
+    "origen_id": 80,
+    "nombre_origen": "BOTANAS LEON Eliminado 20/12/2023 19:29:28",
+    "nombre_limpio": "BOTANAS LEON",
+    "categoria_normalizada": "LACTEOS Y DERIVADOS",
+    "marca_extraida": "LEON",
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "81": {
+    "origen_id": 81,
+    "nombre_origen": "GALLETA DONDE",
+    "nombre_limpio": "GALLETA DONDE",
+    "categoria_normalizada": "GALLETAS Y PAN",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 13
+  },
+  "82": {
+    "origen_id": 82,
+    "nombre_origen": "SEMILLAS",
+    "nombre_limpio": "SEMILLAS",
+    "categoria_normalizada": "SEMILLAS Y GRANOS",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 6
+  },
+  "83": {
+    "origen_id": 83,
+    "nombre_origen": "BEBIDAS Y JUGOS",
+    "nombre_limpio": "BEBIDAS Y JUGOS",
+    "categoria_normalizada": "BEBIDAS Y REFRESCOS",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 83
+  },
+  "84": {
+    "origen_id": 84,
+    "nombre_origen": "CEREAL SUELTO",
+    "nombre_limpio": "CEREAL SUELTO",
+    "categoria_normalizada": "GALLETAS Y PAN",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 5
+  },
+  "85": {
+    "origen_id": 85,
+    "nombre_origen": "JABONES",
+    "nombre_limpio": "JABONES",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 40
+  },
+  "86": {
+    "origen_id": 86,
+    "nombre_origen": "DETERGENTE LIQUIDO",
+    "nombre_limpio": "DETERGENTE LIQUIDO",
+    "categoria_normalizada": "LIMPIEZA Y HOGAR",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 64
+  },
+  "87": {
+    "origen_id": 87,
+    "nombre_origen": "ENLATADOS Eliminado 21/12/2023 16:53:13",
+    "nombre_limpio": "ENLATADOS",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "88": {
+    "origen_id": 88,
+    "nombre_origen": "ENLATADO",
+    "nombre_limpio": "ENLATADO",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 48
+  },
+  "89": {
+    "origen_id": 89,
+    "nombre_origen": "ABARROTE Eliminado 21/12/2023 16:48:48",
+    "nombre_limpio": "ABARROTE",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "90": {
+    "origen_id": 90,
+    "nombre_origen": "Cremeria",
+    "nombre_limpio": "CREMERIA",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 32
+  },
+  "91": {
+    "origen_id": 91,
+    "nombre_origen": "Sonrics",
+    "nombre_limpio": "SONRICS",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 9
+  },
+  "92": {
+    "origen_id": 92,
+    "nombre_origen": "Dulces",
+    "nombre_limpio": "DULCES",
+    "categoria_normalizada": "DULCERIA",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 38
+  },
+  "93": {
+    "origen_id": 93,
+    "nombre_origen": "Ricolino",
+    "nombre_limpio": "RICOLINO",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 10
+  },
+  "94": {
+    "origen_id": 94,
+    "nombre_origen": "nestle",
+    "nombre_limpio": "NESTLE",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": "NESTLE",
+    "es_eliminado": false,
+    "productos_asociados": 10
+  },
+  "95": {
+    "origen_id": 95,
+    "nombre_origen": "Importes",
+    "nombre_limpio": "IMPORTES",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 1
+  },
+  "96": {
+    "origen_id": 96,
+    "nombre_origen": "QUESO",
+    "nombre_limpio": "QUESO",
+    "categoria_normalizada": "LACTEOS Y DERIVADOS",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 3
+  },
+  "97": {
+    "origen_id": 97,
+    "nombre_origen": "VERDURA",
+    "nombre_limpio": "VERDURA",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 22
+  },
+  "98": {
+    "origen_id": 98,
+    "nombre_origen": "FRITURAS",
+    "nombre_limpio": "FRITURAS",
+    "categoria_normalizada": "BOTANAS Y FRITURAS",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 5
+  },
+  "99": {
+    "origen_id": 99,
+    "nombre_origen": "LACTEOS",
+    "nombre_limpio": "LACTEOS",
+    "categoria_normalizada": "LACTEOS Y DERIVADOS",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 65
+  },
+  "100": {
+    "origen_id": 100,
+    "nombre_origen": "MARINELA",
+    "nombre_limpio": "MARINELA",
+    "categoria_normalizada": "GALLETAS Y PAN",
+    "marca_extraida": "MARINELA",
+    "es_eliminado": false,
+    "productos_asociados": 28
+  },
+  "101": {
+    "origen_id": 101,
+    "nombre_origen": "LEO",
+    "nombre_limpio": "LEO",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 6
+  },
+  "102": {
+    "origen_id": 102,
+    "nombre_origen": "CITY ABASTOS",
+    "nombre_limpio": "CITY ABASTOS",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": "CITY ABASTOS",
+    "es_eliminado": false,
+    "productos_asociados": 155
+  },
+  "103": {
+    "origen_id": 103,
+    "nombre_origen": "DULCE",
+    "nombre_limpio": "DULCE",
+    "categoria_normalizada": "DULCERIA",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 63
+  },
+  "104": {
+    "origen_id": 104,
+    "nombre_origen": "sigma",
+    "nombre_limpio": "SIGMA",
+    "categoria_normalizada": "CARNES FRIAS Y EMBUTIDOS",
+    "marca_extraida": "SIGMA",
+    "es_eliminado": false,
+    "productos_asociados": 3
+  },
+  "105": {
+    "origen_id": 105,
+    "nombre_origen": "LA PUERTA",
+    "nombre_limpio": "LA PUERTA",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 1
+  },
+  "106": {
+    "origen_id": 106,
+    "nombre_origen": "tostada",
+    "nombre_limpio": "TOSTADA",
+    "categoria_normalizada": "TORTILLAS Y TOSTADAS",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 3
+  },
+  "107": {
+    "origen_id": 107,
+    "nombre_origen": "ESPECIAS",
+    "nombre_limpio": "ESPECIAS",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 9
+  },
+  "108": {
+    "origen_id": 108,
+    "nombre_origen": "AGUA",
+    "nombre_limpio": "AGUA",
+    "categoria_normalizada": "BEBIDAS Y REFRESCOS",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 4
+  },
+  "109": {
+    "origen_id": 109,
+    "nombre_origen": "periodico",
+    "nombre_limpio": "PERIODICO",
+    "categoria_normalizada": "ARTICULOS DEL HOGAR",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 1
+  },
+  "110": {
+    "origen_id": 110,
+    "nombre_origen": "leon",
+    "nombre_limpio": "LEON",
+    "categoria_normalizada": "LACTEOS Y DERIVADOS",
+    "marca_extraida": "LEON",
+    "es_eliminado": false,
+    "productos_asociados": 3
+  },
+  "111": {
+    "origen_id": 111,
+    "nombre_origen": "duran",
+    "nombre_limpio": "DURAN",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 1
+  },
+  "112": {
+    "origen_id": 112,
+    "nombre_origen": "lala",
+    "nombre_limpio": "LALA",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 15
+  },
+  "113": {
+    "origen_id": 113,
+    "nombre_origen": "pan bimbo",
+    "nombre_limpio": "PAN BIMBO",
+    "categoria_normalizada": "GALLETAS Y PAN",
+    "marca_extraida": "BIMBO",
+    "es_eliminado": false,
+    "productos_asociados": 10
+  },
+  "114": {
+    "origen_id": 114,
+    "nombre_origen": "agomeza",
+    "nombre_limpio": "AGOMEZA",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 1
+  },
+  "115": {
+    "origen_id": 115,
+    "nombre_origen": "botana",
+    "nombre_limpio": "BOTANA",
+    "categoria_normalizada": "BOTANAS Y FRITURAS",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 67
+  },
+  "116": {
+    "origen_id": 116,
+    "nombre_origen": "cityu",
+    "nombre_limpio": "CITYU",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": "CITY ABASTOS",
+    "es_eliminado": false,
+    "productos_asociados": 1
+  },
+  "117": {
+    "origen_id": 117,
+    "nombre_origen": "bimbo tia rosa",
+    "nombre_limpio": "BIMBO TIA ROSA",
+    "categoria_normalizada": "GALLETAS Y PAN",
+    "marca_extraida": "TIA ROSA",
+    "es_eliminado": false,
+    "productos_asociados": 1
+  },
+  "118": {
+    "origen_id": 118,
+    "nombre_origen": "bimbo marinela",
+    "nombre_limpio": "BIMBO MARINELA",
+    "categoria_normalizada": "GALLETAS Y PAN",
+    "marca_extraida": "BIMBO",
+    "es_eliminado": false,
+    "productos_asociados": 16
+  },
+  "119": {
+    "origen_id": 119,
+    "nombre_origen": "city abarrotes",
+    "nombre_limpio": "CITY ABARROTES",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": "CITY ABASTOS",
+    "es_eliminado": false,
+    "productos_asociados": 153
+  },
+  "120": {
+    "origen_id": 120,
+    "nombre_origen": "PINTA",
+    "nombre_limpio": "PINTA",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 1
+  },
+  "121": {
+    "origen_id": 121,
+    "nombre_origen": "vcity",
+    "nombre_limpio": "VCITY",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": "CITY ABASTOS",
+    "es_eliminado": false,
+    "productos_asociados": 2
+  },
+  "122": {
+    "origen_id": 122,
+    "nombre_origen": "19 hermanos",
+    "nombre_limpio": "19 HERMANOS",
+    "categoria_normalizada": "LACTEOS Y DERIVADOS",
+    "marca_extraida": "19 HERMANOS",
+    "es_eliminado": false,
+    "productos_asociados": 8
+  },
+  "123": {
+    "origen_id": 123,
+    "nombre_origen": "citry",
+    "nombre_limpio": "CITRY",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": "CITY ABASTOS",
+    "es_eliminado": false,
+    "productos_asociados": 1
+  },
+  "124": {
+    "origen_id": 124,
+    "nombre_origen": "marimela Eliminado 03/05/2025 19:42:15",
+    "nombre_limpio": "MARIMELA",
+    "categoria_normalizada": "GALLETAS Y PAN",
+    "marca_extraida": "MARINELA",
+    "es_eliminado": true,
+    "productos_asociados": 0
+  },
+  "125": {
+    "origen_id": 125,
+    "nombre_origen": "sabriyas",
+    "nombre_limpio": "SABRIYAS",
+    "categoria_normalizada": "BOTANAS Y FRITURAS",
+    "marca_extraida": "SABRITAS",
+    "es_eliminado": false,
+    "productos_asociados": 1
+  },
+  "126": {
+    "origen_id": 126,
+    "nombre_origen": "vciy",
+    "nombre_limpio": "VCIY",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": "CITY ABASTOS",
+    "es_eliminado": false,
+    "productos_asociados": 1
+  },
+  "127": {
+    "origen_id": 127,
+    "nombre_origen": "gamesa gamesa",
+    "nombre_limpio": "GAMESA GAMESA",
+    "categoria_normalizada": "GALLETAS Y PAN",
+    "marca_extraida": "GAMESA",
+    "es_eliminado": false,
+    "productos_asociados": 1
+  },
+  "128": {
+    "origen_id": 128,
+    "nombre_origen": "Recargas Electrónicas",
+    "nombre_limpio": "RECARGAS ELECTRÓNICAS",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": true,
+    "productos_asociados": 1
+  },
+  "129": {
+    "origen_id": 129,
+    "nombre_origen": "sidral",
+    "nombre_limpio": "SIDRAL",
+    "categoria_normalizada": "BEBIDAS Y REFRESCOS",
+    "marca_extraida": "SIDRAL AGA",
+    "es_eliminado": false,
+    "productos_asociados": 1
+  },
+  "130": {
+    "origen_id": 130,
+    "nombre_origen": "vinos",
+    "nombre_limpio": "VINOS",
+    "categoria_normalizada": "VINOS Y LICORES",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 1
+  },
+  "131": {
+    "origen_id": 131,
+    "nombre_origen": "coyote",
+    "nombre_limpio": "COYOTE",
+    "categoria_normalizada": "TORTILLAS Y TOSTADAS",
+    "marca_extraida": "COYOTE",
+    "es_eliminado": false,
+    "productos_asociados": 4
+  },
+  "132": {
+    "origen_id": 132,
+    "nombre_origen": "coyotes",
+    "nombre_limpio": "COYOTES",
+    "categoria_normalizada": "TORTILLAS Y TOSTADAS",
+    "marca_extraida": "COYOTE",
+    "es_eliminado": false,
+    "productos_asociados": 1
+  },
+  "133": {
+    "origen_id": 133,
+    "nombre_origen": "jugos",
+    "nombre_limpio": "JUGOS",
+    "categoria_normalizada": "BEBIDAS Y REFRESCOS",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 10
+  },
+  "134": {
+    "origen_id": 134,
+    "nombre_origen": "cereales",
+    "nombre_limpio": "CEREALES",
+    "categoria_normalizada": "GALLETAS Y PAN",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 1
+  },
+  "135": {
+    "origen_id": 135,
+    "nombre_origen": "pan dulce",
+    "nombre_limpio": "PAN DULCE",
+    "categoria_normalizada": "GALLETAS Y PAN",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 1
+  },
+  "136": {
+    "origen_id": 136,
+    "nombre_origen": "p0erfumeria",
+    "nombre_limpio": "P0ERFUMERIA",
+    "categoria_normalizada": "CUIDADO PERSONAL",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 1
+  },
+  "137": {
+    "origen_id": 137,
+    "nombre_origen": "tortillas",
+    "nombre_limpio": "TORTILLAS",
+    "categoria_normalizada": "TORTILLAS Y TOSTADAS",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 2
+  },
+  "138": {
+    "origen_id": 138,
+    "nombre_origen": "carnes",
+    "nombre_limpio": "CARNES",
+    "categoria_normalizada": "CARNES FRIAS Y EMBUTIDOS",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 2
+  },
+  "139": {
+    "origen_id": 139,
+    "nombre_origen": "fud",
+    "nombre_limpio": "FUD",
+    "categoria_normalizada": "CARNES FRIAS Y EMBUTIDOS",
+    "marca_extraida": "FUD",
+    "es_eliminado": false,
+    "productos_asociados": 3
+  },
+  "140": {
+    "origen_id": 140,
+    "nombre_origen": "sidral aga",
+    "nombre_limpio": "SIDRAL AGA",
+    "categoria_normalizada": "BEBIDAS Y REFRESCOS",
+    "marca_extraida": "SIDRAL AGA",
+    "es_eliminado": false,
+    "productos_asociados": 1
+  },
+  "141": {
+    "origen_id": 141,
+    "nombre_origen": "CAFE",
+    "nombre_limpio": "CAFE",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 1
+  },
+  "142": {
+    "origen_id": 142,
+    "nombre_origen": "refresco",
+    "nombre_limpio": "REFRESCO",
+    "categoria_normalizada": "BEBIDAS Y REFRESCOS",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 31
+  },
+  "143": {
+    "origen_id": 143,
+    "nombre_origen": "JAMON",
+    "nombre_limpio": "JAMON",
+    "categoria_normalizada": "CARNES FRIAS Y EMBUTIDOS",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 1
+  },
+  "144": {
+    "origen_id": 144,
+    "nombre_origen": "pastelitomarinela",
+    "nombre_limpio": "PASTELITOMARINELA",
+    "categoria_normalizada": "GALLETAS Y PAN",
+    "marca_extraida": "MARINELA",
+    "es_eliminado": false,
+    "productos_asociados": 3
+  },
+  "145": {
+    "origen_id": 145,
+    "nombre_origen": "electricidad",
+    "nombre_limpio": "ELECTRICIDAD",
+    "categoria_normalizada": "ARTICULOS DEL HOGAR",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 2
+  },
+  "146": {
+    "origen_id": 146,
+    "nombre_origen": "brefresco",
+    "nombre_limpio": "BREFRESCO",
+    "categoria_normalizada": "BEBIDAS Y REFRESCOS",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 1
+  },
+  "147": {
+    "origen_id": 147,
+    "nombre_origen": "BOYANA",
+    "nombre_limpio": "BOYANA",
+    "categoria_normalizada": "BOTANAS Y FRITURAS",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 1
+  },
+  "148": {
+    "origen_id": 148,
+    "nombre_origen": "botanas sabritas",
+    "nombre_limpio": "BOTANAS SABRITAS",
+    "categoria_normalizada": "BOTANAS Y FRITURAS",
+    "marca_extraida": "SABRITAS",
+    "es_eliminado": false,
+    "productos_asociados": 1
+  },
+  "149": {
+    "origen_id": 149,
+    "nombre_origen": "ACCESORIO",
+    "nombre_limpio": "ACCESORIO",
+    "categoria_normalizada": "ARTICULOS DEL HOGAR",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 4
+  },
+  "150": {
+    "origen_id": 150,
+    "nombre_origen": "744886523238",
+    "nombre_limpio": "744886523238",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 1
+  },
+  "151": {
+    "origen_id": 151,
+    "nombre_origen": "galletas",
+    "nombre_limpio": "GALLETAS",
+    "categoria_normalizada": "GALLETAS Y PAN",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 1
+  },
+  "152": {
+    "origen_id": 152,
+    "nombre_origen": "galleta",
+    "nombre_limpio": "GALLETA",
+    "categoria_normalizada": "GALLETAS Y PAN",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 15
+  },
+  "153": {
+    "origen_id": 153,
+    "nombre_origen": "pan tia rosa",
+    "nombre_limpio": "PAN TIA ROSA",
+    "categoria_normalizada": "GALLETAS Y PAN",
+    "marca_extraida": "TIA ROSA",
+    "es_eliminado": false,
+    "productos_asociados": 1
+  },
+  "154": {
+    "origen_id": 154,
+    "nombre_origen": "NBOTANA",
+    "nombre_limpio": "NBOTANA",
+    "categoria_normalizada": "BOTANAS Y FRITURAS",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 1
+  },
+  "155": {
+    "origen_id": 155,
+    "nombre_origen": "vrefresco",
+    "nombre_limpio": "VREFRESCO",
+    "categoria_normalizada": "BEBIDAS Y REFRESCOS",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 1
+  },
+  "156": {
+    "origen_id": 156,
+    "nombre_origen": "limpieza",
+    "nombre_limpio": "LIMPIEZA",
+    "categoria_normalizada": "LIMPIEZA Y HOGAR",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 8
+  },
+  "157": {
+    "origen_id": 157,
+    "nombre_origen": "alchool",
+    "nombre_limpio": "ALCHOOL",
+    "categoria_normalizada": "VINOS Y LICORES",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 6
+  },
+  "158": {
+    "origen_id": 158,
+    "nombre_origen": "abarrote",
+    "nombre_limpio": "ABARROTE",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 71
+  },
+  "159": {
+    "origen_id": 159,
+    "nombre_origen": "GALLETA GAMESA",
+    "nombre_limpio": "GALLETA GAMESA",
+    "categoria_normalizada": "GALLETAS Y PAN",
+    "marca_extraida": "GAMESA",
+    "es_eliminado": false,
+    "productos_asociados": 2
+  },
+  "160": {
+    "origen_id": 160,
+    "nombre_origen": "Dulcerias Bomboncito",
+    "nombre_limpio": "DULCERIAS BOMBONCITO",
+    "categoria_normalizada": "DULCERIA",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 6
+  },
+  "161": {
+    "origen_id": 161,
+    "nombre_origen": "cerveza",
+    "nombre_limpio": "CERVEZA",
+    "categoria_normalizada": "VINOS Y LICORES",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 5
+  },
+  "162": {
+    "origen_id": 162,
+    "nombre_origen": "PAPAS",
+    "nombre_limpio": "PAPAS",
+    "categoria_normalizada": "BOTANAS Y FRITURAS",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 3
+  },
+  "163": {
+    "origen_id": 163,
+    "nombre_origen": "tostadas",
+    "nombre_limpio": "TOSTADAS",
+    "categoria_normalizada": "TORTILLAS Y TOSTADAS",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 1
+  },
+  "164": {
+    "origen_id": 164,
+    "nombre_origen": "bebids",
+    "nombre_limpio": "BEBIDS",
+    "categoria_normalizada": "BEBIDAS Y REFRESCOS",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 1
+  },
+  "165": {
+    "origen_id": 165,
+    "nombre_origen": "boytana",
+    "nombre_limpio": "BOYTANA",
+    "categoria_normalizada": "BOTANAS Y FRITURAS",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 1
+  },
+  "166": {
+    "origen_id": 166,
+    "nombre_origen": "LACTEO",
+    "nombre_limpio": "LACTEO",
+    "categoria_normalizada": "LACTEOS Y DERIVADOS",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 17
+  },
+  "167": {
+    "origen_id": 167,
+    "nombre_origen": "cemillas",
+    "nombre_limpio": "CEMILLAS",
+    "categoria_normalizada": "SEMILLAS Y GRANOS",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 1
+  },
+  "168": {
+    "origen_id": 168,
+    "nombre_origen": "bevidas",
+    "nombre_limpio": "BEVIDAS",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 1
+  },
+  "169": {
+    "origen_id": 169,
+    "nombre_origen": "FARMACIA",
+    "nombre_limpio": "FARMACIA",
+    "categoria_normalizada": "FARMACIA",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 1
+  },
+  "170": {
+    "origen_id": 170,
+    "nombre_origen": "sbotana",
+    "nombre_limpio": "SBOTANA",
+    "categoria_normalizada": "BOTANAS Y FRITURAS",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 1
+  },
+  "171": {
+    "origen_id": 171,
+    "nombre_origen": "abarote",
+    "nombre_limpio": "ABAROTE",
+    "categoria_normalizada": "ABARROTES GENERAL",
+    "marca_extraida": null,
+    "es_eliminado": false,
+    "productos_asociados": 6
+  }
+}
