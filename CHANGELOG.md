@@ -4,7 +4,25 @@ Todas las modificaciones notables a este proyecto serán documentadas en este ar
 
 ---
 
-## [Fase 1] - 2026-09-16
+## [Fase 7] - 2026-09-17
+### Agregado
+- Escáner de Código de Barras HID, Retroalimentación Auditiva (Web Audio) y Pesaje de Granel:
+  - Soporte de Códigos de Báscula EAN-13 (prefijo `20` / `21`):
+    - Decodificación en backend .NET 9 (`ServicioProductos.cs`) del estándar de etiquetas de báscula de autoservicio (`20PPPPPWWWWWC`), extrayendo el PLU y los gramos para calcular automáticamente los kilogramos fraccionados (`pesoGramos / 1000m`).
+    - DTO `ProductoCobroDto` enriquecido con `CantidadSugerida` y `EsPesableConCodigo`.
+    - Pruebas unitarias en `PruebasProductos.cs` verificando la decodificación de etiquetas de báscula con peso variable y productos regulares (29/29 pruebas superadas).
+  - Retroalimentación Auditiva Web Audio API nativa (`sonidosPdv.ts`):
+    - `reproducirBeepExito()`: sintetizador de onda senoidal de 1760 Hz (tono idéntico a escáneres industriales Zebra/Honeywell) de 65ms con decaimiento exponencial, sin necesidad de archivos MP3 externos.
+    - `reproducirBeepError()`: sintetizador de onda diente de sierra de 440 Hz a 220 Hz para alertas sonoras de error de lectura o producto inexistente.
+  - Componente `ModalPesajeGranel.tsx`:
+    - Modal de pesaje rápido para productos con `permiteVentaFraccionada = true`.
+    - Atajos rápidos de porciones comunes (¼ kg, ½ kg, ¾ kg, 1 kg), campo numérico editable con máscara de decimales, cálculo dinámico de subtotal y atajos de teclado (`Enter` para confirmar, `Escape` para cancelar).
+  - Integración en el PDV Central (`DisenoPdv.tsx`):
+    - Interceptación y ráfaga rápida mediante `useEscanerCodigoBarras`.
+    - Detección automática: si el producto es pesable con código incrustado, se agrega directamente con su peso en kg; si es a granel manual, se abre `ModalPesajeGranel`; si es unitario, se suma a la partida.
+    - Control fino de incrementos fraccionados (pasos de 0.250 kg) o unitarios (+1/-1) en la tabla del carrito.
+
+## [Fase 6] - 2026-09-17
 ### Agregado
 - Auditoría integral de los 46 objetos de base de datos en SQL Server 2022 (`AAM`).
 - Mapeo y verificación de integridad referencial (52 FKs y 33 índices especializados).
