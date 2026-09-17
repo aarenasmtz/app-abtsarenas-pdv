@@ -42,6 +42,8 @@ export interface ProductoCobroDto {
   permiteVentaFraccionada: boolean;
   manejaInventario: boolean;
   existenciaActual: number;
+  cantidadSugerida?: number;
+  esPesableConCodigo?: boolean;
 }
 
 /**

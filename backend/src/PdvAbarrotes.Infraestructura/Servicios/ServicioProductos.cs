@@ -405,12 +405,37 @@ public class ServicioProductos : IServicioProductos
 
         Producto? producto = cb?.Producto;
 
-        // Si no se encontró en tabla de códigos de barras, verificar si coincide con CodigoProducto
-        if (producto == null)
+        bool esPesableConCodigo = false;
+        decimal cantidadSugerida = 1.0m;
+
+        // Si no se encontró directo, verificar si es un código de báscula con peso embebido (EAN-13 prefijo 20 o 21)
+        if (producto == null && codigoLimpio.Length == 13 && (codigoLimpio.StartsWith("20") || codigoLimpio.StartsWith("21")))
         {
+            var prefijoPlu = codigoLimpio.Substring(2, 5); // 5 dígitos de PLU
+            var partePeso = codigoLimpio.Substring(7, 5);  // 5 dígitos de peso en gramos
+
+            if (decimal.TryParse(partePeso, out var pesoGramos) && pesoGramos > 0)
+            {
+                cantidadSugerida = Math.Round(pesoGramos / 1000m, 3);
+            }
+
+            int.TryParse(prefijoPlu, out var pluNumero);
+
+            // Buscar por PLU o código
             producto = await _contexto.Productos
                 .AsNoTracking()
-                .FirstOrDefaultAsync(p => p.CodigoProducto == codigoLimpio && p.Activo, cancellationToken);
+                .Include(p => p.CodigosBarras)
+                .FirstOrDefaultAsync(p => 
+                    p.Activo && 
+                    (p.CodigoProducto == prefijoPlu || 
+                     (pluNumero > 0 && p.IdProducto == pluNumero) ||
+                     p.CodigosBarras.Any(cb => cb.CodigoValor == prefijoPlu || cb.CodigoValor == "20" + prefijoPlu)),
+                    cancellationToken);
+
+            if (producto != null)
+            {
+                esPesableConCodigo = true;
+            }
         }
 
         if (producto == null)
@@ -427,14 +452,16 @@ public class ServicioProductos : IServicioProductos
         return new ProductoCobroDto
         {
             IdProducto = producto.IdProducto,
-            CodigoBarras = cb?.CodigoValor ?? producto.CodigoProducto ?? string.Empty,
+            CodigoBarras = esPesableConCodigo ? codigoLimpio : (cb?.CodigoValor ?? producto.CodigoProducto ?? string.Empty),
             CodigoProducto = producto.CodigoProducto ?? string.Empty,
             Descripcion = producto.Descripcion,
             PrecioVenta = producto.PrecioVenta,
             PrecioMayoreo = producto.PrecioMayoreo,
             PermiteVentaFraccionada = producto.PermiteVentaFraccionada,
             ManejaInventario = producto.ManejaInventario,
-            ExistenciaActual = existencia
+            ExistenciaActual = existencia,
+            CantidadSugerida = cantidadSugerida,
+            EsPesableConCodigo = esPesableConCodigo
         };
     }
 

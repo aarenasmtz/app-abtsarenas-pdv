@@ -17,6 +17,9 @@ import type { ResultadoBusquedaPdvDto } from '../modules/productos/tipos';
 import { ModalCobro } from '../modules/pdv/ModalCobro';
 import { ModalTicket } from '../modules/pdv/ModalTicket';
 import { ModalReimpresion } from '../modules/pdv/ModalReimpresion';
+import { ModalPesajeGranel } from '../modules/pdv/ModalPesajeGranel';
+import { reproducirBeepExito, reproducirBeepError } from '../utils/sonidosPdv';
+import type { ProductoCobroDto } from '../modules/productos/tipos';
 import type { VentaRealizada } from '../modules/ventas/tipos';
 
 interface PropiedadesDisenoPdv {
@@ -50,6 +53,8 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
   const [mostrarModalCobro, setMostrarModalCobro] = useState(false);
   const [mostrarModalTicket, setMostrarModalTicket] = useState(false);
   const [mostrarModalReimpresion, setMostrarModalReimpresion] = useState(false);
+  const [mostrarModalGranel, setMostrarModalGranel] = useState(false);
+  const [productoGranelSeleccionado, setProductoGranelSeleccionado] = useState<ProductoCobroDto | null>(null);
   const [ventaActual, setVentaActual] = useState<VentaRealizada | null>(null);
 
   // Escáner HID global
@@ -130,22 +135,62 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
     return () => clearTimeout(timer);
   }, [codigoInput]);
 
-  const agregarDesdePredictivo = (producto: ResultadoBusquedaPdvDto) => {
+  const handleConfirmarPesoGranel = (producto: ProductoCobroDto, pesoKg: number) => {
     agregarArticulo({
       idProducto: producto.idProducto,
       codigoBarras: producto.codigoBarras,
       descripcion: producto.descripcion,
-      cantidad: 1,
+      cantidad: pesoKg,
       precioUnitario: producto.precioVenta,
-      permiteVentaFraccionada: producto.permiteVentaFraccionada,
+      permiteVentaFraccionada: true,
       existenciaDisponible: producto.existenciaActual,
     });
-
+    reproducirBeepExito();
     setMensajeNotificacion({
       tipo: 'exito',
-      texto: `✓ ${producto.descripcion} agregado ($${producto.precioVenta.toFixed(2)})`
+      texto: `✓ ${producto.descripcion} (${pesoKg.toFixed(3)} kg) ($${(pesoKg * producto.precioVenta).toFixed(2)})`
     });
     setTimeout(() => setMensajeNotificacion(null), 2500);
+    setMostrarModalGranel(false);
+    setProductoGranelSeleccionado(null);
+    inputRef.current?.focus();
+  };
+
+  const agregarDesdePredictivo = (producto: ResultadoBusquedaPdvDto) => {
+    if (producto.permiteVentaFraccionada) {
+      setProductoGranelSeleccionado({
+        idProducto: producto.idProducto,
+        codigoBarras: producto.codigoBarras,
+        codigoProducto: producto.codigoBarras,
+        descripcion: producto.descripcion,
+        precioVenta: producto.precioVenta,
+        precioMayoreo: producto.precioVenta,
+        permiteVentaFraccionada: true,
+        manejaInventario: true,
+        existenciaActual: producto.existenciaActual,
+        cantidadSugerida: 0.500,
+        esPesableConCodigo: false
+      });
+      setMostrarModalGranel(true);
+      reproducirBeepExito();
+    } else {
+      agregarArticulo({
+        idProducto: producto.idProducto,
+        codigoBarras: producto.codigoBarras,
+        descripcion: producto.descripcion,
+        cantidad: 1,
+        precioUnitario: producto.precioVenta,
+        permiteVentaFraccionada: false,
+        existenciaDisponible: producto.existenciaActual,
+      });
+      reproducirBeepExito();
+      setMensajeNotificacion({
+        tipo: 'exito',
+        texto: `✓ ${producto.descripcion} agregado ($${producto.precioVenta.toFixed(2)})`
+      });
+      setTimeout(() => setMensajeNotificacion(null), 2500);
+    }
+
     setCodigoInput('');
     setMostrarDropdown(false);
     inputRef.current?.focus();
@@ -158,20 +203,46 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
     try {
       // 1. Consulta ultrarrápida por código de barras (<50ms, sin imágenes ni costos)
       const producto = await servicioProductos.buscarPorCodigoBarras(codigoLimpio);
-      agregarArticulo({
-        idProducto: producto.idProducto,
-        codigoBarras: producto.codigoBarras,
-        descripcion: producto.descripcion,
-        cantidad: 1,
-        precioUnitario: producto.precioVenta,
-        permiteVentaFraccionada: producto.permiteVentaFraccionada,
-        existenciaDisponible: producto.existenciaActual,
-      });
 
-      setMensajeNotificacion({
-        tipo: 'exito',
-        texto: `✓ ${producto.descripcion} ($${producto.precioVenta.toFixed(2)})`
-      });
+      // Si es un código de báscula con peso ya incrustado (EAN-13 prefijo 20/21)
+      if (producto.esPesableConCodigo) {
+        const peso = producto.cantidadSugerida && producto.cantidadSugerida > 0 ? producto.cantidadSugerida : 1;
+        agregarArticulo({
+          idProducto: producto.idProducto,
+          codigoBarras: producto.codigoBarras,
+          descripcion: producto.descripcion,
+          cantidad: peso,
+          precioUnitario: producto.precioVenta,
+          permiteVentaFraccionada: true,
+          existenciaDisponible: producto.existenciaActual,
+        });
+        reproducirBeepExito();
+        setMensajeNotificacion({
+          tipo: 'exito',
+          texto: `✓ ${producto.descripcion} (${peso.toFixed(3)} kg) ($${(peso * producto.precioVenta).toFixed(2)})`
+        });
+      } else if (producto.permiteVentaFraccionada) {
+        // Producto a granel sin peso en el código (se abre modal de pesaje)
+        setProductoGranelSeleccionado(producto);
+        setMostrarModalGranel(true);
+        reproducirBeepExito();
+      } else {
+        // Producto unitario normal
+        agregarArticulo({
+          idProducto: producto.idProducto,
+          codigoBarras: producto.codigoBarras,
+          descripcion: producto.descripcion,
+          cantidad: 1,
+          precioUnitario: producto.precioVenta,
+          permiteVentaFraccionada: false,
+          existenciaDisponible: producto.existenciaActual,
+        });
+        reproducirBeepExito();
+        setMensajeNotificacion({
+          tipo: 'exito',
+          texto: `✓ ${producto.descripcion} ($${producto.precioVenta.toFixed(2)})`
+        });
+      }
     } catch {
       // 2. Si no coincide exactamente, revisar si hay coincidencia predictiva única
       try {
@@ -182,6 +253,7 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
         }
       } catch {}
 
+      reproducirBeepError();
       setMensajeNotificacion({
         tipo: 'error',
         texto: `⚠️ Producto con código '${codigoLimpio}' no encontrado en el catálogo.`
@@ -393,17 +465,25 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
                             <button
                               className="btn btn-secundario"
                               style={{ padding: '0.2rem 0.4rem' }}
-                              onClick={() => actualizarCantidad(item.idProducto, item.cantidad - 1)}
+                              onClick={() => {
+                                const delta = item.permiteVentaFraccionada ? 0.250 : 1;
+                                const nuevaCantidad = Math.max(0, Math.round((item.cantidad - delta) * 1000) / 1000);
+                                actualizarCantidad(item.idProducto, nuevaCantidad);
+                              }}
                             >
                               <Minus size={14} />
                             </button>
-                            <span className="mono" style={{ fontWeight: 700, minWidth: '32px', textAlign: 'center' }}>
-                              {item.cantidad}
+                            <span className="mono" style={{ fontWeight: 700, minWidth: '40px', textAlign: 'center' }}>
+                              {item.permiteVentaFraccionada ? `${item.cantidad.toFixed(3)}kg` : item.cantidad}
                             </span>
                             <button
                               className="btn btn-secundario"
                               style={{ padding: '0.2rem 0.4rem' }}
-                              onClick={() => actualizarCantidad(item.idProducto, item.cantidad + 1)}
+                              onClick={() => {
+                                const delta = item.permiteVentaFraccionada ? 0.250 : 1;
+                                const nuevaCantidad = Math.round((item.cantidad + delta) * 1000) / 1000;
+                                actualizarCantidad(item.idProducto, nuevaCantidad);
+                              }}
                             >
                               <Plus size={14} />
                             </button>
@@ -544,6 +624,18 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
           inputRef.current?.focus();
         }}
         onSeleccionarParaReimprimir={handleSeleccionarParaReimprimir}
+      />
+
+      {/* Modal de Pesaje de Productos a Granel */}
+      <ModalPesajeGranel
+        abierto={mostrarModalGranel}
+        producto={productoGranelSeleccionado}
+        onConfirmarPeso={handleConfirmarPesoGranel}
+        onCerrar={() => {
+          setMostrarModalGranel(false);
+          setProductoGranelSeleccionado(null);
+          inputRef.current?.focus();
+        }}
       />
     </div>
   );
