@@ -1,0 +1,39 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using PdvAbarrotes.Aplicacion.Interfaces;
+using PdvAbarrotes.Infraestructura.Persistencia;
+using PdvAbarrotes.Infraestructura.Servicios;
+
+namespace PdvAbarrotes.Infraestructura;
+
+/// <summary>
+/// Métodos de extensión para registrar la capa de infraestructura en el contenedor de dependencias.
+/// </summary>
+public static class ConfiguracionInfraestructura
+{
+    public static IServiceCollection AgregarInfraestructura(this IServiceCollection servicios, IConfiguration configuracion)
+    {
+        var cadenaConexion = configuracion.GetConnectionString("CadenaConexion") 
+            ?? "Server=AAM;Database=PdvAbarrotesArenas;Trusted_Connection=True;TrustServerCertificate=True;";
+
+        servicios.AddDbContext<ContextoPrincipal>(opciones =>
+            opciones.UseSqlServer(cadenaConexion, sqlOpciones =>
+            {
+                sqlOpciones.EnableRetryOnFailure(
+                    maxRetryCount: 5,
+                    maxRetryDelay: TimeSpan.FromSeconds(10),
+                    errorNumbersToAdd: null);
+            }));
+
+        servicios.AddScoped<IContextoPrincipal>(proveedor => 
+            proveedor.GetRequiredService<ContextoPrincipal>());
+
+        servicios.AddScoped<IServicioUsuarioActual, ServicioUsuarioActual>();
+        servicios.AddScoped<IServicioAuditoria, ServicioAuditoria>();
+        servicios.AddScoped<IProveedorRecargas, ProveedorRecargasPendiente>();
+        servicios.AddScoped<IProveedorServicios, ProveedorServiciosPendiente>();
+
+        return servicios;
+    }
+}

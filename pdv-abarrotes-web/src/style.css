@@ -1,0 +1,389 @@
+/* ==============================================================================
+   PDV ABARROTES ARENAS - SISTEMA DE DISEÑO Y ESTILOS GLOBALES
+   ============================================================================== */
+
+:root {
+  /* Paleta cromática principal */
+  --color-fondo: #0f172a;
+  --color-superficie: #1e293b;
+  --color-superficie-hover: #334155;
+  --color-borde: #334155;
+  
+  --color-primario: #059669; /* Verde esmeralda de cobro */
+  --color-primario-hover: #10b981;
+  --color-primario-suave: rgba(16, 185, 129, 0.15);
+
+  --color-acento: #3b82f6; /* Azul para acciones administrativas */
+  --color-acento-hover: #60a5fa;
+
+  --color-advertencia: #f59e0b; /* Ámbar para stock bajo y tickets pendientes */
+  --color-peligro: #ef4444; /* Rojo para cancelaciones y mermas */
+  
+  --color-texto: #f8fafc;
+  --color-texto-secundario: #94a3b8;
+  --color-texto-apagado: #64748b;
+
+  --fuente-principal: 'Inter', system-ui, -apple-system, sans-serif;
+  --fuente-numerica: 'JetBrains Mono', monospace;
+
+  --radio-sm: 6px;
+  --radio-md: 10px;
+  --radio-lg: 16px;
+
+  --sombra-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+  --sombra-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  --sombra-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--fuente-principal);
+  background-color: var(--color-fondo);
+  color: var(--color-texto);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* Tipografía */
+h1, h2, h3, h4 {
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
+
+.mono {
+  font-family: var(--fuente-numerica);
+}
+
+/* Contenedores Principales */
+.contenedor-app {
+  display: flex;
+  min-height: 100vh;
+  width: 100vw;
+}
+
+/* Barra Lateral (Admin) */
+.barra-lateral {
+  width: 260px;
+  background-color: #0b1120;
+  border-right: 1px solid var(--color-borde);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.barra-lateral-cabecera {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--color-borde);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.logo-icono {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radio-sm);
+  background: linear-gradient(135deg, var(--color-primario), var(--color-acento));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 800;
+  font-size: 1.2rem;
+}
+
+.navegacion-admin {
+  padding: 1rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.enlace-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radio-md);
+  color: var(--color-texto-secundario);
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  font-size: 0.95rem;
+}
+
+.enlace-nav:hover {
+  background-color: var(--color-superficie);
+  color: #ffffff;
+}
+
+.enlace-nav.activo {
+  background-color: var(--color-primario-suave);
+  color: var(--color-primario-hover);
+  font-weight: 600;
+}
+
+/* Área de Contenido */
+.area-contenido {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  height: 100vh;
+}
+
+.barra-superior {
+  height: 64px;
+  background-color: rgba(30, 41, 59, 0.7);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--color-borde);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.cuerpo-modulo {
+  padding: 1.5rem;
+  flex: 1;
+}
+
+/* Tarjetas y Paneles */
+.tarjeta {
+  background-color: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-lg);
+  padding: 1.5rem;
+  box-shadow: var(--sombra-md);
+}
+
+/* Botones */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.25rem;
+  border-radius: var(--radio-md);
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s ease;
+}
+
+.btn-primario {
+  background-color: var(--color-primario);
+  color: white;
+}
+.btn-primario:hover {
+  background-color: var(--color-primario-hover);
+  transform: translateY(-1px);
+}
+
+.btn-secundario {
+  background-color: var(--color-superficie-hover);
+  color: var(--color-texto);
+  border: 1px solid var(--color-borde);
+}
+.btn-secundario:hover {
+  background-color: #475569;
+}
+
+.btn-peligro {
+  background-color: var(--color-peligro);
+  color: white;
+}
+
+.btn-advertencia {
+  background-color: var(--color-advertencia);
+  color: #000000;
+}
+
+/* Tablas Paginadas */
+.tabla-contenedor {
+  width: 100%;
+  overflow-x: auto;
+  background-color: var(--color-superficie);
+  border-radius: var(--radio-lg);
+  border: 1px solid var(--color-borde);
+}
+
+.tabla-datos {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.tabla-datos th {
+  background-color: #0f172a;
+  padding: 0.85rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-texto-secundario);
+  border-bottom: 1px solid var(--color-borde);
+}
+
+.tabla-datos td {
+  padding: 0.85rem 1rem;
+  font-size: 0.95rem;
+  border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+}
+
+.tabla-datos tr:hover td {
+  background-color: rgba(51, 65, 85, 0.3);
+}
+
+/* Paginador 25/50/100 */
+.paginador-barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--color-borde);
+  background-color: var(--color-superficie);
+  border-radius: 0 0 var(--radio-lg) var(--radio-lg);
+}
+
+.selector-registros {
+  background-color: #0f172a;
+  color: var(--color-texto);
+  border: 1px solid var(--color-borde);
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--radio-sm);
+  font-size: 0.9rem;
+}
+
+/* Badges / Placas */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.badge-exito {
+  background-color: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+}
+
+.badge-peligro {
+  background-color: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+.badge-advertencia {
+  background-color: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+}
+
+/* Estilos Específicos del Punto de Venta (PDV Modo Cajero) */
+.modo-pdv {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 1.25rem;
+  height: calc(100vh - 96px);
+}
+
+.pdv-panel-venta {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-lg);
+  overflow: hidden;
+}
+
+.pdv-buscador-barra {
+  padding: 1rem;
+  border-bottom: 1px solid var(--color-borde);
+  background-color: #0b1120;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.input-escaner {
+  flex: 1;
+  background-color: #1e293b;
+  border: 2px solid var(--color-acento);
+  color: #ffffff;
+  padding: 0.85rem 1.25rem;
+  border-radius: var(--radio-md);
+  font-size: 1.15rem;
+  font-family: var(--fuente-numerica);
+}
+
+.input-escaner:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
+}
+
+.pdv-lista-articulos {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+.pdv-panel-cobro {
+  background-color: #0b1120;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-lg);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.total-caja-display {
+  background: linear-gradient(135deg, #064e3b, #022c22);
+  border: 2px solid var(--color-primario);
+  border-radius: var(--radio-lg);
+  padding: 1.5rem;
+  text-align: right;
+  margin-bottom: 1rem;
+}
+
+.total-caja-monto {
+  font-size: 2.8rem;
+  font-weight: 800;
+  color: #34d399;
+  font-family: var(--fuente-numerica);
+  line-height: 1;
+}
+
+/* Scrollbar personalizada */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
