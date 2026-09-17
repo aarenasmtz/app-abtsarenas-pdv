@@ -11,6 +11,8 @@ import {
 } from 'lucide-react';
 import { useStoreCarritoPdv } from '../modules/pdv/storeCarrito';
 import { useEscanerCodigoBarras } from '../hooks/useEscanerCodigoBarras';
+import { servicioProductos } from '../modules/productos/servicioProductos';
+import type { ResultadoBusquedaPdvDto } from '../modules/productos/tipos';
 
 interface PropiedadesDisenoPdv {
   onVolverAAdmin: () => void;
@@ -22,7 +24,10 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
   servidorEnLinea
 }) => {
   const [codigoInput, setCodigoInput] = useState('');
-  const [mensajeNotificacion, setMensajeNotificacion] = useState<string | null>(null);
+  const [mensajeNotificacion, setMensajeNotificacion] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
+  const [resultadosPredictivos, setResultadosPredictivos] = useState<ResultadoBusquedaPdvDto[]>([]);
+  const [mostrarDropdown, setMostrarDropdown] = useState(false);
+  const [buscando, setBuscando] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -48,23 +53,93 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
     inputRef.current?.focus();
   }, []);
 
-  const procesarCodigoBarras = (codigo: string) => {
-    if (!codigo) return;
-    
-    // Simulación de lectura rápida o consulta
+  // Búsqueda predictiva con debounce mientras el cajero escribe
+  useEffect(() => {
+    const termino = codigoInput.trim();
+    if (termino.length < 2) {
+      setResultadosPredictivos([]);
+      setMostrarDropdown(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        setBuscando(true);
+        const resultados = await servicioProductos.buscarPdv(termino, 10);
+        setResultadosPredictivos(resultados);
+        setMostrarDropdown(resultados.length > 0);
+      } catch {
+        setResultadosPredictivos([]);
+      } finally {
+        setBuscando(false);
+      }
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [codigoInput]);
+
+  const agregarDesdePredictivo = (producto: ResultadoBusquedaPdvDto) => {
     agregarArticulo({
-      idProducto: Math.floor(Math.random() * 1000) + 1,
-      codigoBarras: codigo,
-      descripcion: `Artículo Código ${codigo}`,
+      idProducto: producto.idProducto,
+      codigoBarras: producto.codigoBarras,
+      descripcion: producto.descripcion,
       cantidad: 1,
-      precioUnitario: 25.00,
-      permiteVentaFraccionada: false,
-      existenciaDisponible: 50,
+      precioUnitario: producto.precioVenta,
+      permiteVentaFraccionada: producto.permiteVentaFraccionada,
+      existenciaDisponible: producto.existenciaActual,
     });
 
-    setMensajeNotificacion(`Producto agregado: ${codigo}`);
+    setMensajeNotificacion({
+      tipo: 'exito',
+      texto: `✓ ${producto.descripcion} agregado ($${producto.precioVenta.toFixed(2)})`
+    });
     setTimeout(() => setMensajeNotificacion(null), 2500);
     setCodigoInput('');
+    setMostrarDropdown(false);
+    inputRef.current?.focus();
+  };
+
+  const procesarCodigoBarras = async (codigo: string) => {
+    const codigoLimpio = codigo?.trim();
+    if (!codigoLimpio) return;
+
+    try {
+      // 1. Consulta ultrarrápida por código de barras (<50ms, sin imágenes ni costos)
+      const producto = await servicioProductos.buscarPorCodigoBarras(codigoLimpio);
+      agregarArticulo({
+        idProducto: producto.idProducto,
+        codigoBarras: producto.codigoBarras,
+        descripcion: producto.descripcion,
+        cantidad: 1,
+        precioUnitario: producto.precioVenta,
+        permiteVentaFraccionada: producto.permiteVentaFraccionada,
+        existenciaDisponible: producto.existenciaActual,
+      });
+
+      setMensajeNotificacion({
+        tipo: 'exito',
+        texto: `✓ ${producto.descripcion} ($${producto.precioVenta.toFixed(2)})`
+      });
+    } catch {
+      // 2. Si no coincide exactamente, revisar si hay coincidencia predictiva única
+      try {
+        const coincidencias = await servicioProductos.buscarPdv(codigoLimpio, 2);
+        if (coincidencias.length === 1) {
+          agregarDesdePredictivo(coincidencias[0]);
+          return;
+        }
+      } catch {}
+
+      setMensajeNotificacion({
+        tipo: 'error',
+        texto: `⚠️ Producto con código '${codigoLimpio}' no encontrado en el catálogo.`
+      });
+    } finally {
+      setTimeout(() => setMensajeNotificacion(null), 3000);
+      setCodigoInput('');
+      setMostrarDropdown(false);
+      inputRef.current?.focus();
+    }
   };
 
   const manejarEnvioManual = (e: React.FormEvent) => {
@@ -120,14 +195,14 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
       {/* Notificación rápida flotante */}
       {mensajeNotificacion && (
         <div style={{
-          backgroundColor: 'var(--color-primario)',
+          backgroundColor: mensajeNotificacion.tipo === 'exito' ? 'var(--color-exito)' : 'var(--color-peligro)',
           color: 'white',
           padding: '0.5rem 1rem',
           textAlign: 'center',
           fontWeight: 600,
           fontSize: '0.9rem'
         }}>
-          {mensajeNotificacion}
+          {mensajeNotificacion.texto}
         </div>
       )}
 
@@ -136,7 +211,7 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
         <div className="modo-pdv">
           {/* Panel Izquierdo: Escáner y lista de partidas */}
           <div className="pdv-panel-venta">
-            <div className="pdv-buscador-barra">
+            <div className="pdv-buscador-barra" style={{ position: 'relative' }}>
               <form onSubmit={manejarEnvioManual} style={{ flex: 1, display: 'flex', gap: '0.75rem' }}>
                 <div style={{ position: 'relative', flex: 1 }}>
                   <Barcode 
@@ -148,10 +223,71 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
                     type="text"
                     className="input-escaner input-escaner-permitido"
                     style={{ paddingLeft: '44px', width: '100%' }}
-                    placeholder="Escanea el código de barras o escribe para buscar..."
+                    placeholder="Escanea el código de barras o escribe para buscar producto..."
                     value={codigoInput}
                     onChange={(e) => setCodigoInput(e.target.value)}
                   />
+                  {buscando && (
+                    <div style={{ position: 'absolute', right: '12px', top: '16px', fontSize: '0.75rem', color: 'var(--color-primario-hover)' }}>
+                      Buscando...
+                    </div>
+                  )}
+
+                  {/* Dropdown Predictivo Ultrarrápido (CERO IMÁGENES) */}
+                  {mostrarDropdown && resultadosPredictivos.length > 0 && (
+                    <div 
+                      style={{
+                        position: 'absolute',
+                        top: 'calc(100% + 6px)',
+                        left: 0,
+                        right: 0,
+                        zIndex: 100,
+                        backgroundColor: '#1e293b',
+                        border: '1px solid var(--color-borde)',
+                        borderRadius: 'var(--radio-md)',
+                        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.6)',
+                        maxHeight: '320px',
+                        overflowY: 'auto'
+                      }}
+                    >
+                      {resultadosPredictivos.map((p) => (
+                        <div
+                          key={p.idProducto}
+                          style={{
+                            padding: '0.75rem 1rem',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            cursor: 'pointer',
+                            borderBottom: '1px solid rgba(255,255,255,0.05)',
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.06)')}
+                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                          onClick={() => agregarDesdePredictivo(p)}
+                        >
+                          <div>
+                            <div style={{ fontWeight: 600, color: '#f8fafc', fontSize: '0.95rem' }}>
+                              {p.descripcion}
+                            </div>
+                            <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.2rem', alignItems: 'center' }}>
+                              <span className="mono" style={{ fontSize: '0.8rem', color: 'var(--color-primario-hover)' }}>
+                                {p.codigoBarras}
+                              </span>
+                              <span className="badge badge-secundario" style={{ fontSize: '0.65rem' }}>
+                                {p.categoria}
+                              </span>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--color-texto-secundario)' }}>
+                                Stock: <strong className="mono">{p.existenciaActual} {p.permiteVentaFraccionada ? 'kg' : 'pza'}</strong>
+                              </span>
+                            </div>
+                          </div>
+                          <div className="mono font-bold" style={{ color: '#34d399', fontSize: '1.15rem' }}>
+                            ${p.precioVenta.toFixed(2)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <button type="submit" className="btn btn-primario" style={{ padding: '0 1.5rem' }}>
                   <Search size={18} />

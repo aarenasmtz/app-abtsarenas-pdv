@@ -66,6 +66,11 @@ public class ContextoPrincipal : DbContext, IContextoPrincipal
                 .WithMany(u => u.Productos)
                 .HasForeignKey(e => e.IdUnidadMedida)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            entidad.HasOne(e => e.ProveedorPredeterminado)
+                .WithMany()
+                .HasForeignKey(e => e.IdProveedorPredeterminado)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         // Mapeo CodigoBarras
@@ -241,6 +246,16 @@ public class ContextoPrincipal : DbContext, IContextoPrincipal
         {
             entidad.ToTable("UsuarioRoles");
             entidad.HasKey(e => e.IdUsuarioRol);
+
+            entidad.HasOne(e => e.Usuario)
+                .WithMany()
+                .HasForeignKey(e => e.IdUsuario)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entidad.HasOne(e => e.Rol)
+                .WithMany()
+                .HasForeignKey(e => e.IdRol)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // Mapeo Caja y Turnos

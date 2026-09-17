@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import { DisenoAdmin } from './layouts/DisenoAdmin';
 import { DisenoPdv } from './layouts/DisenoPdv';
-import { TablaPaginada } from './components/comun/TablaPaginada';
 import { PantallaLogin } from './modules/autenticacion/PantallaLogin';
 import { PantallaUsuarios } from './modules/usuarios/PantallaUsuarios';
 import { PantallaAuditoria } from './modules/auditoria/PantallaAuditoria';
+import { PantallaProductos } from './modules/productos/PantallaProductos';
 import { useStoreAutenticacion } from './modules/autenticacion/storeAutenticacion';
-import type { ResultadoPaginado } from './types/comun';
 import clienteApi from './api/clienteApi';
 import { CheckCircle, AlertTriangle, Database, TrendingUp, Package, Users } from 'lucide-react';
 
@@ -28,10 +27,6 @@ export function App() {
   const [moduloActivo, setModuloActivo] = useState('dashboard');
   const [servidorEnLinea, setServidorEnLinea] = useState<boolean>(false);
   const [diagnostico, setDiagnostico] = useState<InfoDiagnostico | null>(null);
-
-  // Estado para la tabla paginada de demostración de productos
-  const [paginaActual, setPaginaActual] = useState(1);
-  const [registrosPorPagina, setRegistrosPorPagina] = useState<25 | 50 | 100>(25);
 
   // Inicializar sesión guardada
   useEffect(() => {
@@ -73,23 +68,6 @@ export function App() {
       />
     );
   }
-
-  // Datos de demostración para el catálogo de productos
-  const datosDemostracion: ResultadoPaginado<{ id: number; codigo: string; descripcion: string; precio: number; stock: number; categoria: string }> = {
-    paginaActual,
-    registrosPorPagina,
-    totalRegistros: diagnostico?.estadisticas.totalProductos || 3586,
-    totalPaginas: Math.ceil((diagnostico?.estadisticas.totalProductos || 3586) / registrosPorPagina),
-    tienePaginaAnterior: paginaActual > 1,
-    tienePaginaSiguiente: true,
-    elementos: [
-      { id: 1, codigo: '7501055310884', descripcion: 'COCA COLA 600ML NO RETORNABLE', precio: 19.00, stock: 45, categoria: 'Refrescos' },
-      { id: 2, codigo: '7501000111209', descripcion: 'LECHE LALA ENTERA 1L TETRAPAK', precio: 28.50, stock: 24, categoria: 'Lácteos' },
-      { id: 3, codigo: '7501030424513', descripcion: 'SABRITAS ORIGINAL 45G', precio: 18.00, stock: 32, categoria: 'Botanas' },
-      { id: 4, codigo: '7501000153100', descripcion: 'PAN BLANCO BIMBO GRANDE 680G', precio: 45.00, stock: 15, categoria: 'Panadería' },
-      { id: 5, codigo: '7501008001014', descripcion: 'ACEITE 1-2-3 VEGETAL 1L', precio: 38.00, stock: 18, categoria: 'Abarrotes' },
-    ]
-  };
 
   return (
     <DisenoAdmin
@@ -155,16 +133,17 @@ export function App() {
           <div className="tarjeta" style={{ marginBottom: '1.5rem' }}>
             <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <CheckCircle size={20} color="var(--color-primario)" />
-              <span>Fase 3 — Autenticación JWT, Usuarios, Roles y Auditoría Activa</span>
+              <span>Fase 4 — Catálogo Maestro de Productos, Buscador PDV y Soporte de Imágenes</span>
             </h3>
             <p style={{ color: 'var(--color-texto-secundario)', lineHeight: 1.6, marginBottom: '1rem' }}>
-              La autenticación mediante JWT Bearer está activa. Los usuarios cuentan con roles estrictos (Administrador, Cajero, Supervisor) y cada evento relevante genera un registro detallado en la bitácora de auditoría con el usuario extraído del token criptográfico.
+              Catálogo administrativo completo con paginación server-side (25/50/100 registros), filtros dinámicos por categoría y marca, auditoría granular de cambio de precios, cálculo automático de margen de utilidad, buscador predictivo ultrarrápido (&lt;50ms) y separación estricta de imágenes para no sobrecargar el PDV.
             </p>
             <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-              <span className="badge badge-exito">JWT Bearer Auth</span>
-              <span className="badge badge-exito">BCrypt Password Hashing</span>
-              <span className="badge badge-exito">Auditoría Granular (BitacoraAuditoria)</span>
-              <span className="badge badge-exito">Control de Acceso por Roles</span>
+              <span className="badge badge-exito">Paginación Server-Side (25/50/100)</span>
+              <span className="badge badge-exito">Escáner de Caja &lt;50ms (Sin Imágenes)</span>
+              <span className="badge badge-exito">Buscador Predictivo PDV</span>
+              <span className="badge badge-exito">Auditoría Precios Granular</span>
+              <span className="badge badge-exito">Almacenamiento Local de Imágenes</span>
               <span className="badge badge-advertencia">Nomenclatura 100% en Español</span>
             </div>
           </div>
@@ -175,37 +154,7 @@ export function App() {
 
       {moduloActivo === 'auditoria' && <PantallaAuditoria />}
 
-      {moduloActivo === 'productos' && (
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-            <div>
-              <h3 style={{ margin: 0 }}>Catálogo de Productos</h3>
-              <p style={{ fontSize: '0.85rem', color: 'var(--color-texto-secundario)', marginTop: '0.25rem' }}>
-                Gestión administrativa con soporte de imágenes y paginación server-side.
-              </p>
-            </div>
-            <button className="btn btn-primario">
-              + Nuevo Producto
-            </button>
-          </div>
-
-          <TablaPaginada
-            columnas={[
-              { clave: 'codigo', titulo: 'Código de Barras' },
-              { clave: 'descripcion', titulo: 'Descripción del Artículo' },
-              { clave: 'categoria', titulo: 'Categoría' },
-              { clave: 'precio', titulo: 'Precio Venta', renderizar: (p) => <span className="mono font-bold">${p.precio.toFixed(2)}</span> },
-              { clave: 'stock', titulo: 'Existencia', renderizar: (p) => <span className="badge badge-exito mono">{p.stock} pza</span> },
-            ]}
-            resultado={datosDemostracion}
-            onCambiarPagina={(p) => setPaginaActual(p)}
-            onCambiarRegistrosPorPagina={(tam) => {
-              setRegistrosPorPagina(tam);
-              setPaginaActual(1);
-            }}
-          />
-        </div>
-      )}
+      {moduloActivo === 'productos' && <PantallaProductos />}
 
       {moduloActivo !== 'dashboard' && moduloActivo !== 'productos' && moduloActivo !== 'usuarios' && moduloActivo !== 'auditoria' && (
         <div className="tarjeta" style={{ textAlign: 'center', padding: '4rem 1rem' }}>
