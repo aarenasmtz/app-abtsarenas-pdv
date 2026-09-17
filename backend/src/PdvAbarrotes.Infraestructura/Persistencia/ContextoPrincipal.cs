@@ -19,6 +19,10 @@ public class ContextoPrincipal : DbContext, IContextoPrincipal
     public DbSet<Marca> Marcas => Set<Marca>();
     public DbSet<UnidadMedida> UnidadesMedida => Set<UnidadMedida>();
     public DbSet<Inventario> Inventarios => Set<Inventario>();
+    public DbSet<TipoMovimientoInventario> TiposMovimientoInventario => Set<TipoMovimientoInventario>();
+    public DbSet<MovimientoInventario> MovimientosInventario => Set<MovimientoInventario>();
+    public DbSet<AjusteInventario> AjustesInventario => Set<AjusteInventario>();
+    public DbSet<DetalleAjusteInventario> DetalleAjustesInventario => Set<DetalleAjusteInventario>();
     public DbSet<Venta> Ventas => Set<Venta>();
     public DbSet<DetalleVenta> DetalleVentas => Set<DetalleVenta>();
     public DbSet<VentaPago> VentaPagos => Set<VentaPago>();
@@ -119,6 +123,70 @@ public class ContextoPrincipal : DbContext, IContextoPrincipal
                 .WithMany(p => p.Inventarios)
                 .HasForeignKey(e => e.IdProducto)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Mapeo TiposMovimientoInventario
+        modelBuilder.Entity<TipoMovimientoInventario>(entidad =>
+        {
+            entidad.ToTable("TiposMovimientoInventario");
+            entidad.HasKey(e => e.IdTipoMovimiento);
+        });
+
+        // Mapeo MovimientosInventario (Kardex)
+        modelBuilder.Entity<MovimientoInventario>(entidad =>
+        {
+            entidad.ToTable("MovimientosInventario");
+            entidad.HasKey(e => e.IdMovimientoInventario);
+            entidad.Property(e => e.CantidadAnterior).HasPrecision(18, 4);
+            entidad.Property(e => e.CantidadMovimiento).HasPrecision(18, 4);
+            entidad.Property(e => e.CantidadNueva).HasPrecision(18, 4);
+            entidad.Property(e => e.PrecioCosto).HasPrecision(18, 2);
+
+            entidad.HasOne(e => e.Producto)
+                .WithMany()
+                .HasForeignKey(e => e.IdProducto)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entidad.HasOne(e => e.TipoMovimiento)
+                .WithMany()
+                .HasForeignKey(e => e.IdTipoMovimiento)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entidad.HasOne(e => e.Usuario)
+                .WithMany()
+                .HasForeignKey(e => e.IdUsuario)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // Mapeo AjustesInventario
+        modelBuilder.Entity<AjusteInventario>(entidad =>
+        {
+            entidad.ToTable("AjustesInventario");
+            entidad.HasKey(e => e.IdAjusteInventario);
+
+            entidad.HasOne(e => e.Usuario)
+                .WithMany()
+                .HasForeignKey(e => e.IdUsuario)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Mapeo DetalleAjustesInventario
+        modelBuilder.Entity<DetalleAjusteInventario>(entidad =>
+        {
+            entidad.ToTable("DetalleAjustesInventario");
+            entidad.HasKey(e => e.IdDetalleAjuste);
+            entidad.Property(e => e.Cantidad).HasPrecision(18, 4);
+            entidad.Property(e => e.PrecioCosto).HasPrecision(18, 2);
+
+            entidad.HasOne(e => e.AjusteInventario)
+                .WithMany(a => a.Detalles)
+                .HasForeignKey(e => e.IdAjusteInventario)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entidad.HasOne(e => e.Producto)
+                .WithMany()
+                .HasForeignKey(e => e.IdProducto)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // Mapeo Ventas
