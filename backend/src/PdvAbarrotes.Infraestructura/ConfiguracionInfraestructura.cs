@@ -39,6 +39,7 @@ public static class ConfiguracionInfraestructura
         servicios.AddScoped<IServicioInventario, ServicioInventario>();
         servicios.AddScoped<IServicioVentas, ServicioVentas>();
         servicios.AddScoped<IServicioTicketsPendientes, ServicioTicketsPendientes>();
+        servicios.AddScoped<IServicioCaja, ServicioCaja>();
         servicios.AddScoped<IProveedorRecargas, ProveedorRecargasPendiente>();
         servicios.AddScoped<IProveedorServicios, ProveedorServiciosPendiente>();
 

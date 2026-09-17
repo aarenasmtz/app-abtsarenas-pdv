@@ -11,8 +11,8 @@
 | **Fase 7: Escáner de Código de Barras HID y Granel** | ✅ | ✅ | ✅ | ✅ | **Completado** |
 | **Fase 8: Pagos Mixtos** | ✅ | ✅ | ✅ | ✅ | **Completado** |
 | **Fase 9: Tickets en Espera / Pendientes** | ✅ | ✅ | ✅ | ✅ | **Completado** |
-| **Fase 10: Control de Caja y Cortes X/Z** | ✅ | ⏳ | ⏳ | ⏳ | Siguiente Fase |
-| **Fase 11: Proveedores y Compras** | ✅ | ⏳ | ⏳ | ⏳ | Pendiente |
+| **Fase 10: Control de Caja y Cortes X/Z** | ✅ | ✅ | ✅ | ✅ | **Completado** |
+| **Fase 11: Proveedores y Compras** | ✅ | ⏳ | ⏳ | ⏳ | Siguiente Fase |
 | **Fase 12: Dashboard y Reportes Gerenciales** | ✅ | ⏳ | ⏳ | ⏳ | Pendiente |
 | **Fase 13: Pedido Sugerido Dominical** | ✅ | ⏳ | ⏳ | ⏳ | Pendiente |
 | **Fase 14: Recargas y Servicios (Interfaces)** | ⏳ | ⏳ | ⏳ | ⏳ | Pendiente Prov. |

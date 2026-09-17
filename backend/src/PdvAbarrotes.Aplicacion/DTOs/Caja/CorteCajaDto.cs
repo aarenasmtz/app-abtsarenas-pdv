@@ -1,14 +1,16 @@
-namespace PdvAbarrotes.Dominio.Entidades;
+namespace PdvAbarrotes.Aplicacion.DTOs.Caja;
 
 /// <summary>
-/// Corte de caja (cierre financiero y balance de turno). Mapea a dbo.CortesCaja.
+/// DTO con los datos de un corte de caja registrado en el historial.
 /// </summary>
-public class CorteCaja
+public class CorteCajaDto
 {
     public int IdCorteCaja { get; set; }
     public int IdTurnoCaja { get; set; }
     public int IdCaja { get; set; }
+    public string NombreCaja { get; set; } = string.Empty;
     public int IdUsuario { get; set; }
+    public string NombreUsuario { get; set; } = string.Empty;
     public DateTime FechaCorte { get; set; }
     public string TipoCorte { get; set; } = "Z";
     public decimal MontoInicial { get; set; }
@@ -22,8 +24,4 @@ public class CorteCaja
     public decimal TotalContado { get; set; }
     public decimal Diferencia { get; set; }
     public string? Observaciones { get; set; }
-
-    public virtual TurnoCaja? TurnoCaja { get; set; }
-    public virtual Caja? Caja { get; set; }
-    public virtual Usuario? Usuario { get; set; }
 }
