@@ -28,6 +28,7 @@ public class ContextoPrincipal : DbContext, IContextoPrincipal
     public DbSet<Proveedor> Proveedores => Set<Proveedor>();
     public DbSet<Usuario> Usuarios => Set<Usuario>();
     public DbSet<Rol> Roles => Set<Rol>();
+    public DbSet<UsuarioRol> UsuarioRoles => Set<UsuarioRol>();
     public DbSet<Caja> Cajas => Set<Caja>();
     public DbSet<TurnoCaja> TurnosCaja => Set<TurnoCaja>();
     public DbSet<CorteCaja> CortesCaja => Set<CorteCaja>();
@@ -234,6 +235,12 @@ public class ContextoPrincipal : DbContext, IContextoPrincipal
         {
             entidad.ToTable("Roles");
             entidad.HasKey(e => e.IdRol);
+        });
+
+        modelBuilder.Entity<UsuarioRol>(entidad =>
+        {
+            entidad.ToTable("UsuarioRoles");
+            entidad.HasKey(e => e.IdUsuarioRol);
         });
 
         // Mapeo Caja y Turnos

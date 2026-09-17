@@ -5,14 +5,17 @@ import {
   Layers, 
   ShoppingCart, 
   Users, 
+  UserCheck,
   Truck, 
   DollarSign, 
   BarChart3, 
   ShieldCheck, 
   Settings, 
   Store,
-  Wifi
+  Wifi,
+  LogOut
 } from 'lucide-react';
+import { useStoreAutenticacion } from '../modules/autenticacion/storeAutenticacion';
 
 interface PropiedadesDisenoAdmin {
   moduloActivo: string;
@@ -29,11 +32,14 @@ export const DisenoAdmin: React.FC<PropiedadesDisenoAdmin> = ({
   servidorEnLinea,
   children,
 }) => {
+  const { usuario, cerrarSesion } = useStoreAutenticacion();
+
   const elementosMenu = [
     { id: 'dashboard', etiqueta: 'Dashboard', icono: LayoutDashboard },
     { id: 'productos', etiqueta: 'Productos', icono: Package },
     { id: 'inventario', etiqueta: 'Inventario & Kardex', icono: Layers },
     { id: 'caja', etiqueta: 'Control de Caja', icono: DollarSign },
+    { id: 'usuarios', etiqueta: 'Usuarios & Cajeros', icono: UserCheck },
     { id: 'compras', etiqueta: 'Compras', icono: ShoppingCart },
     { id: 'clientes', etiqueta: 'Clientes', icono: Users },
     { id: 'proveedores', etiqueta: 'Proveedores', icono: Truck },
@@ -56,7 +62,7 @@ export const DisenoAdmin: React.FC<PropiedadesDisenoAdmin> = ({
           </div>
         </div>
 
-        {/* Botón directo para ingresar a cobrar al PDV */}
+        {/* Botón directo para entrar a cobrar al PDV */}
         <div style={{ padding: '1rem 0.75rem 0.25rem 0.75rem' }}>
           <button 
             className="btn btn-primario" 
@@ -108,12 +114,22 @@ export const DisenoAdmin: React.FC<PropiedadesDisenoAdmin> = ({
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <span style={{ fontSize: '0.9rem', color: 'var(--color-texto-secundario)' }}>
-              Sucursal Matriz | Caja 1
-            </span>
-            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--color-superficie-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
-              A
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>{usuario?.nombreCompleto || 'Usuario'}</div>
+              <span className="badge badge-advertencia" style={{ fontSize: '0.7rem' }}>
+                {usuario?.rol || 'Administrador'}
+              </span>
             </div>
+
+            <button
+              className="btn btn-secundario"
+              style={{ padding: '0.4rem 0.65rem', gap: '0.4rem', fontSize: '0.85rem' }}
+              onClick={cerrarSesion}
+              title="Cerrar Sesión"
+            >
+              <LogOut size={16} />
+              <span>Salir</span>
+            </button>
           </div>
         </header>
 

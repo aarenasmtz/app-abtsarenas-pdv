@@ -23,6 +23,7 @@ public interface IContextoPrincipal
     DbSet<Proveedor> Proveedores { get; }
     DbSet<Usuario> Usuarios { get; }
     DbSet<Rol> Roles { get; }
+    DbSet<UsuarioRol> UsuarioRoles { get; }
     DbSet<Caja> Cajas { get; }
     DbSet<TurnoCaja> TurnosCaja { get; }
     DbSet<CorteCaja> CortesCaja { get; }

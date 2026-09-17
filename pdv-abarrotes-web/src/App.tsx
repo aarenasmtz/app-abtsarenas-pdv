@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react';
 import { DisenoAdmin } from './layouts/DisenoAdmin';
 import { DisenoPdv } from './layouts/DisenoPdv';
 import { TablaPaginada } from './components/comun/TablaPaginada';
+import { PantallaLogin } from './modules/autenticacion/PantallaLogin';
+import { PantallaUsuarios } from './modules/usuarios/PantallaUsuarios';
+import { PantallaAuditoria } from './modules/auditoria/PantallaAuditoria';
+import { useStoreAutenticacion } from './modules/autenticacion/storeAutenticacion';
 import type { ResultadoPaginado } from './types/comun';
 import clienteApi from './api/clienteApi';
 import { CheckCircle, AlertTriangle, Database, TrendingUp, Package, Users } from 'lucide-react';
@@ -19,14 +23,20 @@ interface InfoDiagnostico {
 }
 
 export function App() {
+  const { estaAutenticado, cargarSesionInicial } = useStoreAutenticacion();
   const [modo, setModo] = useState<'pdv' | 'admin'>('admin');
   const [moduloActivo, setModuloActivo] = useState('dashboard');
   const [servidorEnLinea, setServidorEnLinea] = useState<boolean>(false);
   const [diagnostico, setDiagnostico] = useState<InfoDiagnostico | null>(null);
 
-  // Estado de ejemplo para la tabla paginada (regla 25/50/100)
+  // Estado para la tabla paginada de demostración de productos
   const [paginaActual, setPaginaActual] = useState(1);
   const [registrosPorPagina, setRegistrosPorPagina] = useState<25 | 50 | 100>(25);
+
+  // Inicializar sesión guardada
+  useEffect(() => {
+    cargarSesionInicial();
+  }, [cargarSesionInicial]);
 
   // Verificar conexión con la API y SQL Server
   useEffect(() => {
@@ -49,7 +59,22 @@ export function App() {
     return () => clearInterval(intervalo);
   }, []);
 
-  // Datos de ejemplo para demostrar la tabla paginada de productos
+  // Si no está autenticado, mostrar pantalla de inicio de sesión
+  if (!estaAutenticado) {
+    return <PantallaLogin />;
+  }
+
+  // Si está en modo Punto de Venta (caja rápida)
+  if (modo === 'pdv') {
+    return (
+      <DisenoPdv 
+        onVolverAAdmin={() => setModo('admin')} 
+        servidorEnLinea={servidorEnLinea} 
+      />
+    );
+  }
+
+  // Datos de demostración para el catálogo de productos
   const datosDemostracion: ResultadoPaginado<{ id: number; codigo: string; descripcion: string; precio: number; stock: number; categoria: string }> = {
     paginaActual,
     registrosPorPagina,
@@ -65,15 +90,6 @@ export function App() {
       { id: 5, codigo: '7501008001014', descripcion: 'ACEITE 1-2-3 VEGETAL 1L', precio: 38.00, stock: 18, categoria: 'Abarrotes' },
     ]
   };
-
-  if (modo === 'pdv') {
-    return (
-      <DisenoPdv 
-        onVolverAAdmin={() => setModo('admin')} 
-        servidorEnLinea={servidorEnLinea} 
-      />
-    );
-  }
 
   return (
     <DisenoAdmin
@@ -139,21 +155,25 @@ export function App() {
           <div className="tarjeta" style={{ marginBottom: '1.5rem' }}>
             <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <CheckCircle size={20} color="var(--color-primario)" />
-              <span>Fase 2 — Arquitectura Base Conectada (.NET 9 + React + SQL Server)</span>
+              <span>Fase 3 — Autenticación JWT, Usuarios, Roles y Auditoría Activa</span>
             </h3>
             <p style={{ color: 'var(--color-texto-secundario)', lineHeight: 1.6, marginBottom: '1rem' }}>
-              La solución está configurada con arquitectura limpia, controladores y entidades en español, paginación server-side estricta (25/50/100), soporte de pagos múltiples y lector de código de barras para la tienda de abarrotes.
+              La autenticación mediante JWT Bearer está activa. Los usuarios cuentan con roles estrictos (Administrador, Cajero, Supervisor) y cada evento relevante genera un registro detallado en la bitácora de auditoría con el usuario extraído del token criptográfico.
             </p>
             <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-              <span className="badge badge-exito">.NET 9 Web API</span>
-              <span className="badge badge-exito">React 19 + TypeScript + Vite</span>
-              <span className="badge badge-exito">SQL Server 2022 (PdvAbarrotesArenas)</span>
-              <span className="badge badge-exito">Snapshot Isolation Habilitado</span>
+              <span className="badge badge-exito">JWT Bearer Auth</span>
+              <span className="badge badge-exito">BCrypt Password Hashing</span>
+              <span className="badge badge-exito">Auditoría Granular (BitacoraAuditoria)</span>
+              <span className="badge badge-exito">Control de Acceso por Roles</span>
               <span className="badge badge-advertencia">Nomenclatura 100% en Español</span>
             </div>
           </div>
         </div>
       )}
+
+      {moduloActivo === 'usuarios' && <PantallaUsuarios />}
+
+      {moduloActivo === 'auditoria' && <PantallaAuditoria />}
 
       {moduloActivo === 'productos' && (
         <div>
@@ -187,7 +207,7 @@ export function App() {
         </div>
       )}
 
-      {moduloActivo !== 'dashboard' && moduloActivo !== 'productos' && (
+      {moduloActivo !== 'dashboard' && moduloActivo !== 'productos' && moduloActivo !== 'usuarios' && moduloActivo !== 'auditoria' && (
         <div className="tarjeta" style={{ textAlign: 'center', padding: '4rem 1rem' }}>
           <AlertTriangle size={48} style={{ color: 'var(--color-advertencia)', marginBottom: '1rem', opacity: 0.8 }} />
           <h3>Módulo '{moduloActivo}' Preparado para Implementación en Fase Siguiente</h3>
