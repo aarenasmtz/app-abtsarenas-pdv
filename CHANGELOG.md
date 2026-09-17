@@ -4,6 +4,22 @@ Todas las modificaciones notables a este proyecto serán documentadas en este ar
 
 ---
 
+## [Fase 8] - 2026-09-17
+### Agregado
+- Pagos Mixtos y Catálogo de Métodos de Pago:
+  - Soporte integral de múltiples métodos de pago combinados en una sola transacción atómica:
+    - Entidades `MetodoPago` (`CodigoMetodo`, `Descripcion`, `RequiereReferencia`, `Activo`) y `VentaPago` mapeadas en `ContextoPrincipal` con relación explícita a `dbo.MetodosPago`.
+    - DTO `MetodoPagoDto` expuesto a través de `GET /api/v1/ventas/metodos-pago` en `VentasController`.
+    - Regla contable estricta en `ServicioVentas.cs`:
+      - La suma de pagos con métodos no en efectivo (tarjeta, vales o transferencia) no puede exceder el total de la venta, previniendo disposición o cambio fraudulento de efectivo no autorizado.
+      - El cambio se calcula estrictamente a partir del excedente entregado en efectivo: $\text{Cambio} = \max(0, \text{SumaEfectivo} - (\text{Total} - \text{SumaNoEfectivo}))$.
+      - En `dbo.VentaPagos` se registra cada método con su importe neto aplicado, asegurando que la sumatoria de pagos registrados sea idéntica al total de la venta ($\sum \text{Importe} = \text{Total}$).
+    - 4 nuevas pruebas unitarias en `PruebasPagosMixtos.cs`: pago mixto exacto, pago mixto con cambio de efectivo, rechazo por tarjeta excesiva y rechazo por monto insuficiente. Suite de backend con 33 pruebas exitosas (100% de aprobación).
+  - Frontend React 19 en `ModalCobro.tsx`:
+    - Selector dual de modo: **Cobro Directo** (flujo ultra rápido en efectivo/tarjeta con billetes $50, $100, $200, $500 y Exacto) vs **Pago Mixto** (combinar varios métodos).
+    - Modo Pago Mixto con interfaz interactiva: desglose de pagos con insignias y botón de eliminación, formulario con botón rápido "Asignar Restante ($X.XX)", barra visual de progreso de cobertura (ámbar/verde), indicador reactivo de faltante y cambio en efectivo.
+    - Teclado numérico táctil en pantalla y atajo global `Enter` para finalizar venta una vez cubierta al 100%.
+
 ## [Fase 7] - 2026-09-17
 ### Agregado
 - Escáner de Código de Barras HID, Retroalimentación Auditiva (Web Audio) y Pesaje de Granel:
