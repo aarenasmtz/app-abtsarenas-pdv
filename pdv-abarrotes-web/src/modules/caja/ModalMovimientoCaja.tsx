@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowDownCircle, ArrowUpCircle, AlertCircle, Check, X, Loader2, DollarSign } from 'lucide-react';
+import { DollarSign, ArrowDownRight, ArrowUpRight, AlertCircle, Check, Loader2, X } from 'lucide-react';
 import { servicioCaja } from './servicioCaja';
-import type { TurnoCajaDto, MovimientoCajaDto } from './tiposCaja';
+import type { TurnoCajaDto } from './tiposCaja';
 import { reproducirBeepExito, reproducirBeepError } from '../../utils/sonidosPdv';
 
 interface PropiedadesModalMovimientoCaja {
   abierto: boolean;
   turno: TurnoCajaDto | null;
   onCerrar: () => void;
-  onMovimientoRegistrado: (movimiento: MovimientoCajaDto) => void;
+  onMovimientoRegistrado: () => void;
 }
 
 export const ModalMovimientoCaja: React.FC<PropiedadesModalMovimientoCaja> = ({
@@ -17,45 +17,57 @@ export const ModalMovimientoCaja: React.FC<PropiedadesModalMovimientoCaja> = ({
   onCerrar,
   onMovimientoRegistrado
 }) => {
-  const [tipo, setTipo] = useState<'ENTRADA' | 'SALIDA'>('SALIDA');
+  const [tipo, setTipo] = useState<'ENTRADA' | 'SALIDA'>('ENTRADA');
   const [montoTexto, setMontoTexto] = useState<string>('');
-  const [descripcion, setDescripcion] = useState<string>('');
+  const [motivo, setMotivo] = useState<string>('');
   const [cargando, setCargando] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-
   const inputMontoRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (abierto) {
       setMontoTexto('');
-      setDescripcion('');
+      setMotivo('');
       setError(null);
       setTimeout(() => {
         inputMontoRef.current?.focus();
-      }, 100);
+      }, 150);
     }
   }, [abierto]);
 
+  // Atajo para cerrar con Escape
+  useEffect(() => {
+    if (!abierto) return;
+    const manejarTecla = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onCerrar();
+      }
+    };
+    window.addEventListener('keydown', manejarTecla);
+    return () => window.removeEventListener('keydown', manejarTecla);
+  }, [abierto, onCerrar]);
+
   if (!abierto || !turno) return null;
 
-  const handleRegistrar = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     const monto = parseFloat(montoTexto);
+
     if (isNaN(monto) || monto <= 0) {
-      setError('Ingresa un monto válido mayor a $0.00');
+      setError('Ingresa un monto válido mayor a $0.00.');
       reproducirBeepError();
       return;
     }
 
-    if (!descripcion.trim()) {
-      setError('Ingresa el motivo o concepto del movimiento.');
+    if (!motivo.trim()) {
+      setError('Debes especificar el motivo o justificación del movimiento.');
       reproducirBeepError();
       return;
     }
 
     if (tipo === 'SALIDA' && monto > turno.efectivoActualEnCaja) {
-      setError(`Fondos insuficientes. Solo hay $${turno.efectivoActualEnCaja.toFixed(2)} en efectivo en caja.`);
+      setError(`No hay suficiente efectivo en caja. Disponible: $${turno.efectivoActualEnCaja.toFixed(2)}.`);
       reproducirBeepError();
       return;
     }
@@ -68,12 +80,12 @@ export const ModalMovimientoCaja: React.FC<PropiedadesModalMovimientoCaja> = ({
         idTurnoCaja: turno.idTurnoCaja,
         tipoMovimiento: tipo,
         monto,
-        descripcion: descripcion.trim()
+        descripcion: motivo.trim()
       });
 
-      if (resp.exito && resp.datos) {
+      if (resp.exito) {
         reproducirBeepExito();
-        onMovimientoRegistrado(resp.datos);
+        onMovimientoRegistrado();
         onCerrar();
       } else {
         reproducirBeepError();
@@ -89,132 +101,204 @@ export const ModalMovimientoCaja: React.FC<PropiedadesModalMovimientoCaja> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-fadeIn">
-      <div className="bg-slate-900 border border-slate-700 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+    <div className="modal-overlay">
+      <div 
+        className="modal-contenido"
+        style={{
+          maxWidth: '520px',
+          backgroundColor: '#ffffff',
+          borderRadius: '18px',
+          boxShadow: '0 25px 60px -15px rgba(15, 23, 42, 0.25)',
+          border: '1px solid #e2e8f0',
+          overflow: 'hidden'
+        }}
+      >
         {/* Cabecera */}
-        <div className="bg-slate-800 px-6 py-4 flex items-center justify-between border-b border-slate-700">
-          <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-xl ${tipo === 'ENTRADA' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
-              <DollarSign className="w-6 h-6" />
+        <div style={{
+          padding: '1.25rem 1.5rem',
+          backgroundColor: '#f8fafc',
+          borderBottom: '1px solid #e2e8f0',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{
+              padding: '0.5rem',
+              borderRadius: '10px',
+              backgroundColor: tipo === 'ENTRADA' ? '#ecfdf5' : '#fef2f2',
+              color: tipo === 'ENTRADA' ? '#059669' : '#dc2626',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <DollarSign size={22} />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white">Movimiento de Caja</h2>
-              <p className="text-xs text-slate-400">
-                Turno #{turno.idTurnoCaja} • {turno.nombreCaja} • Efectivo Actual: ${turno.efectivoActualEnCaja.toFixed(2)}
+              <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>
+                Movimiento de Caja
+              </h2>
+              <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>
+                Turno #{turno.idTurnoCaja} • {turno.nombreCaja} • Efectivo: <strong>${turno.efectivoActualEnCaja.toFixed(2)}</strong>
               </p>
             </div>
           </div>
           <button
             onClick={onCerrar}
             disabled={cargando}
-            className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
+            style={{ background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', padding: '0.35rem' }}
+            title="Cerrar (Esc)"
           >
-            <X className="w-5 h-5" />
+            <X size={20} />
           </button>
         </div>
 
-        {/* Selector de Tipo */}
-        <div className="p-6 flex flex-col gap-5">
+        {/* Formulario */}
+        <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           {error && (
-            <div className="p-3 bg-rose-500/20 border border-rose-500/40 rounded-xl flex items-center gap-2 text-rose-300 text-sm">
-              <AlertCircle className="w-5 h-5 shrink-0" />
+            <div style={{
+              padding: '0.75rem 1rem',
+              backgroundColor: '#fef2f2',
+              border: '1px solid #fecaca',
+              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              color: '#b91c1c',
+              fontSize: '0.9rem'
+            }}>
+              <AlertCircle size={18} />
               <span>{error}</span>
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
+          {/* Selector de Tipo */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
             <button
               type="button"
               onClick={() => setTipo('ENTRADA')}
-              className={`p-3 rounded-xl border flex items-center justify-center gap-2 font-bold transition-all ${
-                tipo === 'ENTRADA'
-                  ? 'bg-emerald-600 border-emerald-400 text-white shadow-lg shadow-emerald-950/40 scale-[1.02]'
-                  : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200'
-              }`}
+              style={{
+                padding: '0.85rem',
+                borderRadius: '12px',
+                border: tipo === 'ENTRADA' ? '2px solid #059669' : '1px solid #e2e8f0',
+                backgroundColor: tipo === 'ENTRADA' ? '#ecfdf5' : '#ffffff',
+                color: tipo === 'ENTRADA' ? '#065f46' : '#64748b',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                fontWeight: 700,
+                fontSize: '0.95rem',
+                cursor: 'pointer'
+              }}
             >
-              <ArrowDownCircle className="w-5 h-5 text-emerald-300" />
-              <span>ENTRADA (Ingreso)</span>
+              <ArrowDownRight size={18} />
+              <span>Entrada (+Efectivo)</span>
             </button>
 
             <button
               type="button"
               onClick={() => setTipo('SALIDA')}
-              className={`p-3 rounded-xl border flex items-center justify-center gap-2 font-bold transition-all ${
-                tipo === 'SALIDA'
-                  ? 'bg-rose-600 border-rose-400 text-white shadow-lg shadow-rose-950/40 scale-[1.02]'
-                  : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200'
-              }`}
+              style={{
+                padding: '0.85rem',
+                borderRadius: '12px',
+                border: tipo === 'SALIDA' ? '2px solid #dc2626' : '1px solid #e2e8f0',
+                backgroundColor: tipo === 'SALIDA' ? '#fef2f2' : '#ffffff',
+                color: tipo === 'SALIDA' ? '#991b1b' : '#64748b',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                fontWeight: 700,
+                fontSize: '0.95rem',
+                cursor: 'pointer'
+              }}
             >
-              <ArrowUpCircle className="w-5 h-5 text-rose-300" />
-              <span>SALIDA (Retiro)</span>
+              <ArrowUpRight size={18} />
+              <span>Salida (-Retiro/Gasto)</span>
             </button>
           </div>
 
-          <form onSubmit={handleRegistrar} className="flex flex-col gap-4">
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
-                Monto del Movimiento ($)
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
+                Importe del Movimiento ($)
               </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 font-bold text-2xl">
+              <div style={{ position: 'relative' }}>
+                <div style={{ position: 'absolute', left: '16px', top: '10px', fontSize: '1.4rem', fontWeight: 800, color: tipo === 'ENTRADA' ? '#059669' : '#dc2626' }}>
                   $
                 </div>
                 <input
                   ref={inputMontoRef}
                   type="number"
                   step="0.50"
-                  min="0"
+                  min="0.50"
                   value={montoTexto}
                   onChange={(e) => setMontoTexto(e.target.value)}
                   disabled={cargando}
                   placeholder="0.00"
-                  className="w-full bg-slate-800 border-2 border-slate-700 focus:border-cyan-500 rounded-xl pl-10 pr-4 py-3 text-3xl font-extrabold text-white focus:outline-none"
+                  style={{
+                    width: '100%',
+                    padding: '0.65rem 1rem 0.65rem 2.75rem',
+                    borderRadius: '12px',
+                    border: `2px solid ${tipo === 'ENTRADA' ? '#10b981' : '#f87171'}`,
+                    backgroundColor: tipo === 'ENTRADA' ? '#f0fdf4' : '#fff1f2',
+                    color: tipo === 'ENTRADA' ? '#047857' : '#991b1b',
+                    fontSize: '1.8rem',
+                    fontWeight: 800,
+                    fontFamily: 'var(--fuente-numerica)'
+                  }}
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
-                Concepto / Motivo
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
+                Motivo / Justificación
               </label>
               <input
                 type="text"
-                value={descripcion}
-                onChange={(e) => setDescripcion(e.target.value)}
+                value={motivo}
+                onChange={(e) => setMotivo(e.target.value)}
                 disabled={cargando}
-                placeholder={tipo === 'ENTRADA' ? 'Ej. Cambio aportado por gerencia' : 'Ej. Pago a proveedor de panadería'}
-                className="w-full bg-slate-800 border border-slate-700 focus:border-cyan-500 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none"
+                placeholder={tipo === 'ENTRADA' ? 'Ej. Cambio adicional de banco, fondo extra...' : 'Ej. Pago de refrescos, pago de pan, retiro a dueño...'}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '10px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#f8fafc',
+                  color: '#0f172a',
+                  fontSize: '0.95rem'
+                }}
               />
             </div>
 
-            {/* Botones de acción */}
-            <div className="flex gap-3 pt-3">
+            <div style={{ display: 'flex', gap: '0.75rem', paddingTop: '0.5rem' }}>
               <button
                 type="button"
                 onClick={onCerrar}
                 disabled={cargando}
-                className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl"
+                className="btn btn-secundario"
+                style={{ flex: 1, padding: '0.85rem' }}
               >
-                Cancelar
+                Cancelar (Esc)
               </button>
               <button
                 type="submit"
                 disabled={cargando}
-                className={`flex-2 py-3 font-bold text-white rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all ${
-                  tipo === 'ENTRADA'
-                    ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-950/40'
-                    : 'bg-rose-600 hover:bg-rose-500 shadow-rose-950/40'
-                }`}
+                className={tipo === 'ENTRADA' ? 'btn btn-primario' : 'btn btn-peligro'}
+                style={{ flex: 2, padding: '0.85rem', fontSize: '1rem', gap: '0.5rem' }}
               >
                 {cargando ? (
                   <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    <span>Registrando...</span>
+                    <Loader2 size={18} className="spinner" />
+                    <span>Guardando...</span>
                   </>
                 ) : (
                   <>
-                    <Check className="w-5 h-5" />
-                    <span>Confirmar {tipo === 'ENTRADA' ? 'Ingreso' : 'Retiro'}</span>
+                    <Check size={18} />
+                    <span>Confirmar {tipo === 'ENTRADA' ? 'Entrada' : 'Salida'}</span>
                   </>
                 )}
               </button>

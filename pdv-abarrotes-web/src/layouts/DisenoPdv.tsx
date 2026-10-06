@@ -11,7 +11,9 @@ import {
   Printer,
   DollarSign,
   Calculator,
-  Layers
+  Layers,
+  Zap,
+  Package
 } from 'lucide-react';
 import { useStoreCarritoPdv } from '../modules/pdv/storeCarrito';
 import { useEscanerCodigoBarras } from '../hooks/useEscanerCodigoBarras';
@@ -22,6 +24,8 @@ import { ModalTicket } from '../modules/pdv/ModalTicket';
 import { ModalReimpresion } from '../modules/pdv/ModalReimpresion';
 import { ModalPesajeGranel } from '../modules/pdv/ModalPesajeGranel';
 import { ModalTicketsPendientes } from '../modules/pdv/ModalTicketsPendientes';
+import { ModalBuscarProductos } from '../modules/pdv/ModalBuscarProductos';
+import { PantallaRecargasYServicios } from '../modules/servicios/PantallaRecargasYServicios';
 import { servicioTicketsPendientes } from '../modules/ventas/servicioTicketsPendientes';
 import { ModalAbrirTurno } from '../modules/caja/ModalAbrirTurno';
 import { ModalMovimientoCaja } from '../modules/caja/ModalMovimientoCaja';
@@ -66,6 +70,8 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
   const [mostrarModalReimpresion, setMostrarModalReimpresion] = useState(false);
   const [mostrarModalGranel, setMostrarModalGranel] = useState(false);
   const [mostrarModalTicketsPendientes, setMostrarModalTicketsPendientes] = useState(false);
+  const [mostrarModalBuscarProductos, setMostrarModalBuscarProductos] = useState(false);
+  const [mostrarModalRecargas, setMostrarModalRecargas] = useState(false);
   const [mostrarDialogoPonerEnEspera, setMostrarDialogoPonerEnEspera] = useState(false);
   const [identificadorClienteEspera, setIdentificadorClienteEspera] = useState('');
   const [conteoTicketsPendientes, setConteoTicketsPendientes] = useState(0);
@@ -85,10 +91,48 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
     },
   });
 
-  // Mantener foco en el input del escáner
+  // Mantener foco en el input del escáner al cargar
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  // Auto-foco permanente en el escáner al hacer clic fuera de elementos interactivos
+  useEffect(() => {
+    const mantenerFocoEscaner = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      const esInteractivo = target?.closest('button, input, select, textarea, [role="button"], .th-sortable, table');
+      const hayModalAbierto = 
+        mostrarModalCobro || 
+        mostrarModalTicket || 
+        mostrarModalReimpresion || 
+        mostrarModalGranel || 
+        mostrarModalTicketsPendientes || 
+        mostrarDialogoPonerEnEspera || 
+        mostrarModalAbrirTurno || 
+        mostrarModalMovimientoCaja || 
+        mostrarModalCorteCaja ||
+        mostrarModalBuscarProductos ||
+        mostrarModalRecargas;
+
+      if (!esInteractivo && !hayModalAbierto) {
+        inputRef.current?.focus();
+      }
+    };
+    window.addEventListener('click', mantenerFocoEscaner);
+    return () => window.removeEventListener('click', mantenerFocoEscaner);
+  }, [
+    mostrarModalCobro,
+    mostrarModalTicket,
+    mostrarModalReimpresion,
+    mostrarModalGranel,
+    mostrarModalTicketsPendientes,
+    mostrarDialogoPonerEnEspera,
+    mostrarModalAbrirTurno,
+    mostrarModalMovimientoCaja,
+    mostrarModalCorteCaja,
+    mostrarModalBuscarProductos,
+    mostrarModalRecargas
+  ]);
 
   // Consultar conteo de tickets pendientes en espera
   const refrescarConteoTicketsPendientes = useCallback(async () => {
@@ -133,11 +177,29 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
     }
   }, [turnoActual, articulos.length]);
 
-  // Escuchar atajos de teclado globales (C/P/F12 Cobrar Efectivo, T Tarjeta, M Mixto, F10 Mov Caja, F9 Corte X/Z, F8 Reimprimir, F7 Pendientes, F6 En Espera, F4 Limpiar)
+  // Escuchar atajos de teclado globales (C/P/F12 Cobrar Efectivo, T Tarjeta, M Mixto, F10 Mov Caja, F9 Corte X/Z, F8 Reimprimir, F7 Pendientes, F6 En Espera, F4 Limpiar, F3/F2 Catálogo, Esc Salir)
   useEffect(() => {
     const manejarTeclasGlobales = (e: KeyboardEvent) => {
+      // 1. Tecla Escape: Cerrar cualquier modal que esté abierto y devolver foco al escáner
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setMostrarModalCobro(false);
+        setMostrarModalTicket(false);
+        setMostrarModalReimpresion(false);
+        setMostrarModalGranel(false);
+        setMostrarModalTicketsPendientes(false);
+        setMostrarDialogoPonerEnEspera(false);
+        setMostrarModalAbrirTurno(false);
+        setMostrarModalMovimientoCaja(false);
+        setMostrarModalCorteCaja(false);
+        setMostrarModalBuscarProductos(false);
+        setMostrarModalRecargas(false);
+        setTimeout(() => inputRef.current?.focus(), 60);
+        return;
+      }
+
       // Si algún modal o diálogo está abierto, no interceptar teclas generales del mostrador
-      if (
+      const hayModalAbierto = 
         mostrarModalCobro || 
         mostrarModalTicket || 
         mostrarModalReimpresion || 
@@ -146,19 +208,76 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
         mostrarDialogoPonerEnEspera || 
         mostrarModalAbrirTurno || 
         mostrarModalMovimientoCaja || 
-        mostrarModalCorteCaja
-      ) {
+        mostrarModalCorteCaja ||
+        mostrarModalBuscarProductos ||
+        mostrarModalRecargas;
+
+      if (hayModalAbierto) {
         return;
       }
 
+      // 2. Teclas de Función F1-F12 (Funcionan de forma DIRECTA e INDEPENDIENTE)
+      if (e.key === 'F12') {
+        e.preventDefault();
+        abrirCobro('efectivo');
+        return;
+      }
+
+      if (e.key === 'F10') {
+        e.preventDefault();
+        if (turnoActual) setMostrarModalMovimientoCaja(true);
+        else setMostrarModalAbrirTurno(true);
+        return;
+      }
+
+      if (e.key === 'F9') {
+        e.preventDefault();
+        if (turnoActual) setMostrarModalCorteCaja(true);
+        else setMostrarModalAbrirTurno(true);
+        return;
+      }
+
+      if (e.key === 'F8') {
+        e.preventDefault();
+        setMostrarModalReimpresion(true);
+        return;
+      }
+
+      if (e.key === 'F7') {
+        e.preventDefault();
+        setMostrarModalTicketsPendientes(true);
+        return;
+      }
+
+      if (e.key === 'F6') {
+        e.preventDefault();
+        if (articulos.length > 0) {
+          setIdentificadorClienteEspera('');
+          setMostrarDialogoPonerEnEspera(true);
+        }
+        return;
+      }
+
+      if (e.key === 'F4') {
+        e.preventDefault();
+        if (articulos.length > 0) {
+          limpiarCarrito();
+        }
+        return;
+      }
+
+      if (e.key === 'F3' || e.key === 'F2') {
+        e.preventDefault();
+        setMostrarModalBuscarProductos(true);
+        return;
+      }
+
+      // 3. Teclas de Cobro Rápido (C, P, T, M, Enter) cuando no se está escribiendo en el buscador
       const target = e.target as HTMLElement | null;
       const estaEnInput = target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.isContentEditable;
       const esInputEscanerVacio = target === inputRef.current && codigoInput.trim() === '';
 
-      if (e.key === 'F12') {
-        e.preventDefault();
-        abrirCobro('efectivo');
-      } else if (articulos.length > 0 && (!estaEnInput || esInputEscanerVacio)) {
+      if (articulos.length > 0 && (!estaEnInput || esInputEscanerVacio)) {
         if (e.key === 'c' || e.key === 'C' || e.key === 'p' || e.key === 'P') {
           e.preventDefault();
           abrirCobro('efectivo');
@@ -171,37 +290,6 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
         } else if (e.key === 'Enter' && esInputEscanerVacio) {
           e.preventDefault();
           abrirCobro('efectivo');
-        }
-      } else if (e.key === 'F10') {
-        e.preventDefault();
-        if (turnoActual) {
-          setMostrarModalMovimientoCaja(true);
-        } else {
-          setMostrarModalAbrirTurno(true);
-        }
-      } else if (e.key === 'F9') {
-        e.preventDefault();
-        if (turnoActual) {
-          setMostrarModalCorteCaja(true);
-        } else {
-          setMostrarModalAbrirTurno(true);
-        }
-      } else if (e.key === 'F8') {
-        e.preventDefault();
-        setMostrarModalReimpresion(true);
-      } else if (e.key === 'F7') {
-        e.preventDefault();
-        setMostrarModalTicketsPendientes(true);
-      } else if (e.key === 'F6') {
-        e.preventDefault();
-        if (articulos.length > 0) {
-          setIdentificadorClienteEspera('');
-          setMostrarDialogoPonerEnEspera(true);
-        }
-      } else if (e.key === 'F4') {
-        e.preventDefault();
-        if (articulos.length > 0) {
-          limpiarCarrito();
         }
       }
     };
@@ -221,7 +309,9 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
     mostrarDialogoPonerEnEspera, 
     mostrarModalAbrirTurno, 
     mostrarModalMovimientoCaja, 
-    mostrarModalCorteCaja
+    mostrarModalCorteCaja,
+    mostrarModalBuscarProductos,
+    mostrarModalRecargas
   ]);
 
   const handleVentaCompletada = (venta: VentaRealizada) => {
@@ -480,16 +570,17 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
   const cantidadArticulos = obtenerCantidadArticulos();
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#090d16' }}>
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--color-fondo)' }}>
       {/* Barra de estado superior del cajero */}
       <header style={{ 
-        height: '56px', 
-        backgroundColor: '#0f172a', 
+        height: '58px', 
+        backgroundColor: 'var(--color-superficie)', 
         borderBottom: '1px solid var(--color-borde)',
         display: 'flex', 
         alignItems: 'center', 
         justifyContent: 'space-between',
-        padding: '0 1.5rem'
+        padding: '0 1.5rem',
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <button 
@@ -501,7 +592,7 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
             <span>Volver a Administración</span>
           </button>
           
-          <h1 style={{ fontSize: '1.15rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <h1 style={{ fontSize: '1.15rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-texto)', margin: 0 }}>
             <span>PUNTO DE VENTA</span>
             {turnoActual ? (
               <button
@@ -527,7 +618,26 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
           </h1>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+          {/* Botón de Recargas y Servicios */}
+          <button 
+            className="btn btn-secundario" 
+            style={{ 
+              padding: '0.4rem 0.75rem', 
+              fontSize: '0.85rem', 
+              gap: '0.4rem', 
+              borderColor: '#3b82f6', 
+              backgroundColor: 'rgba(59, 130, 246, 0.08)',
+              color: '#2563eb',
+              fontWeight: 600
+            }}
+            onClick={() => setMostrarModalRecargas(true)}
+            title="Venta de tiempo aire y pago de servicios (CFE, Telmex, etc.)"
+          >
+            <Zap size={16} />
+            <span>Recargas y Servicios</span>
+          </button>
+
           {/* Botón Movimiento de Caja (Entrada/Salida) */}
           <button 
             className="btn btn-secundario" 
@@ -565,7 +675,7 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
               gap: '0.4rem',
               borderColor: conteoTicketsPendientes > 0 ? '#f59e0b' : undefined,
               backgroundColor: conteoTicketsPendientes > 0 ? 'rgba(245, 158, 11, 0.15)' : undefined,
-              color: conteoTicketsPendientes > 0 ? '#fbbf24' : undefined,
+              color: conteoTicketsPendientes > 0 ? '#d97706' : undefined,
               fontWeight: conteoTicketsPendientes > 0 ? 700 : 500
             }}
             onClick={() => setMostrarModalTicketsPendientes(true)}
@@ -693,6 +803,16 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
                     </div>
                   )}
                 </div>
+                <button 
+                  type="button" 
+                  className="btn btn-secundario" 
+                  style={{ padding: '0 1.25rem', gap: '0.4rem', fontWeight: 600 }}
+                  onClick={() => setMostrarModalBuscarProductos(true)}
+                  title="Abrir catálogo y búsqueda avanzada de productos (F3)"
+                >
+                  <Package size={18} />
+                  <span>Catálogo (F3)</span>
+                </button>
                 <button type="submit" className="btn btn-primario" style={{ padding: '0 1.5rem' }}>
                   <Search size={18} />
                   <span>Agregar</span>
@@ -992,20 +1112,20 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
             style={{ 
               maxWidth: '440px', 
               width: '90%', 
-              backgroundColor: '#111827', 
-              borderRadius: '12px',
-              border: '1px solid #374151',
-              padding: '1.5rem',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)'
+              backgroundColor: '#ffffff', 
+              borderRadius: '16px',
+              border: '1px solid #e2e8f0',
+              padding: '1.75rem',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.2)'
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-              <Clock size={22} color="#f59e0b" />
-              <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#f3f4f6' }}>Poner Venta en Espera</h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.75rem' }}>
+              <Clock size={24} color="#d97706" />
+              <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#0f172a', fontWeight: 700 }}>Poner Venta en Espera</h3>
             </div>
             
-            <p style={{ margin: '0 0 1rem', fontSize: '0.85rem', color: '#9ca3af' }}>
-              Total: <strong style={{ color: '#38bdf8' }}>${totalVenta.toFixed(2)}</strong> ({cantidadArticulos} artículo(s)).
+            <p style={{ margin: '0 0 1rem', fontSize: '0.9rem', color: '#64748b', lineHeight: 1.5 }}>
+              Total: <strong style={{ color: '#0284c7' }}>${totalVenta.toFixed(2)}</strong> ({cantidadArticulos} artículo(s)).
               Ingresa una referencia o nombre para reconocer al cliente cuando regrese.
             </p>
 
@@ -1029,11 +1149,12 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
                 width: '100%',
                 padding: '0.75rem 1rem',
                 borderRadius: '8px',
-                border: '1px solid #374151',
-                backgroundColor: '#1f2937',
-                color: '#fff',
-                fontSize: '0.95rem',
-                marginBottom: '1.25rem'
+                border: '1.5px solid #cbd5e1',
+                backgroundColor: '#f8fafc',
+                color: '#0f172a',
+                fontSize: '1rem',
+                marginBottom: '1.25rem',
+                outline: 'none'
               }}
             />
 
@@ -1044,16 +1165,8 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
                   setMostrarDialogoPonerEnEspera(false);
                   inputRef.current?.focus();
                 }}
-                style={{
-                  padding: '0.55rem 1rem',
-                  borderRadius: '6px',
-                  border: '1px solid #4b5563',
-                  backgroundColor: '#374151',
-                  color: '#d1d5db',
-                  fontSize: '0.85rem',
-                  fontWeight: 600,
-                  cursor: 'pointer'
-                }}
+                className="btn btn-secundario"
+                style={{ padding: '0.6rem 1.15rem', fontSize: '0.9rem' }}
               >
                 Cancelar (Esc)
               </button>
@@ -1061,20 +1174,94 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
               <button
                 type="button"
                 onClick={handleConfirmarPonerEnEspera}
+                className="btn btn-primario"
                 style={{
-                  padding: '0.55rem 1.25rem',
-                  borderRadius: '6px',
-                  border: 'none',
-                  backgroundColor: '#f59e0b',
-                  color: '#000',
-                  fontSize: '0.85rem',
+                  padding: '0.6rem 1.25rem',
+                  fontSize: '0.9rem',
                   fontWeight: 700,
-                  cursor: 'pointer'
+                  backgroundColor: '#d97706',
+                  borderColor: '#d97706',
+                  color: '#ffffff'
                 }}
               >
                 Guardar en Espera (Enter)
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Búsqueda Avanzada / Catálogo de Productos (F3) */}
+      <ModalBuscarProductos
+        abierto={mostrarModalBuscarProductos}
+        onCerrar={() => {
+          setMostrarModalBuscarProductos(false);
+          inputRef.current?.focus();
+        }}
+        onSeleccionarProducto={(p) => {
+          if (p.permiteVentaFraccionada) {
+            setProductoGranelSeleccionado(p);
+            setMostrarModalGranel(true);
+            reproducirBeepExito();
+          } else {
+            agregarArticulo({
+              idProducto: p.idProducto,
+              codigoBarras: p.codigoBarras,
+              descripcion: p.descripcion,
+              cantidad: 1,
+              precioUnitario: p.precioVenta,
+              permiteVentaFraccionada: false,
+              existenciaDisponible: p.existenciaActual,
+            });
+            reproducirBeepExito();
+            setMensajeNotificacion({
+              tipo: 'exito',
+              texto: `✓ ${p.descripcion} ($${p.precioVenta.toFixed(2)})`
+            });
+            setTimeout(() => setMensajeNotificacion(null), 2500);
+          }
+          setMostrarModalBuscarProductos(false);
+          inputRef.current?.focus();
+        }}
+      />
+
+      {/* Modal de Recargas Electrónicas y Pago de Servicios */}
+      {mostrarModalRecargas && (
+        <div className="modal-overlay" style={{ zIndex: 1200 }}>
+          <div 
+            className="modal-contenido"
+            style={{ 
+              maxWidth: '1000px', 
+              width: '95%', 
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              backgroundColor: '#ffffff',
+              borderRadius: '16px',
+              padding: '1.5rem',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              border: '1px solid #e2e8f0',
+              position: 'relative'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Zap size={24} color="#2563eb" />
+                <h2 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a' }}>Recargas Electrónicas y Pago de Servicios</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setMostrarModalRecargas(false);
+                  inputRef.current?.focus();
+                }}
+                className="btn btn-secundario"
+                style={{ padding: '0.35rem 0.75rem', fontSize: '0.85rem' }}
+              >
+                Cerrar (Esc)
+              </button>
+            </div>
+
+            <PantallaRecargasYServicios />
           </div>
         </div>
       )}

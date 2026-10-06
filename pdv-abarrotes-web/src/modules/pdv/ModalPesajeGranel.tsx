@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Scale, Check, X } from 'lucide-react';
 import type { ProductoCobroDto } from '../productos/tipos';
 
@@ -16,31 +16,72 @@ export const ModalPesajeGranel: React.FC<PropiedadesModalPesajeGranel> = ({
   onCerrar
 }) => {
   const [pesoTexto, setPesoTexto] = useState<string>('0.500');
+  const [importeTexto, setImporteTexto] = useState<string>('0.00');
+  const inputPesoRef = useRef<HTMLInputElement>(null);
 
+  // Inicializar al abrir
   useEffect(() => {
     if (abierto && producto) {
-      setPesoTexto(
-        producto.cantidadSugerida && producto.cantidadSugerida > 0
-          ? producto.cantidadSugerida.toFixed(3)
-          : '0.500'
-      );
+      const pesoInicial = producto.cantidadSugerida && producto.cantidadSugerida > 0
+        ? producto.cantidadSugerida
+        : 0.500;
+      setPesoTexto(pesoInicial.toFixed(3));
+      const sub = Math.round(pesoInicial * producto.precioVenta * 100) / 100;
+      setImporteTexto(sub.toFixed(2));
+
+      setTimeout(() => {
+        inputPesoRef.current?.focus();
+        inputPesoRef.current?.select();
+      }, 100);
     }
   }, [abierto, producto]);
 
-  const pesoKg = useMemo(() => {
-    const parsed = parseFloat(pesoTexto);
-    return isNaN(parsed) || parsed < 0 ? 0 : parsed;
-  }, [pesoTexto]);
+  // Manejar cambio directo en Kilogramos
+  const handleCambioPeso = (valorStr: string) => {
+    setPesoTexto(valorStr);
+    const p = parseFloat(valorStr);
+    if (!isNaN(p) && p >= 0 && producto) {
+      const imp = Math.round(p * producto.precioVenta * 100) / 100;
+      setImporteTexto(imp.toFixed(2));
+    } else {
+      setImporteTexto('0.00');
+    }
+  };
 
-  const subtotalCalculado = useMemo(() => {
-    if (!producto) return 0;
-    return Math.round(pesoKg * producto.precioVenta * 100) / 100;
-  }, [pesoKg, producto]);
+  // Manejar cambio directo en Dinero / Importe ($)
+  // Ej: Quieren $50 de chicharrón a $190/kg -> peso = 50 / 190 = 0.263 kg
+  const handleCambioImporte = (valorStr: string) => {
+    setImporteTexto(valorStr);
+    const imp = parseFloat(valorStr);
+    if (!isNaN(imp) && imp >= 0 && producto && producto.precioVenta > 0) {
+      const p = Math.round((imp / producto.precioVenta) * 1000) / 1000;
+      setPesoTexto(p.toFixed(3));
+    } else {
+      setPesoTexto('0.000');
+    }
+  };
+
+  const seleccionarPorcion = (kg: number) => {
+    if (!producto) return;
+    setPesoTexto(kg.toFixed(3));
+    const imp = Math.round(kg * producto.precioVenta * 100) / 100;
+    setImporteTexto(imp.toFixed(2));
+  };
+
+  const seleccionarImporte = (dinero: number) => {
+    if (!producto || producto.precioVenta <= 0) return;
+    setImporteTexto(dinero.toFixed(2));
+    const kg = Math.round((dinero / producto.precioVenta) * 1000) / 1000;
+    setPesoTexto(kg.toFixed(3));
+  };
+
+  const pesoNumerico = parseFloat(pesoTexto) || 0;
+  const subtotalNumerico = parseFloat(importeTexto) || 0;
 
   const handleConfirmar = useCallback(() => {
-    if (pesoKg <= 0 || !producto) return;
-    onConfirmarPeso(producto, pesoKg);
-  }, [pesoKg, producto, onConfirmarPeso]);
+    if (pesoNumerico <= 0 || !producto) return;
+    onConfirmarPeso(producto, pesoNumerico);
+  }, [pesoNumerico, producto, onConfirmarPeso]);
 
   // Atajos de teclado (Enter para confirmar, Esc para cancelar)
   useEffect(() => {
@@ -52,7 +93,7 @@ export const ModalPesajeGranel: React.FC<PropiedadesModalPesajeGranel> = ({
         onCerrar();
       } else if (e.key === 'Enter') {
         e.preventDefault();
-        if (pesoKg > 0) {
+        if (pesoNumerico > 0) {
           handleConfirmar();
         }
       }
@@ -60,218 +101,270 @@ export const ModalPesajeGranel: React.FC<PropiedadesModalPesajeGranel> = ({
 
     window.addEventListener('keydown', manejarTecla);
     return () => window.removeEventListener('keydown', manejarTecla);
-  }, [abierto, pesoKg, onCerrar, handleConfirmar]);
+  }, [abierto, pesoNumerico, onCerrar, handleConfirmar]);
 
   if (!abierto || !producto) return null;
 
   return (
-    <div className="modal-overlay" style={{ zIndex: 1250 }}>
+    <div className="modal-overlay">
       <div 
         className="modal-contenido" 
         style={{ 
-          maxWidth: '480px', 
+          maxWidth: '520px', 
           width: '95%', 
-          backgroundColor: '#111827', 
-          color: '#f9fafb',
-          borderRadius: '16px',
-          border: '1px solid #374151',
-          overflow: 'hidden',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)'
+          backgroundColor: '#ffffff', 
+          borderRadius: '18px',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 25px 60px -15px rgba(15, 23, 42, 0.25)',
+          overflow: 'hidden'
         }}
       >
-        {/* Cabecera */}
+        {/* Cabecera Luminosa */}
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
           padding: '1.25rem 1.5rem',
-          borderBottom: '1px solid #1f2937',
-          backgroundColor: '#1f2937'
+          borderBottom: '1px solid #e2e8f0',
+          backgroundColor: '#f8fafc'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <Scale size={24} color="#34d399" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{
+              padding: '0.5rem',
+              backgroundColor: '#ecfdf5',
+              color: '#059669',
+              borderRadius: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <Scale size={24} />
+            </div>
             <div>
-              <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700 }}>
+              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>
                 Pesaje de Producto a Granel
               </h3>
-              <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>
-                Ingresa el peso o selecciona una porción
+              <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                Ingresa por peso (kg) o por importe en dinero ($)
               </span>
             </div>
           </div>
-
           <button 
             onClick={onCerrar}
-            style={{ 
-              background: 'transparent', 
-              border: 'none', 
-              color: '#9ca3af', 
-              cursor: 'pointer' 
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#64748b',
+              cursor: 'pointer',
+              padding: '0.35rem',
+              borderRadius: '8px'
             }}
+            title="Cerrar (Esc)"
           >
             <X size={20} />
           </button>
         </div>
 
+        {/* Cuerpo del Modal */}
         <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          {/* Ficha del Producto */}
+          {/* Tarjeta del Producto */}
           <div style={{
-            padding: '1rem',
-            backgroundColor: '#1f2937',
-            borderRadius: '10px',
-            border: '1px solid #374151'
+            padding: '1rem 1.25rem',
+            backgroundColor: '#f8fafc',
+            borderRadius: '12px',
+            border: '1px solid #e2e8f0',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
           }}>
-            <h4 style={{ margin: 0, fontSize: '1.1rem', color: '#f3f4f6' }}>
-              {producto.descripcion}
-            </h4>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.4rem' }}>
-              <span style={{ fontSize: '0.85rem', color: '#9ca3af' }}>
-                Código: <strong className="mono">{producto.codigoBarras}</strong>
-              </span>
-              <span style={{ fontSize: '1.05rem', fontWeight: 700, color: '#38bdf8' }}>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: '1.15rem', color: '#0f172a' }}>
+                {producto.descripcion}
+              </div>
+              <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.2rem' }}>
+                Código: <strong className="mono" style={{ color: '#059669' }}>{producto.codigoBarras}</strong>
+              </div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 600 }}>Precio x Kilo</div>
+              <div className="mono" style={{ fontSize: '1.35rem', fontWeight: 800, color: '#2563eb' }}>
                 ${producto.precioVenta.toFixed(2)} / kg
-              </span>
+              </div>
             </div>
           </div>
 
-          {/* Botones de Porciones Rápidas */}
+          {/* Doble Campo: Peso (kg) y Total en Dinero ($) */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            {/* Campo 1: Kilogramos */}
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
+                ⚖️ Peso (Kg / Gramos)
+              </label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  ref={inputPesoRef}
+                  type="number"
+                  step="0.005"
+                  min="0.001"
+                  value={pesoTexto}
+                  onChange={(e) => handleCambioPeso(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem 2.5rem 0.75rem 1rem',
+                    fontSize: '1.6rem',
+                    fontWeight: 800,
+                    fontFamily: 'var(--fuente-numerica)',
+                    border: '2px solid #059669',
+                    borderRadius: '12px',
+                    backgroundColor: '#f0fdf4',
+                    color: '#047857'
+                  }}
+                />
+                <span style={{ position: 'absolute', right: '12px', top: '14px', fontSize: '0.9rem', fontWeight: 700, color: '#059669' }}>
+                  kg
+                </span>
+              </div>
+            </div>
+
+            {/* Campo 2: Dinero Total ($) */}
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
+                💵 Total en Dinero ($)
+              </label>
+              <div style={{ position: 'relative' }}>
+                <span style={{ position: 'absolute', left: '12px', top: '10px', fontSize: '1.4rem', fontWeight: 800, color: '#2563eb' }}>
+                  $
+                </span>
+                <input
+                  type="number"
+                  step="0.50"
+                  min="0.10"
+                  value={importeTexto}
+                  onChange={(e) => handleCambioImporte(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem 1rem 0.75rem 2.25rem',
+                    fontSize: '1.6rem',
+                    fontWeight: 800,
+                    fontFamily: 'var(--fuente-numerica)',
+                    border: '2px solid #2563eb',
+                    borderRadius: '12px',
+                    backgroundColor: '#eff6ff',
+                    color: '#1d4ed8'
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Botones de Porciones Frecuentes */}
           <div>
-            <label style={{ display: 'block', fontSize: '0.85rem', color: '#9ca3af', marginBottom: '0.5rem' }}>
-              Porciones Frecuentes
-            </label>
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#64748b', display: 'block', marginBottom: '0.4rem' }}>
+              Porciones por Peso Frecuentes:
+            </span>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
               {[
-                { etiqueta: '¼ kg', valor: '0.250' },
-                { etiqueta: '½ kg', valor: '0.500' },
-                { etiqueta: '¾ kg', valor: '0.750' },
-                { etiqueta: '1.0 kg', valor: '1.000' },
-              ].map(por => (
-                <button
-                  key={por.valor}
-                  type="button"
-                  onClick={() => setPesoTexto(por.valor)}
-                  style={{
-                    padding: '0.6rem 0.25rem',
-                    borderRadius: '8px',
-                    border: pesoTexto === por.valor ? '2px solid #10b981' : '1px solid #374151',
-                    backgroundColor: pesoTexto === por.valor ? 'rgba(16, 185, 129, 0.15)' : '#1f2937',
-                    color: pesoTexto === por.valor ? '#34d399' : '#d1d5db',
-                    fontWeight: 600,
-                    fontSize: '0.9rem',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {por.etiqueta}
-                </button>
-              ))}
+                { label: '¼ kg (250g)', valor: 0.250 },
+                { label: '½ kg (500g)', valor: 0.500 },
+                { label: '¾ kg (750g)', valor: 0.750 },
+                { label: '1.0 kg (1000g)', valor: 1.000 },
+              ].map((p) => {
+                const activo = Math.abs(pesoNumerico - p.valor) < 0.001;
+                return (
+                  <button
+                    key={p.label}
+                    type="button"
+                    onClick={() => seleccionarPorcion(p.valor)}
+                    className="btn"
+                    style={{
+                      padding: '0.6rem 0.4rem',
+                      fontSize: '0.85rem',
+                      fontWeight: 700,
+                      backgroundColor: activo ? '#ecfdf5' : '#f8fafc',
+                      color: activo ? '#059669' : '#475569',
+                      border: activo ? '2px solid #059669' : '1px solid #e2e8f0',
+                      borderRadius: '10px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {p.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Input de Peso Exacto */}
+          {/* Botones de Importes en Dinero Frecuentes */}
           <div>
-            <label style={{ display: 'block', fontSize: '0.85rem', color: '#9ca3af', marginBottom: '0.4rem' }}>
-              Peso Registrado (Kilogramos)
-            </label>
-            <div style={{ position: 'relative' }}>
-              <input
-                type="text"
-                value={pesoTexto}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/[^0-9.]/g, '');
-                  setPesoTexto(val);
-                }}
-                placeholder="0.000"
-                style={{
-                  width: '100%',
-                  padding: '0.75rem 1rem',
-                  paddingRight: '3.5rem',
-                  fontSize: '1.5rem',
-                  fontWeight: 800,
-                  textAlign: 'right',
-                  borderRadius: '8px',
-                  border: '2px solid #10b981',
-                  backgroundColor: '#1f2937',
-                  color: '#34d399'
-                }}
-                autoFocus
-              />
-              <span style={{
-                position: 'absolute',
-                right: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: '#9ca3af',
-                fontWeight: 700,
-                fontSize: '1rem'
-              }}>
-                kg
-              </span>
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#64748b', display: 'block', marginBottom: '0.4rem' }}>
+              Pedir por Dinero Exacto:
+            </span>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
+              {[10, 20, 50, 100].map((monto) => {
+                const activo = Math.abs(subtotalNumerico - monto) < 0.01;
+                return (
+                  <button
+                    key={monto}
+                    type="button"
+                    onClick={() => seleccionarImporte(monto)}
+                    className="btn"
+                    style={{
+                      padding: '0.55rem',
+                      fontSize: '0.9rem',
+                      fontWeight: 700,
+                      backgroundColor: activo ? '#eff6ff' : '#f8fafc',
+                      color: activo ? '#2563eb' : '#475569',
+                      border: activo ? '2px solid #2563eb' : '1px solid #e2e8f0',
+                      borderRadius: '10px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    ${monto}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           {/* Subtotal a Cobrar */}
           <div style={{
-            padding: '1rem',
-            borderRadius: '10px',
-            backgroundColor: '#0f172a',
-            border: '1px solid #1e293b',
+            padding: '1rem 1.25rem',
+            backgroundColor: '#f8fafc',
+            borderRadius: '12px',
+            border: '1px solid #e2e8f0',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center'
           }}>
-            <span style={{ fontSize: '0.9rem', color: '#9ca3af' }}>Subtotal de la partida:</span>
-            <span style={{ fontSize: '1.6rem', fontWeight: 800, color: '#38bdf8' }}>
-              ${subtotalCalculado.toFixed(2)}
+            <span style={{ fontSize: '0.95rem', fontWeight: 600, color: '#475569' }}>
+              Subtotal de la partida a registrar:
+            </span>
+            <span className="mono" style={{ fontSize: '1.75rem', fontWeight: 800, color: '#059669' }}>
+              ${subtotalNumerico.toFixed(2)}
             </span>
           </div>
-        </div>
 
-        {/* Botones de Acción */}
-        <div style={{
-          padding: '1rem 1.5rem',
-          backgroundColor: '#1f2937',
-          borderTop: '1px solid #374151',
-          display: 'flex',
-          justifyContent: 'flex-end',
-          gap: '0.75rem'
-        }}>
-          <button
-            type="button"
-            onClick={onCerrar}
-            style={{
-              padding: '0.65rem 1.25rem',
-              borderRadius: '8px',
-              border: '1px solid #4b5563',
-              backgroundColor: '#374151',
-              color: '#d1d5db',
-              fontWeight: 600,
-              cursor: 'pointer'
-            }}
-          >
-            Cancelar (Esc)
-          </button>
-
-          <button
-            type="button"
-            onClick={handleConfirmar}
-            disabled={pesoKg <= 0}
-            style={{
-              padding: '0.65rem 1.5rem',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: pesoKg > 0 ? '#10b981' : '#4b5563',
-              color: '#ffffff',
-              fontWeight: 700,
-              cursor: pesoKg > 0 ? 'pointer' : 'not-allowed',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              boxShadow: pesoKg > 0 ? '0 4px 12px rgba(16, 185, 129, 0.4)' : 'none'
-            }}
-          >
-            <Check size={18} />
-            <span>Agregar Partida (Enter)</span>
-          </button>
+          {/* Botones de Acción */}
+          <div style={{ display: 'flex', gap: '0.75rem', paddingTop: '0.25rem' }}>
+            <button
+              type="button"
+              onClick={onCerrar}
+              className="btn btn-secundario"
+              style={{ flex: 1, padding: '0.85rem' }}
+            >
+              Cancelar (Esc)
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirmar}
+              disabled={pesoNumerico <= 0}
+              className="btn btn-primario"
+              style={{ flex: 2, padding: '0.85rem', fontSize: '1.05rem', gap: '0.5rem' }}
+            >
+              <Check size={20} />
+              <span>Agregar Partida (Enter)</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

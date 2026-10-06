@@ -28,6 +28,7 @@ import type {
 } from '../catalogos/tipos';
 import { TablaPaginada } from '../../components/comun/TablaPaginada';
 import type { ResultadoPaginado } from '../../types/comun';
+import { useTableSort } from '../../hooks/useTableSort';
 
 export const PantallaProductos: React.FC = () => {
   // Estados de datos y paginación
@@ -40,6 +41,14 @@ export const PantallaProductos: React.FC = () => {
     tienePaginaAnterior: false,
     tienePaginaSiguiente: false,
   });
+
+  const { sortedData: productosOrdenados, sortKey, sortDirection, handleSort } = useTableSort<ProductoAdminDto>(
+    productosPaginados.elementos,
+    {
+      initialKey: null,
+      initialDirection: null
+    }
+  );
 
   const [paginaActual, setPaginaActual] = useState(1);
   const [registrosPorPagina, setRegistrosPorPagina] = useState<25 | 50 | 100>(25);
@@ -433,10 +442,14 @@ export const PantallaProductos: React.FC = () => {
       {/* Tabla Paginada de Productos */}
       <TablaPaginada<ProductoAdminDto>
         cargando={cargando}
+        sortKey={sortKey}
+        sortDirection={sortDirection}
+        onSort={handleSort}
         columnas={[
           {
             clave: 'imagen',
             titulo: 'Foto',
+            ordenable: false,
             renderizar: (p) => (
               <div 
                 style={{ 
@@ -472,9 +485,10 @@ export const PantallaProductos: React.FC = () => {
           {
             clave: 'codigoBarrasPrincipal',
             titulo: 'Código de Barras',
+            ordenable: true,
             renderizar: (p) => (
               <div>
-                <span className="mono font-bold" style={{ color: 'var(--color-primario-hover)' }}>
+                <span className="mono font-bold" style={{ color: 'var(--color-primario)' }}>
                   {p.codigoBarrasPrincipal || p.codigoProducto}
                 </span>
                 {p.codigoProducto && p.codigoProducto !== p.codigoBarrasPrincipal && (
@@ -488,9 +502,10 @@ export const PantallaProductos: React.FC = () => {
           {
             clave: 'descripcion',
             titulo: 'Descripción',
+            ordenable: true,
             renderizar: (p) => (
               <div>
-                <div style={{ fontWeight: 600, color: 'var(--color-texto-principal)' }}>
+                <div style={{ fontWeight: 600, color: 'var(--color-texto)' }}>
                   {p.descripcion}
                 </div>
                 <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.2rem' }}>
@@ -511,6 +526,8 @@ export const PantallaProductos: React.FC = () => {
           {
             clave: 'precioCosto',
             titulo: 'Costo',
+            ordenable: true,
+            alineacion: 'right',
             renderizar: (p) => (
               <span className="mono" style={{ color: 'var(--color-texto-secundario)' }}>
                 ${p.precioCosto.toFixed(2)}
@@ -520,8 +537,10 @@ export const PantallaProductos: React.FC = () => {
           {
             clave: 'precioVenta',
             titulo: 'P. Venta',
+            ordenable: true,
+            alineacion: 'right',
             renderizar: (p) => (
-              <span className="mono font-bold" style={{ color: '#34d399', fontSize: '1rem' }}>
+              <span className="mono font-bold" style={{ color: 'var(--color-primario)', fontSize: '1rem' }}>
                 ${p.precioVenta.toFixed(2)}
               </span>
             )
@@ -529,6 +548,8 @@ export const PantallaProductos: React.FC = () => {
           {
             clave: 'precioMayoreo',
             titulo: 'P. Mayoreo',
+            ordenable: true,
+            alineacion: 'right',
             renderizar: (p) => (
               <span className="mono" style={{ color: 'var(--color-acento-hover)' }}>
                 ${p.precioMayoreo.toFixed(2)}
@@ -538,6 +559,8 @@ export const PantallaProductos: React.FC = () => {
           {
             clave: 'porcentajeGanancia',
             titulo: 'Margen %',
+            ordenable: true,
+            alineacion: 'center',
             renderizar: (p) => (
               <span className="badge badge-exito mono" style={{ fontSize: '0.75rem' }}>
                 +{p.porcentajeGanancia.toFixed(1)}%
@@ -547,10 +570,12 @@ export const PantallaProductos: React.FC = () => {
           {
             clave: 'existenciaActual',
             titulo: 'Stock',
+            ordenable: true,
+            alineacion: 'center',
             renderizar: (p) => {
               const bajoStock = p.manejaInventario && p.existenciaActual <= p.existenciaMinima;
               return (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', alignItems: 'center' }}>
                   <span className={`mono font-bold ${bajoStock ? 'color-peligro' : ''}`}>
                     {p.existenciaActual} {p.permiteVentaFraccionada ? 'kg' : 'pza'}
                   </span>
@@ -566,6 +591,8 @@ export const PantallaProductos: React.FC = () => {
           {
             clave: 'activo',
             titulo: 'Estado',
+            ordenable: true,
+            alineacion: 'center',
             renderizar: (p) => (
               <span className={`badge ${p.activo ? 'badge-exito' : 'badge-peligro'}`}>
                 {p.activo ? 'Activo' : 'Inactivo'}
@@ -575,8 +602,10 @@ export const PantallaProductos: React.FC = () => {
           {
             clave: 'acciones',
             titulo: 'Acciones',
+            ordenable: false,
+            alineacion: 'center',
             renderizar: (p) => (
-              <div style={{ display: 'flex', gap: '0.4rem' }}>
+              <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'center' }}>
                 <button 
                   className="btn btn-secundario" 
                   style={{ padding: '0.35rem 0.5rem' }}
@@ -608,7 +637,10 @@ export const PantallaProductos: React.FC = () => {
             )
           }
         ]}
-        resultado={productosPaginados}
+        resultado={{
+          ...productosPaginados,
+          elementos: productosOrdenados
+        }}
         onCambiarPagina={(nuevaPagina) => setPaginaActual(nuevaPagina)}
         onCambiarRegistrosPorPagina={(nuevoTam) => {
           setRegistrosPorPagina(nuevoTam);

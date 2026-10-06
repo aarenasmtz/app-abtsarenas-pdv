@@ -44,6 +44,7 @@ export interface ProductoCobroDto {
   existenciaActual: number;
   cantidadSugerida?: number;
   esPesableConCodigo?: boolean;
+  categoria?: string;
 }
 
 /**
