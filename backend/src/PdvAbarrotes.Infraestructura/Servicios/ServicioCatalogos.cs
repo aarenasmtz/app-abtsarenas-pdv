@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using PdvAbarrotes.Aplicacion.DTOs.Catalogos;
 using PdvAbarrotes.Aplicacion.Interfaces;
 using PdvAbarrotes.Dominio.Entidades;
@@ -9,20 +10,36 @@ namespace PdvAbarrotes.Infraestructura.Servicios;
 
 /// <summary>
 /// Implementación de la gestión de catálogos generales (Categorías, Marcas, Unidades de Medida).
+/// Optimizado con IMemoryCache para respuesta instantánea (<1ms) en cajas de mostrador.
 /// </summary>
 public class ServicioCatalogos : IServicioCatalogos
 {
     private readonly ContextoPrincipal _contexto;
     private readonly IServicioAuditoria _servicioAuditoria;
+    private readonly IMemoryCache? _cache;
 
-    public ServicioCatalogos(ContextoPrincipal contexto, IServicioAuditoria servicioAuditoria)
+    private const string ClaveCacheCategorias = "cat_categorias_activas";
+    private const string ClaveCacheMarcas = "cat_marcas_activas";
+    private const string ClaveCacheUnidades = "cat_unidades_activas";
+    private static readonly TimeSpan TiempoExpiracionCache = TimeSpan.FromMinutes(30);
+
+    public ServicioCatalogos(
+        ContextoPrincipal contexto,
+        IServicioAuditoria servicioAuditoria,
+        IMemoryCache? cache = null)
     {
         _contexto = contexto;
         _servicioAuditoria = servicioAuditoria;
+        _cache = cache;
     }
 
     public async Task<IReadOnlyList<CategoriaDto>> ObtenerCategoriasAsync(bool soloActivos = false, CancellationToken cancellationToken = default)
     {
+        if (soloActivos && _cache != null && _cache.TryGetValue(ClaveCacheCategorias, out IReadOnlyList<CategoriaDto>? cacheadas) && cacheadas != null)
+        {
+            return cacheadas;
+        }
+
         var consulta = _contexto.Categorias.AsNoTracking().AsQueryable();
 
         if (soloActivos)
@@ -40,6 +57,11 @@ public class ServicioCatalogos : IServicioCatalogos
                 TotalProductos = c.Productos.Count()
             })
             .ToListAsync(cancellationToken);
+
+        if (soloActivos && _cache != null)
+        {
+            _cache.Set(ClaveCacheCategorias, (IReadOnlyList<CategoriaDto>)lista, TiempoExpiracionCache);
+        }
 
         return lista;
     }
@@ -91,6 +113,8 @@ public class ServicioCatalogos : IServicioCatalogos
             await _servicioAuditoria.RegistrarAsync("Categorias", categoria.IdCategoria, "CREAR", null, valorNuevo, cancellationToken);
         }
 
+        _cache?.Remove(ClaveCacheCategorias);
+
         return new CategoriaDto
         {
             IdCategoria = categoria.IdCategoria,
@@ -102,6 +126,11 @@ public class ServicioCatalogos : IServicioCatalogos
 
     public async Task<IReadOnlyList<MarcaDto>> ObtenerMarcasAsync(bool soloActivos = false, CancellationToken cancellationToken = default)
     {
+        if (soloActivos && _cache != null && _cache.TryGetValue(ClaveCacheMarcas, out IReadOnlyList<MarcaDto>? cacheadas) && cacheadas != null)
+        {
+            return cacheadas;
+        }
+
         var consulta = _contexto.Marcas.AsNoTracking().AsQueryable();
 
         if (soloActivos)
@@ -119,6 +148,11 @@ public class ServicioCatalogos : IServicioCatalogos
                 TotalProductos = m.Productos.Count()
             })
             .ToListAsync(cancellationToken);
+
+        if (soloActivos && _cache != null)
+        {
+            _cache.Set(ClaveCacheMarcas, (IReadOnlyList<MarcaDto>)lista, TiempoExpiracionCache);
+        }
 
         return lista;
     }
@@ -169,6 +203,8 @@ public class ServicioCatalogos : IServicioCatalogos
             await _servicioAuditoria.RegistrarAsync("Marcas", marca.IdMarca, "CREAR", null, valorNuevo, cancellationToken);
         }
 
+        _cache?.Remove(ClaveCacheMarcas);
+
         return new MarcaDto
         {
             IdMarca = marca.IdMarca,
@@ -180,6 +216,11 @@ public class ServicioCatalogos : IServicioCatalogos
 
     public async Task<IReadOnlyList<UnidadMedidaDto>> ObtenerUnidadesMedidaAsync(bool soloActivos = true, CancellationToken cancellationToken = default)
     {
+        if (soloActivos && _cache != null && _cache.TryGetValue(ClaveCacheUnidades, out IReadOnlyList<UnidadMedidaDto>? cacheadas) && cacheadas != null)
+        {
+            return cacheadas;
+        }
+
         var consulta = _contexto.UnidadesMedida.AsNoTracking().AsQueryable();
 
         if (soloActivos)
@@ -199,6 +240,11 @@ public class ServicioCatalogos : IServicioCatalogos
                 Activo = u.Activo
             })
             .ToListAsync(cancellationToken);
+
+        if (soloActivos && _cache != null)
+        {
+            _cache.Set(ClaveCacheUnidades, (IReadOnlyList<UnidadMedidaDto>)lista, TiempoExpiracionCache);
+        }
 
         return lista;
     }

@@ -456,7 +456,7 @@ export const PantallaProductos: React.FC = () => {
               >
                 {p.imagenUrl ? (
                   <img 
-                    src={p.imagenUrl.startsWith('http') ? p.imagenUrl : `http://localhost:5000${p.imagenUrl}`} 
+                    src={p.imagenUrl.startsWith('http') ? p.imagenUrl : p.imagenUrl.startsWith('/') ? p.imagenUrl : `/${p.imagenUrl}`} 
                     alt={p.descripcion}
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     onError={(e) => {
@@ -925,7 +925,7 @@ export const PantallaProductos: React.FC = () => {
               }}>
                 {previewImagenUrl ? (
                   <img 
-                    src={previewImagenUrl.startsWith('blob:') || previewImagenUrl.startsWith('http') ? previewImagenUrl : `http://localhost:5000${previewImagenUrl}`} 
+                    src={previewImagenUrl.startsWith('blob:') || previewImagenUrl.startsWith('http') ? previewImagenUrl : previewImagenUrl.startsWith('/') ? previewImagenUrl : `/${previewImagenUrl}`} 
                     alt="Vista previa" 
                     style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                   />

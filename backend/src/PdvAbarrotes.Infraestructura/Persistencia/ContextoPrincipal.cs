@@ -30,6 +30,8 @@ public class ContextoPrincipal : DbContext, IContextoPrincipal
     public DbSet<DetalleTicketPendiente> DetalleTicketsPendientes => Set<DetalleTicketPendiente>();
     public DbSet<Cliente> Clientes => Set<Cliente>();
     public DbSet<Proveedor> Proveedores => Set<Proveedor>();
+    public DbSet<Compra> Compras => Set<Compra>();
+    public DbSet<DetalleCompra> DetalleCompras => Set<DetalleCompra>();
     public DbSet<Usuario> Usuarios => Set<Usuario>();
     public DbSet<Rol> Roles => Set<Rol>();
     public DbSet<UsuarioRol> UsuarioRoles => Set<UsuarioRol>();
@@ -39,6 +41,8 @@ public class ContextoPrincipal : DbContext, IContextoPrincipal
     public DbSet<MovimientoCaja> MovimientosCaja => Set<MovimientoCaja>();
     public DbSet<MetodoPago> MetodosPago => Set<MetodoPago>();
     public DbSet<BitacoraAuditoria> BitacoraAuditoria => Set<BitacoraAuditoria>();
+    public DbSet<PedidoSugerido> PedidosSugeridos => Set<PedidoSugerido>();
+    public DbSet<DetallePedidoSugerido> DetallePedidosSugeridos => Set<DetallePedidoSugerido>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -310,6 +314,53 @@ public class ContextoPrincipal : DbContext, IContextoPrincipal
         {
             entidad.ToTable("Proveedores");
             entidad.HasKey(e => e.IdProveedor);
+            entidad.Property(e => e.Nombre).HasMaxLength(150).IsRequired();
+            entidad.Property(e => e.NombreContacto).HasMaxLength(150);
+            entidad.Property(e => e.Rfc).HasMaxLength(15);
+            entidad.Property(e => e.Telefono).HasMaxLength(50);
+            entidad.Property(e => e.Correo).HasMaxLength(100);
+            entidad.Property(e => e.Direccion).HasMaxLength(250);
+            entidad.Property(e => e.Notas).HasMaxLength(500);
+        });
+
+        // Mapeo Compras
+        modelBuilder.Entity<Compra>(entidad =>
+        {
+            entidad.ToTable("Compras");
+            entidad.HasKey(e => e.IdCompra);
+            entidad.Property(e => e.TotalCompra).HasPrecision(18, 2);
+            entidad.Property(e => e.Estatus).HasMaxLength(20).IsRequired();
+            entidad.Property(e => e.Observaciones).HasMaxLength(250);
+
+            entidad.HasOne(e => e.Proveedor)
+                .WithMany()
+                .HasForeignKey(e => e.IdProveedor)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entidad.HasOne(e => e.Usuario)
+                .WithMany()
+                .HasForeignKey(e => e.IdUsuario)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Mapeo DetalleCompras
+        modelBuilder.Entity<DetalleCompra>(entidad =>
+        {
+            entidad.ToTable("DetalleCompras");
+            entidad.HasKey(e => e.IdDetalleCompra);
+            entidad.Property(e => e.CantidadRecibida).HasPrecision(18, 4);
+            entidad.Property(e => e.CostoUnitario).HasPrecision(18, 2);
+            entidad.Property(e => e.TotalRenglon).HasPrecision(18, 2);
+
+            entidad.HasOne(e => e.Compra)
+                .WithMany(c => c.Detalles)
+                .HasForeignKey(e => e.IdCompra)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entidad.HasOne(e => e.Producto)
+                .WithMany()
+                .HasForeignKey(e => e.IdProducto)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // Mapeo Usuarios y Roles
@@ -393,6 +444,43 @@ public class ContextoPrincipal : DbContext, IContextoPrincipal
         {
             entidad.ToTable("BitacoraAuditoria");
             entidad.HasKey(e => e.IdAuditoria);
+        });
+
+        // Mapeo PedidosSugeridos
+        modelBuilder.Entity<PedidoSugerido>(entidad =>
+        {
+            entidad.ToTable("PedidosSugeridos");
+            entidad.HasKey(e => e.IdPedidoSugerido);
+            entidad.Property(e => e.Estado).HasMaxLength(50).IsRequired();
+            entidad.Property(e => e.Observaciones).HasMaxLength(500);
+
+            entidad.HasMany(e => e.Detalles)
+                .WithOne(d => d.PedidoSugerido)
+                .HasForeignKey(d => d.IdPedidoSugerido)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Mapeo DetallePedidosSugeridos
+        modelBuilder.Entity<DetallePedidoSugerido>(entidad =>
+        {
+            entidad.ToTable("DetallePedidosSugeridos");
+            entidad.HasKey(e => e.IdDetallePedidoSugerido);
+            entidad.Property(e => e.StockActual).HasPrecision(18, 4);
+            entidad.Property(e => e.VentaPromedioDiaria).HasPrecision(18, 4);
+            entidad.Property(e => e.CantidadSugerida).HasPrecision(18, 4);
+            entidad.Property(e => e.CantidadAjustada).HasPrecision(18, 4);
+            entidad.Property(e => e.PrecioCostoUnitario).HasPrecision(18, 2);
+            entidad.Property(e => e.SubtotalSugerido).HasPrecision(18, 2);
+
+            entidad.HasOne(e => e.Producto)
+                .WithMany()
+                .HasForeignKey(e => e.IdProducto)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entidad.HasOne(e => e.Proveedor)
+                .WithMany()
+                .HasForeignKey(e => e.IdProveedor)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

@@ -218,25 +218,41 @@ public class ServicioVentas : IServicioVentas
             }
         }
 
-        // 7. Generar folio comercial único
+        // 7. Generar folio comercial numérico consecutivo (para compatibilidad con la columna FolioVenta INT en SQL Server)
         var ahora = DateTime.Now;
-        var sufijo = Guid.NewGuid().ToString("N")[..6].ToUpper();
-        var folioVenta = $"V{ahora:yyyyMMdd}-{sufijo}";
+        var ultimoFolioStr = await _contexto.Ventas
+            .OrderByDescending(v => v.IdVenta)
+            .Select(v => v.FolioVenta)
+            .FirstOrDefaultAsync(ct);
+
+        int siguienteFolio = 1;
+        if (!string.IsNullOrWhiteSpace(ultimoFolioStr) && int.TryParse(ultimoFolioStr, out var numFolio))
+        {
+            siguienteFolio = numFolio + 1;
+        }
+        else
+        {
+            siguienteFolio = (await _contexto.Ventas.CountAsync(ct)) + 1;
+        }
+        var folioVenta = siguienteFolio.ToString();
 
         // 8. Obtener Tipo de Movimiento para Venta en Kardex
         var tipoVenta = await _contexto.TiposMovimientoInventario
             .FirstOrDefaultAsync(t => t.CodigoTipo == "VENTA" || t.CodigoTipo == "SALIDA_VENTA" || t.Descripcion.Contains("Venta"), ct);
         var idTipoMovimientoVenta = tipoVenta?.IdTipoMovimiento ?? 2;
 
-        // 9. Ejecución atómica en transacción SQL Server (compatible con BD en memoria para tests)
-        var esInMemory = _contexto.Database.ProviderName?.Contains("InMemory") == true;
-        Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction? transaccion = null;
-        if (!esInMemory)
+        // 9. Ejecución atómica en transacción SQL Server con soporte de CreateExecutionStrategy
+        var estrategia = _contexto.Database.CreateExecutionStrategy();
+        return await estrategia.ExecuteAsync(async () =>
         {
-            transaccion = await _contexto.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, ct);
-        }
+            var esInMemory = _contexto.Database.ProviderName?.Contains("InMemory") == true;
+            Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction? transaccion = null;
+            if (!esInMemory)
+            {
+                transaccion = await _contexto.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, ct);
+            }
 
-        try
+            try
         {
             var venta = new Venta
             {
@@ -386,7 +402,8 @@ public class ServicioVentas : IServicioVentas
             _logger.LogError(ex, "Error al registrar la venta con folio {Folio}", folioVenta);
             return RespuestaApi<VentaRealizadaDto>.CrearError($"Error al procesar la venta: {ex.Message}");
         }
-    }
+    });
+}
 
     /// <inheritdoc />
     public async Task<RespuestaApi<TicketVentaDto>> ObtenerTicketVentaAsync(int idVenta, CancellationToken ct = default)
@@ -551,14 +568,17 @@ public class ServicioVentas : IServicioVentas
             .FirstOrDefaultAsync(t => t.CodigoTipo == "CANCELACION_VENTA" || t.CodigoTipo == "ENTRADA_DEVOLUCION" || t.Descripcion.Contains("Cancelación"), ct);
         var idTipoMov = tipoCancelacion?.IdTipoMovimiento ?? 1; // Entrada
 
-        var esInMemory = _contexto.Database.ProviderName?.Contains("InMemory") == true;
-        Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction? transaccion = null;
-        if (!esInMemory)
+        var estrategia = _contexto.Database.CreateExecutionStrategy();
+        return await estrategia.ExecuteAsync(async () =>
         {
-            transaccion = await _contexto.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, ct);
-        }
+            var esInMemory = _contexto.Database.ProviderName?.Contains("InMemory") == true;
+            Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction? transaccion = null;
+            if (!esInMemory)
+            {
+                transaccion = await _contexto.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, ct);
+            }
 
-        try
+            try
         {
             venta.EsCancelada = true;
             venta.Estatus = "Cancelada";
@@ -642,7 +662,8 @@ public class ServicioVentas : IServicioVentas
             _logger.LogError(ex, "Error al cancelar venta {IdVenta}", idVenta);
             return RespuestaApi<bool>.CrearError($"Error al cancelar la venta: {ex.Message}");
         }
-    }
+    });
+}
 
     /// <inheritdoc />
     public async Task<RespuestaApi<List<MetodoPagoDto>>> ObtenerMetodosPagoActivosAsync(CancellationToken ct = default)

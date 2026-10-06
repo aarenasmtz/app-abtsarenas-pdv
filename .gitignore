@@ -51,3 +51,8 @@ sql_schema_audit.json
 .env
 .env.*
 !.env.example
+
+# Despliegues y binarios temporales
+backend/publish_linux/
+deploy_vps/
+deploy_vps.tar.gz

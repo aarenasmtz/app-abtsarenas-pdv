@@ -1,33 +1,56 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { DisenoAdmin } from './layouts/DisenoAdmin';
 import { DisenoPdv } from './layouts/DisenoPdv';
 import { PantallaLogin } from './modules/autenticacion/PantallaLogin';
-import { PantallaUsuarios } from './modules/usuarios/PantallaUsuarios';
-import { PantallaAuditoria } from './modules/auditoria/PantallaAuditoria';
-import { PantallaProductos } from './modules/productos/PantallaProductos';
-import { PantallaInventario } from './modules/inventario/PantallaInventario';
 import { useStoreAutenticacion } from './modules/autenticacion/storeAutenticacion';
 import clienteApi from './api/clienteApi';
-import { CheckCircle, AlertTriangle, Database, TrendingUp, Package, Users } from 'lucide-react';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 
-interface InfoDiagnostico {
-  estado: string;
-  motorBaseDatos: string;
-  baseDatos: string;
-  estadisticas: {
-    totalProductos: number;
-    totalVentas: number;
-    totalClientes: number;
-    totalCajas: number;
-  };
-}
+// Carga perezosa (Lazy loading) de módulos administrativos pesados para descarga ultrarrápida del PDV
+const PantallaDashboard = lazy(() =>
+  import('./modules/dashboard/PantallaDashboard').then((m) => ({ default: m.PantallaDashboard }))
+);
+const PantallaUsuarios = lazy(() =>
+  import('./modules/usuarios/PantallaUsuarios').then((m) => ({ default: m.PantallaUsuarios }))
+);
+const PantallaAuditoria = lazy(() =>
+  import('./modules/auditoria/PantallaAuditoria').then((m) => ({ default: m.PantallaAuditoria }))
+);
+const PantallaProductos = lazy(() =>
+  import('./modules/productos/PantallaProductos').then((m) => ({ default: m.PantallaProductos }))
+);
+const PantallaInventario = lazy(() =>
+  import('./modules/inventario/PantallaInventario').then((m) => ({ default: m.PantallaInventario }))
+);
+const PantallaProveedores = lazy(() =>
+  import('./modules/proveedores/PantallaProveedores').then((m) => ({ default: m.PantallaProveedores }))
+);
+const PantallaCompras = lazy(() =>
+  import('./modules/compras/PantallaCompras').then((m) => ({ default: m.PantallaCompras }))
+);
+const PantallaPedidoSugerido = lazy(() =>
+  import('./modules/pedidos/PantallaPedidoSugerido').then((m) => ({ default: m.PantallaPedidoSugerido }))
+);
+const PantallaRecargasYServicios = lazy(() =>
+  import('./modules/servicios/PantallaRecargasYServicios').then((m) => ({ default: m.PantallaRecargasYServicios }))
+);
+const PantallaReportes = lazy(() =>
+  import('./modules/reportes/PantallaReportes').then((m) => ({ default: m.PantallaReportes }))
+);
+
+// Componente de espera para carga bajo demanda
+const CargadorModulo = () => (
+  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', gap: '0.75rem', color: 'var(--color-texto-secundario)' }}>
+    <RefreshCw size={24} className="animacion-giratoria" />
+    <span style={{ fontSize: '0.95rem', fontWeight: 500 }}>Cargando módulo...</span>
+  </div>
+);
 
 export function App() {
   const { estaAutenticado, cargarSesionInicial } = useStoreAutenticacion();
   const [modo, setModo] = useState<'pdv' | 'admin'>('admin');
   const [moduloActivo, setModuloActivo] = useState('dashboard');
   const [servidorEnLinea, setServidorEnLinea] = useState<boolean>(false);
-  const [diagnostico, setDiagnostico] = useState<InfoDiagnostico | null>(null);
 
   // Inicializar sesión guardada
   useEffect(() => {
@@ -41,7 +64,6 @@ export function App() {
         const respuesta = await clienteApi.get('/diagnostico/estado');
         if (respuesta.data && respuesta.data.exito) {
           setServidorEnLinea(true);
-          setDiagnostico(respuesta.data.datos);
         } else {
           setServidorEnLinea(false);
         }
@@ -60,7 +82,7 @@ export function App() {
     return <PantallaLogin />;
   }
 
-  // Si está en modo Punto de Venta (caja rápida)
+  // Si está en modo Punto de Venta (caja rápida de mostrador)
   if (modo === 'pdv') {
     return (
       <DisenoPdv 
@@ -77,97 +99,51 @@ export function App() {
       onIrAPdv={() => setModo('pdv')}
       servidorEnLinea={servidorEnLinea}
     >
-      {moduloActivo === 'dashboard' && (
-        <div>
-          {/* Tarjetas de Indicadores */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem', marginBottom: '1.5rem' }}>
-            <div className="tarjeta" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <div style={{ padding: '0.85rem', borderRadius: 'var(--radio-md)', backgroundColor: 'var(--color-primario-suave)', color: 'var(--color-primario-hover)' }}>
-                <TrendingUp size={28} />
-              </div>
-              <div>
-                <span style={{ fontSize: '0.85rem', color: 'var(--color-texto-secundario)' }}>Ventas Históricas</span>
-                <h3 className="mono" style={{ fontSize: '1.6rem', margin: 0 }}>
-                  {diagnostico?.estadisticas.totalVentas ? diagnostico.estadisticas.totalVentas.toLocaleString() : '238,424'}
-                </h3>
-              </div>
-            </div>
+      <Suspense fallback={<CargadorModulo />}>
+        {moduloActivo === 'dashboard' && (
+          <PantallaDashboard 
+            onIrAPdv={() => setModo('pdv')}
+            onIrAReportes={() => setModuloActivo('reportes')}
+          />
+        )}
 
-            <div className="tarjeta" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <div style={{ padding: '0.85rem', borderRadius: 'var(--radio-md)', backgroundColor: 'rgba(59, 130, 246, 0.15)', color: 'var(--color-acento-hover)' }}>
-                <Package size={28} />
-              </div>
-              <div>
-                <span style={{ fontSize: '0.85rem', color: 'var(--color-texto-secundario)' }}>Productos en Catálogo</span>
-                <h3 className="mono" style={{ fontSize: '1.6rem', margin: 0 }}>
-                  {diagnostico?.estadisticas.totalProductos ? diagnostico.estadisticas.totalProductos.toLocaleString() : '3,586'}
-                </h3>
-              </div>
-            </div>
+        {moduloActivo === 'usuarios' && <PantallaUsuarios />}
 
-            <div className="tarjeta" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <div style={{ padding: '0.85rem', borderRadius: 'var(--radio-md)', backgroundColor: 'rgba(245, 158, 11, 0.15)', color: 'var(--color-advertencia)' }}>
-                <Users size={28} />
-              </div>
-              <div>
-                <span style={{ fontSize: '0.85rem', color: 'var(--color-texto-secundario)' }}>Clientes Registrados</span>
-                <h3 className="mono" style={{ fontSize: '1.6rem', margin: 0 }}>
-                  {diagnostico?.estadisticas.totalClientes || 4}
-                </h3>
-              </div>
-            </div>
+        {moduloActivo === 'auditoria' && <PantallaAuditoria />}
 
-            <div className="tarjeta" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <div style={{ padding: '0.85rem', borderRadius: 'var(--radio-md)', backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#34d399' }}>
-                <Database size={28} />
-              </div>
-              <div>
-                <span style={{ fontSize: '0.85rem', color: 'var(--color-texto-secundario)' }}>Estado Base de Datos</span>
-                <h3 style={{ fontSize: '1.2rem', margin: 0, color: servidorEnLinea ? '#34d399' : '#f87171' }}>
-                  {servidorEnLinea ? 'En Línea (AAM)' : 'Desconectado'}
-                </h3>
-              </div>
-            </div>
-          </div>
+        {moduloActivo === 'productos' && <PantallaProductos />}
 
-          {/* Panel de Estado y Arquitectura */}
-          <div className="tarjeta" style={{ marginBottom: '1.5rem' }}>
-            <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <CheckCircle size={20} color="var(--color-primario)" />
-              <span>Fase 4 — Catálogo Maestro de Productos, Buscador PDV y Soporte de Imágenes</span>
-            </h3>
-            <p style={{ color: 'var(--color-texto-secundario)', lineHeight: 1.6, marginBottom: '1rem' }}>
-              Catálogo administrativo completo con paginación server-side (25/50/100 registros), filtros dinámicos por categoría y marca, auditoría granular de cambio de precios, cálculo automático de margen de utilidad, buscador predictivo ultrarrápido (&lt;50ms) y separación estricta de imágenes para no sobrecargar el PDV.
+        {moduloActivo === 'inventario' && <PantallaInventario />}
+
+        {moduloActivo === 'proveedores' && <PantallaProveedores />}
+
+        {moduloActivo === 'compras' && <PantallaCompras />}
+
+        {moduloActivo === 'pedidos-sugeridos' && <PantallaPedidoSugerido />}
+
+        {moduloActivo === 'servicios' && <PantallaRecargasYServicios />}
+
+        {moduloActivo === 'reportes' && <PantallaReportes />}
+
+        {moduloActivo !== 'dashboard' && 
+         moduloActivo !== 'productos' && 
+         moduloActivo !== 'usuarios' && 
+         moduloActivo !== 'auditoria' && 
+         moduloActivo !== 'inventario' && 
+         moduloActivo !== 'proveedores' && 
+         moduloActivo !== 'compras' && 
+         moduloActivo !== 'pedidos-sugeridos' && 
+         moduloActivo !== 'servicios' && 
+         moduloActivo !== 'reportes' && (
+          <div className="tarjeta" style={{ textAlign: 'center', padding: '4rem 1rem' }}>
+            <AlertTriangle size={48} style={{ color: 'var(--color-advertencia)', marginBottom: '1rem', opacity: 0.8 }} />
+            <h3>Módulo '{moduloActivo}' Preparado para Implementación</h3>
+            <p style={{ color: 'var(--color-texto-secundario)', marginTop: '0.5rem', maxWidth: '500px', marginInline: 'auto' }}>
+              La estructura modular, DTOs, entidades y servicios base en español ya se encuentran listos para poblar la funcionalidad detallada de este módulo.
             </p>
-            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-              <span className="badge badge-exito">Paginación Server-Side (25/50/100)</span>
-              <span className="badge badge-exito">Escáner de Caja &lt;50ms (Sin Imágenes)</span>
-              <span className="badge badge-exito">Buscador Predictivo PDV</span>
-              <span className="badge badge-exito">Auditoría Precios Granular</span>
-              <span className="badge badge-exito">Almacenamiento Local de Imágenes</span>
-              <span className="badge badge-advertencia">Nomenclatura 100% en Español</span>
-            </div>
           </div>
-        </div>
-      )}
-
-      {moduloActivo === 'usuarios' && <PantallaUsuarios />}
-
-      {moduloActivo === 'auditoria' && <PantallaAuditoria />}
-
-      {moduloActivo === 'productos' && <PantallaProductos />}
-
-      {moduloActivo === 'inventario' && <PantallaInventario />}
-
-      {moduloActivo !== 'dashboard' && moduloActivo !== 'productos' && moduloActivo !== 'usuarios' && moduloActivo !== 'auditoria' && moduloActivo !== 'inventario' && (
-        <div className="tarjeta" style={{ textAlign: 'center', padding: '4rem 1rem' }}>
-          <AlertTriangle size={48} style={{ color: 'var(--color-advertencia)', marginBottom: '1rem', opacity: 0.8 }} />
-          <h3>Módulo '{moduloActivo}' Preparado para Implementación en Fase Siguiente</h3>
-          <p style={{ color: 'var(--color-texto-secundario)', marginTop: '0.5rem', maxWidth: '500px', marginInline: 'auto' }}>
-            La estructura modular, DTOs, entidades y servicios base en español ya se encuentran listos para poblar la funcionalidad detallada de este módulo.
-          </p>
-        </div>
-      )}
+        )}
+      </Suspense>
     </DisenoAdmin>
   );
 }

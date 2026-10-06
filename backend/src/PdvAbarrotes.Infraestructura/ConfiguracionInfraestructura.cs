@@ -42,6 +42,14 @@ public static class ConfiguracionInfraestructura
         servicios.AddScoped<IServicioCaja, ServicioCaja>();
         servicios.AddScoped<IProveedorRecargas, ProveedorRecargasPendiente>();
         servicios.AddScoped<IProveedorServicios, ProveedorServiciosPendiente>();
+        servicios.AddScoped<IServicioProveedores, ServicioProveedores>();
+        servicios.AddScoped<IServicioCompras, ServicioCompras>();
+        servicios.AddScoped<IServicioReportes, ServicioReportes>();
+        servicios.AddScoped<IServicioPedidosSugeridos, ServicioPedidosSugeridos>();
+        servicios.AddScoped<IServicioRecargasYServicios, ServicioRecargasYServicios>();
+
+        // Caché en memoria para catálogos estáticos y alta concurrencia
+        servicios.AddMemoryCache();
 
         return servicios;
     }

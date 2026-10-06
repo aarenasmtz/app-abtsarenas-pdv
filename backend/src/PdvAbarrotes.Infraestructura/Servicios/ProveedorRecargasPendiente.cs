@@ -1,3 +1,4 @@
+using PdvAbarrotes.Aplicacion.DTOs.Servicios;
 using PdvAbarrotes.Aplicacion.Interfaces;
 
 namespace PdvAbarrotes.Infraestructura.Servicios;
@@ -16,5 +17,18 @@ public class ProveedorRecargasPendiente : IProveedorRecargas
     public Task<string> ConsultarSaldoProveedorAsync()
     {
         return Task.FromResult("Proveedor de recargas no configurado. Pendiente de contratación externa.");
+    }
+
+    public Task<ResultadoRecargaDto> EjecutarRecargaAsync(SolicitudRecargaDto solicitud, CancellationToken ct = default)
+    {
+        return Task.FromResult(new ResultadoRecargaDto
+        {
+            Exito = false,
+            Mensaje = "El proveedor externo de recargas de tiempo aire no está configurado. Requiere contratar el servicio comercial (ej. TAE México, Qiubo o RecargaPlus) y configurar las credenciales de API.",
+            Monto = solicitud.Monto,
+            NumeroTelefono = solicitud.NumeroTelefono,
+            Compania = solicitud.CodigoCompania,
+            FechaHora = DateTime.Now
+        });
     }
 }

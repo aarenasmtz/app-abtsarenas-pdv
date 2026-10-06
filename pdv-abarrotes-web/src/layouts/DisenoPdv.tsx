@@ -10,7 +10,8 @@ import {
   Minus,
   Printer,
   DollarSign,
-  Calculator
+  Calculator,
+  Layers
 } from 'lucide-react';
 import { useStoreCarritoPdv } from '../modules/pdv/storeCarrito';
 import { useEscanerCodigoBarras } from '../hooks/useEscanerCodigoBarras';
@@ -60,6 +61,7 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
 
   // Estados para modales de cobro, tickets, reimpresión y espera
   const [mostrarModalCobro, setMostrarModalCobro] = useState(false);
+  const [modoInicialCobro, setModoInicialCobro] = useState<'efectivo' | 'tarjeta' | 'mixto'>('efectivo');
   const [mostrarModalTicket, setMostrarModalTicket] = useState(false);
   const [mostrarModalReimpresion, setMostrarModalReimpresion] = useState(false);
   const [mostrarModalGranel, setMostrarModalGranel] = useState(false);
@@ -120,17 +122,55 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
     consultarTurnoActual();
   }, [refrescarConteoTicketsPendientes, consultarTurnoActual]);
 
-  // Escuchar atajos de teclado globales (F12 Cobrar, F10 Mov Caja, F9 Corte X/Z, F8 Reimprimir, F7 Pendientes, F6 En Espera, F4 Limpiar)
+  const abrirCobro = useCallback((modo: 'efectivo' | 'tarjeta' | 'mixto' = 'efectivo') => {
+    if (!turnoActual) {
+      setMostrarModalAbrirTurno(true);
+      return;
+    }
+    if (articulos.length > 0) {
+      setModoInicialCobro(modo);
+      setMostrarModalCobro(true);
+    }
+  }, [turnoActual, articulos.length]);
+
+  // Escuchar atajos de teclado globales (C/P/F12 Cobrar Efectivo, T Tarjeta, M Mixto, F10 Mov Caja, F9 Corte X/Z, F8 Reimprimir, F7 Pendientes, F6 En Espera, F4 Limpiar)
   useEffect(() => {
     const manejarTeclasGlobales = (e: KeyboardEvent) => {
+      // Si algún modal o diálogo está abierto, no interceptar teclas generales del mostrador
+      if (
+        mostrarModalCobro || 
+        mostrarModalTicket || 
+        mostrarModalReimpresion || 
+        mostrarModalGranel || 
+        mostrarModalTicketsPendientes || 
+        mostrarDialogoPonerEnEspera || 
+        mostrarModalAbrirTurno || 
+        mostrarModalMovimientoCaja || 
+        mostrarModalCorteCaja
+      ) {
+        return;
+      }
+
+      const target = e.target as HTMLElement | null;
+      const estaEnInput = target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.isContentEditable;
+      const esInputEscanerVacio = target === inputRef.current && codigoInput.trim() === '';
+
       if (e.key === 'F12') {
         e.preventDefault();
-        if (!turnoActual) {
-          setMostrarModalAbrirTurno(true);
-          return;
-        }
-        if (articulos.length > 0) {
-          setMostrarModalCobro(true);
+        abrirCobro('efectivo');
+      } else if (articulos.length > 0 && (!estaEnInput || esInputEscanerVacio)) {
+        if (e.key === 'c' || e.key === 'C' || e.key === 'p' || e.key === 'P') {
+          e.preventDefault();
+          abrirCobro('efectivo');
+        } else if (e.key === 't' || e.key === 'T') {
+          e.preventDefault();
+          abrirCobro('tarjeta');
+        } else if (e.key === 'm' || e.key === 'M') {
+          e.preventDefault();
+          abrirCobro('mixto');
+        } else if (e.key === 'Enter' && esInputEscanerVacio) {
+          e.preventDefault();
+          abrirCobro('efectivo');
         }
       } else if (e.key === 'F10') {
         e.preventDefault();
@@ -167,7 +207,22 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
     };
     window.addEventListener('keydown', manejarTeclasGlobales);
     return () => window.removeEventListener('keydown', manejarTeclasGlobales);
-  }, [articulos.length, limpiarCarrito, turnoActual]);
+  }, [
+    articulos.length, 
+    limpiarCarrito, 
+    turnoActual, 
+    codigoInput, 
+    abrirCobro,
+    mostrarModalCobro, 
+    mostrarModalTicket, 
+    mostrarModalReimpresion, 
+    mostrarModalGranel, 
+    mostrarModalTicketsPendientes, 
+    mostrarDialogoPonerEnEspera, 
+    mostrarModalAbrirTurno, 
+    mostrarModalMovimientoCaja, 
+    mostrarModalCorteCaja
+  ]);
 
   const handleVentaCompletada = (venta: VentaRealizada) => {
     setMostrarModalCobro(false);
@@ -532,7 +587,7 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: 'var(--color-texto-secundario)' }}>
             <span>Cliente:</span>
-            <strong style={{ color: '#ffffff' }}>{nombreCliente}</strong>
+            <strong style={{ color: 'var(--color-texto)' }}>{nombreCliente}</strong>
           </div>
 
           <span className={`badge ${servidorEnLinea ? 'badge-exito' : 'badge-peligro'}`}>
@@ -591,10 +646,10 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
                         left: 0,
                         right: 0,
                         zIndex: 100,
-                        backgroundColor: '#1e293b',
+                        backgroundColor: 'var(--color-superficie)',
                         border: '1px solid var(--color-borde)',
                         borderRadius: 'var(--radio-md)',
-                        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.6)',
+                        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.12)',
                         maxHeight: '320px',
                         overflowY: 'auto'
                       }}
@@ -608,14 +663,14 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
                             justifyContent: 'space-between',
                             alignItems: 'center',
                             cursor: 'pointer',
-                            borderBottom: '1px solid rgba(255,255,255,0.05)',
+                            borderBottom: '1px solid var(--color-borde)',
                           }}
-                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.06)')}
+                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--color-fondo)')}
                           onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                           onClick={() => agregarDesdePredictivo(p)}
                         >
                           <div>
-                            <div style={{ fontWeight: 600, color: '#f8fafc', fontSize: '0.95rem' }}>
+                            <div style={{ fontWeight: 600, color: 'var(--color-texto)', fontSize: '0.95rem' }}>
                               {p.descripcion}
                             </div>
                             <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.2rem', alignItems: 'center' }}>
@@ -707,7 +762,7 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
                         <td className="mono" style={{ textAlign: 'right', fontWeight: 500 }}>
                           ${item.precioUnitario.toFixed(2)}
                         </td>
-                        <td className="mono" style={{ textAlign: 'right', fontWeight: 700, color: '#34d399' }}>
+                        <td className="mono" style={{ textAlign: 'right', fontWeight: 700, color: 'var(--color-primario)' }}>
                           ${item.subtotal.toFixed(2)}
                         </td>
                         <td style={{ textAlign: 'center' }}>
@@ -732,33 +787,82 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
           <div className="pdv-panel-cobro">
             <div>
               <div className="total-caja-display">
-                <span style={{ fontSize: '0.9rem', color: '#a7f3d0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <span style={{ fontSize: '0.85rem', color: '#a7f3d0', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
                   Total a Cobrar
                 </span>
                 <div className="total-caja-monto">
                   ${totalVenta.toFixed(2)}
                 </div>
-                <div style={{ fontSize: '0.85rem', color: '#6ee7b7', marginTop: '0.25rem' }}>
+                <div style={{ fontSize: '0.85rem', color: '#d1fae5', marginTop: '0.25rem' }}>
                   {cantidadArticulos} artículo(s)
                 </div>
               </div>
 
-              {/* Botones de acción de venta */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1.5rem' }}>
+              {/* Botones de acción de venta: Flujo ultra rápido */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', marginTop: '1.25rem' }}>
+                {/* 1. Cobrar en Efectivo (C / P / Enter / F12) */}
                 <button 
                   className="btn btn-primario" 
-                  style={{ padding: '1.1rem', fontSize: '1.15rem', gap: '0.75rem' }}
+                  style={{ 
+                    padding: '1rem', 
+                    fontSize: '1.1rem', 
+                    gap: '0.75rem',
+                    boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)'
+                  }}
                   disabled={articulos.length === 0}
-                  onClick={() => setMostrarModalCobro(true)}
-                  title="Finalizar venta y cobrar (F12)"
+                  onClick={() => abrirCobro('efectivo')}
+                  title="Cobrar en efectivo en segundos. Carga el total exacto (C, P, Enter o F12)"
                 >
-                  <CreditCard size={22} />
-                  <span>Cobrar (F12)</span>
+                  <DollarSign size={22} />
+                  <span style={{ fontWeight: 700 }}>💵 Cobrar Efectivo (C / P)</span>
                 </button>
 
+                {/* 2. Solo Tarjeta (T) */}
+                <button 
+                  className="btn" 
+                  style={{ 
+                    padding: '0.85rem', 
+                    fontSize: '0.95rem', 
+                    gap: '0.65rem',
+                    backgroundColor: '#2563eb',
+                    color: '#ffffff',
+                    border: 'none',
+                    fontWeight: 600,
+                    boxShadow: '0 2px 8px rgba(37, 99, 235, 0.25)'
+                  }}
+                  disabled={articulos.length === 0}
+                  onClick={() => abrirCobro('tarjeta')}
+                  title="Cobro directo con tarjeta de débito o crédito (Atajo: T)"
+                >
+                  <CreditCard size={18} />
+                  <span>💳 Solo Tarjeta (T)</span>
+                </button>
+
+                {/* 3. Pago Mixto / Vales (M) */}
+                <button 
+                  className="btn" 
+                  style={{ 
+                    padding: '0.8rem', 
+                    fontSize: '0.95rem', 
+                    gap: '0.65rem',
+                    backgroundColor: '#7c3aed',
+                    color: '#ffffff',
+                    border: 'none',
+                    fontWeight: 600,
+                    boxShadow: '0 2px 8px rgba(124, 58, 237, 0.25)'
+                  }}
+                  disabled={articulos.length === 0}
+                  onClick={() => abrirCobro('mixto')}
+                  title="Combinar Efectivo con Tarjeta, Vales o Transferencia (Atajo: M)"
+                >
+                  <Layers size={18} />
+                  <span>🔀 Mixto / Vales (M)</span>
+                </button>
+
+                {/* 4. Poner en Espera (F6) */}
                 <button 
                   className="btn btn-advertencia" 
-                  style={{ padding: '0.85rem', fontSize: '1rem', gap: '0.6rem' }}
+                  style={{ padding: '0.75rem', fontSize: '0.9rem', gap: '0.5rem', marginTop: '0.25rem' }}
                   disabled={articulos.length === 0}
                   onClick={() => {
                     setIdentificadorClienteEspera('');
@@ -766,19 +870,20 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
                   }}
                   title="Poner en espera la venta actual para atender a otro cliente (F6)"
                 >
-                  <Clock size={18} />
+                  <Clock size={16} />
                   <span>Poner en Espera (F6)</span>
                 </button>
 
+                {/* 5. Cancelar / Limpiar (F4) */}
                 <button 
                   className="btn btn-secundario" 
-                  style={{ padding: '0.75rem', fontSize: '0.95rem' }}
+                  style={{ padding: '0.7rem', fontSize: '0.85rem', color: 'var(--color-peligro)' }}
                   disabled={articulos.length === 0}
                   onClick={limpiarCarrito}
                   title="Limpiar carrito actual (F4)"
                 >
-                  <Trash2 size={16} />
-                  <span>Cancelar Venta Actual (F4)</span>
+                  <Trash2 size={15} />
+                  <span>Cancelar Venta (F4)</span>
                 </button>
               </div>
             </div>
@@ -787,20 +892,20 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
             <div style={{ 
               borderTop: '1px solid var(--color-borde)', 
               paddingTop: '0.85rem', 
-              fontSize: '0.8rem', 
+              fontSize: '0.78rem', 
               color: 'var(--color-texto-secundario)',
               display: 'grid',
               gridTemplateColumns: '1fr 1fr',
-              gap: '0.45rem'
+              gap: '0.4rem'
             }}>
-              <div><strong>F4:</strong> Limpiar Venta</div>
-              <div><strong>F6:</strong> Poner en Espera</div>
-              <div><strong>F7:</strong> Ver Pendientes</div>
-              <div><strong>F8:</strong> Reimprimir Ticket</div>
+              <div><strong>C / P / Enter:</strong> Efectivo</div>
+              <div><strong>T:</strong> Solo Tarjeta</div>
+              <div><strong>M:</strong> Mixto / Vales</div>
+              <div><strong>F4:</strong> Limpiar</div>
+              <div><strong>F6:</strong> En Espera</div>
+              <div><strong>F7:</strong> Pendientes</div>
+              <div><strong>F8:</strong> Reimprimir</div>
               <div><strong>F9:</strong> Corte X / Z</div>
-              <div><strong>F10:</strong> Mov. Caja</div>
-              <div><strong>F12:</strong> Finalizar Cobro</div>
-              <div><strong>Enter:</strong> Confirmar / Cobrar</div>
             </div>
           </div>
         </div>
@@ -812,6 +917,7 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
         total={totalVenta}
         subtotal={totalVenta}
         descuento={0}
+        modoInicial={modoInicialCobro}
         articulos={articulos.map(a => ({
           idProducto: a.idProducto,
           codigoBarras: a.codigoBarras,

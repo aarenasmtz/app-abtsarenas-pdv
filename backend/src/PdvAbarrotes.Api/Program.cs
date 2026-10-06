@@ -81,7 +81,13 @@ builder.Services.AddSwaggerGen(c =>
 // 4. Capa de Infraestructura (EF Core 9, SQL Server, Dapper, Servicios)
 builder.Services.AgregarInfraestructura(builder.Configuration);
 
-// 5. Política CORS para el frontend React Vite
+// 5. Compresión HTTP de respuestas (Gzip y Brotli para acelerar payloads JSON)
+builder.Services.AddResponseCompression(opciones =>
+{
+    opciones.EnableForHttps = true;
+});
+
+// 6. Política CORS para el frontend React Vite
 builder.Services.AddCors(opciones =>
 {
     opciones.AddPolicy("PoliticaPdvWeb", politica =>
@@ -94,6 +100,8 @@ builder.Services.AddCors(opciones =>
 });
 
 var app = builder.Build();
+
+app.UseResponseCompression();
 
 // 6. Inicialización automática de datos base (Roles y credenciales iniciales)
 using (var alcance = app.Services.CreateScope())

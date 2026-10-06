@@ -26,6 +26,8 @@ public interface IContextoPrincipal
     DbSet<DetalleTicketPendiente> DetalleTicketsPendientes { get; }
     DbSet<Cliente> Clientes { get; }
     DbSet<Proveedor> Proveedores { get; }
+    DbSet<Compra> Compras { get; }
+    DbSet<DetalleCompra> DetalleCompras { get; }
     DbSet<Usuario> Usuarios { get; }
     DbSet<Rol> Roles { get; }
     DbSet<UsuarioRol> UsuarioRoles { get; }
@@ -35,6 +37,8 @@ public interface IContextoPrincipal
     DbSet<MovimientoCaja> MovimientosCaja { get; }
     DbSet<MetodoPago> MetodosPago { get; }
     DbSet<BitacoraAuditoria> BitacoraAuditoria { get; }
+    DbSet<PedidoSugerido> PedidosSugeridos { get; }
+    DbSet<DetallePedidoSugerido> DetallePedidosSugeridos { get; }
 
     DatabaseFacade Database { get; }
 
