@@ -49,8 +49,9 @@ export default {
         const respuesta = await fetch(proxyRequest);
 
         // Fallback controlado si el backend en VPS aún no tiene ciertos endpoints desplegados
-        if (respuesta.status === 404) {
-          if (targetPath.includes('/sincronizar-catalogo')) {
+        const lowerPath = targetPath.toLowerCase();
+        if (respuesta.status === 404 || respuesta.status === 405) {
+          if (lowerPath.includes('sincronizar-catalogo')) {
             return new Response(
               JSON.stringify({
                 exito: true,
@@ -68,9 +69,9 @@ export default {
           }
 
           if (
-            targetPath.includes('/transacciones') ||
-            targetPath.includes('/bitacora') ||
-            targetPath.includes('/errores')
+            lowerPath.includes('transacciones') ||
+            lowerPath.includes('bitacora') ||
+            lowerPath.includes('errores')
           ) {
             return new Response(
               JSON.stringify({

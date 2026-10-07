@@ -12,10 +12,12 @@ import {
   RotateCcw,
   ShieldCheck,
   Search,
+  Layers,
 } from 'lucide-react';
 import { servicioRecargasYServicios } from '../servicios/servicioRecargasYServicios';
 import { COMPANIAS_PREDETERMINADAS, enriquecerCompanias, type CompaniaVisual } from '../servicios/datosCompanias';
 import { IconoCompania } from '../servicios/IconoCompania';
+import { VentanaMosaicoCatalogo } from '../servicios/VentanaMosaicoCatalogo';
 import type {
   ResultadoRecargaDto,
   ResultadoPagoServicioDto,
@@ -39,7 +41,8 @@ export const ModalRecargaPdv: React.FC<ModalRecargaPdvProps> = ({
   onCerrar,
   onAgregarAlCarrito,
 }) => {
-  const [pestanaActiva, setPestanaActiva] = useState<'recarga' | 'servicio'>('recarga');
+  const [pestanaActiva, setPestanaActiva] = useState<'recarga' | 'servicio' | 'catalogo'>('recarga');
+
 
   // Catálogos
   const [companias, setCompanias] = useState<CompaniaVisual[]>(COMPANIAS_PREDETERMINADAS);
@@ -273,7 +276,7 @@ export const ModalRecargaPdv: React.FC<ModalRecargaPdvProps> = ({
       <div
         className="modal-contenido"
         style={{
-          maxWidth: '780px',
+          maxWidth: '940px',
           width: '95%',
           maxHeight: '92vh',
           display: 'flex',
@@ -399,6 +402,30 @@ export const ModalRecargaPdv: React.FC<ModalRecargaPdvProps> = ({
           >
             <Receipt size={18} />
             <span>Pago de Recibos / Servicios</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setPestanaActiva('catalogo');
+            }}
+            style={{
+              padding: '0.85rem 1.25rem',
+              border: 'none',
+              background: 'transparent',
+              borderBottom: pestanaActiva === 'catalogo' ? '3px solid #7c3aed' : '3px solid transparent',
+              color: pestanaActiva === 'catalogo' ? '#7c3aed' : '#64748b',
+              fontWeight: pestanaActiva === 'catalogo' ? 700 : 500,
+              fontSize: '0.95rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            <Layers size={18} />
+            <span>Catálogo RNP (Mosaico & Filtros)</span>
           </button>
         </div>
 
@@ -983,14 +1010,36 @@ export const ModalRecargaPdv: React.FC<ModalRecargaPdvProps> = ({
 
                   {/* Selector de Servicio */}
                   <div className="grupo-formulario">
-                    <label className="etiqueta-formulario">
-                      <span>Seleccionar Servicio o Empresa:</span>
-                      {servicioActual && (
-                        <span style={{ fontSize: '0.78rem', color: '#64748b' }}>
-                          Comisión sugerida: ${servicioActual.comisionRecomendada || 12} MXN
-                        </span>
-                      )}
-                    </label>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
+                      <label className="etiqueta-formulario" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span>Seleccionar Servicio o Empresa:</span>
+                        {servicioActual && (
+                          <span style={{ fontSize: '0.78rem', color: '#059669', fontWeight: 600 }}>
+                            (Comisión: ${servicioActual.comisionRecomendada || 12} MXN)
+                          </span>
+                        )}
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setPestanaActiva('catalogo')}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.35rem',
+                          background: '#eff6ff',
+                          border: '1px solid #bfdbfe',
+                          color: '#1d4ed8',
+                          padding: '0.25rem 0.6rem',
+                          borderRadius: '6px',
+                          fontSize: '0.76rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <Layers size={13} />
+                        <span>Ver Catálogo Completo en Mosaico</span>
+                      </button>
+                    </div>
                     <select
                       className="control-formulario"
                       value={servicioSeleccionado}
@@ -1163,6 +1212,31 @@ export const ModalRecargaPdv: React.FC<ModalRecargaPdvProps> = ({
                 </form>
               )}
             </div>
+          )}
+
+          {/* ======================================================== */}
+          {/* PESTAÑA: CATÁLOGO COMPLETO RNP (MOSAICO Y FILTROS)       */}
+          {/* ======================================================== */}
+          {pestanaActiva === 'catalogo' && (
+            <VentanaMosaicoCatalogo
+              onSeleccionarServicio={(serv) => {
+                setServicioSeleccionado(serv.codigo);
+                setComisionServicio(serv.comisionRecomendada || 12);
+                setPestanaActiva('servicio');
+              }}
+              onSeleccionarCompania={(comp) => {
+                setCompaniaSeleccionada(comp);
+                setPestanaActiva('recarga');
+              }}
+              onSincronizacionCompletada={() => {
+                servicioRecargasYServicios
+                  .obtenerCatalogoServicios()
+                  .then((cat) => {
+                    if (cat && cat.length > 0) setServicios(cat);
+                  })
+                  .catch(() => {});
+              }}
+            />
           )}
         </div>
 

@@ -15,10 +15,12 @@ import {
   Search,
   Database,
   Info,
+  Layers,
 } from 'lucide-react';
 import { servicioRecargasYServicios } from './servicioRecargasYServicios';
 import { COMPANIAS_PREDETERMINADAS, enriquecerCompanias, type CompaniaVisual } from './datosCompanias';
 import { IconoCompania } from './IconoCompania';
+import { VentanaMosaicoCatalogo } from './VentanaMosaicoCatalogo';
 import type {
   EstadoIntegracionServiciosDto,
   CatalogoServicioDto,
@@ -30,7 +32,8 @@ import type {
 } from './tiposServicios';
 
 export const PantallaRecargasYServicios: React.FC = () => {
-  const [pestaña, setPestaña] = useState<'recargas' | 'servicios' | 'historial' | 'bitacora' | 'integracion'>('recargas');
+  const [pestaña, setPestaña] = useState<'recargas' | 'servicios' | 'catalogo' | 'historial' | 'bitacora' | 'integracion'>('recargas');
+
 
   // Estado de integración del proveedor
   const [estadoIntegracion, setEstadoIntegracion] = useState<EstadoIntegracionServiciosDto | null>(null);
@@ -370,6 +373,16 @@ export const PantallaRecargasYServicios: React.FC = () => {
         >
           <Receipt size={17} />
           <span>Pago de Servicios</span>
+        </button>
+
+        <button
+          type="button"
+          className={`btn ${pestaña === 'catalogo' ? 'btn-primario' : 'btn-secundario'}`}
+          onClick={() => setPestaña('catalogo')}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1.1rem' }}
+        >
+          <Layers size={17} />
+          <span>Catálogo RNP (Mosaico)</span>
         </button>
 
         <button
@@ -980,6 +993,35 @@ export const PantallaRecargasYServicios: React.FC = () => {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* PESTAÑA: CATÁLOGO COMPLETO EN MOSAICO */}
+      {pestaña === 'catalogo' && (
+        <div className="tarjeta" style={{ margin: 0, padding: '1.5rem' }}>
+          <div style={{ marginBottom: '1.25rem' }}>
+            <h3 style={{ margin: 0, fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Layers size={22} style={{ color: 'var(--color-primario)' }} />
+              <span>Explorador de Catálogo Oficial RNP en Modo Mosaico</span>
+            </h3>
+            <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: 'var(--color-texto-secundario)' }}>
+              Filtre por nombre de empresa o categoría, verifique comisiones recomendadas y sincronice en tiempo real con Red Nacional de Pagos.
+            </p>
+          </div>
+          <VentanaMosaicoCatalogo
+            onSeleccionarServicio={(serv) => {
+              setServicioSeleccionado(serv.codigo);
+              setComisionServicio(serv.comisionRecomendada || 12);
+              setPestaña('servicios');
+            }}
+            onSeleccionarCompania={(comp) => {
+              setCompaniaSeleccionada(comp.codigo);
+              setPestaña('recargas');
+            }}
+            onSincronizacionCompletada={() => {
+              cargarDatos();
+            }}
+          />
         </div>
       )}
 

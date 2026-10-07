@@ -787,3 +787,103 @@ input.control-error {
   font-weight: 800;
 }
 
+/* ==============================================================================
+   MOSAICO DE CATÁLOGO RNP & SERVICIOS PÚBLICOS
+   ============================================================================== */
+.catalogo-buscador-contenedor {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background-color: #f8fafc;
+  border: 1.5px solid var(--color-borde);
+  border-radius: var(--radio-md);
+  padding: 0.5rem 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.catalogo-buscador-contenedor:focus-within {
+  border-color: var(--color-primario);
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+}
+
+.catalogo-buscador-input {
+  border: none;
+  background: transparent;
+  outline: none;
+  width: 100%;
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: var(--color-texto);
+}
+
+.catalogo-categorias-scroll {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding: 0.25rem 0.1rem 0.5rem;
+  scrollbar-width: thin;
+}
+
+.catalogo-categoria-pildora {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 9999px;
+  border: 1px solid var(--color-borde);
+  background-color: #ffffff;
+  color: var(--color-texto-secundario);
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.catalogo-categoria-pildora:hover {
+  border-color: #94a3b8;
+  background-color: #f8fafc;
+  color: var(--color-texto);
+}
+
+.catalogo-categoria-pildora.activa {
+  background-color: var(--color-primario-suave);
+  border-color: var(--color-primario);
+  color: var(--color-primario-texto);
+  font-weight: 700;
+}
+
+.mosaico-servicios-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 0.85rem;
+  width: 100%;
+}
+
+.tarjeta-mosaico-servicio {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1rem;
+  border-radius: var(--radio-md);
+  border: 1.5px solid var(--color-borde);
+  background-color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+  text-align: left;
+}
+
+.tarjeta-mosaico-servicio:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 20px -5px rgba(15, 23, 42, 0.1);
+  border-color: #94a3b8;
+}
+
+.tarjeta-mosaico-servicio:active {
+  transform: translateY(-1px);
+}
+
+
