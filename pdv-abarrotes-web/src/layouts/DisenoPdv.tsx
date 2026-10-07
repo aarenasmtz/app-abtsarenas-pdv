@@ -358,11 +358,23 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
     mostrarModalVentasDelDia
   ]);
 
-  const handleVentaCompletada = (venta: VentaRealizada) => {
+  const handleVentaCompletada = (venta: VentaRealizada, imprimirTicket: boolean = false) => {
     setMostrarModalCobro(false);
     setVentaActual(venta);
-    setMostrarModalTicket(true);
     limpiarCarrito();
+
+    if (imprimirTicket) {
+      setMostrarModalTicket(true);
+    } else {
+      setMostrarModalTicket(false);
+      const cambioCalculado = Math.max(0, venta.importeRecibido - venta.total);
+      setMensajeNotificacion({
+        tipo: 'exito',
+        texto: `✓ ¡Venta completada! Total: $${venta.total.toFixed(2)}${cambioCalculado > 0 ? ` • Cambio: $${cambioCalculado.toFixed(2)}` : ''}`
+      });
+      setTimeout(() => setMensajeNotificacion(null), 4000);
+      setTimeout(() => inputRef.current?.focus(), 80);
+    }
   };
 
   const handleNuevaVenta = () => {
@@ -848,14 +860,44 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
       {/* Notificación rápida flotante */}
       {mensajeNotificacion && (
         <div style={{
-          backgroundColor: mensajeNotificacion.tipo === 'exito' ? 'var(--color-exito)' : 'var(--color-peligro)',
+          backgroundColor: mensajeNotificacion.tipo === 'exito' ? '#059669' : '#dc2626',
           color: 'white',
-          padding: '0.5rem 1rem',
+          padding: '0.6rem 1.25rem',
           textAlign: 'center',
           fontWeight: 600,
-          fontSize: '0.9rem'
+          fontSize: '0.95rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '1rem',
+          boxShadow: '0 4px 14px rgba(0,0,0,0.12)',
+          zIndex: 100
         }}>
-          {mensajeNotificacion.texto}
+          <span>{mensajeNotificacion.texto}</span>
+          {mensajeNotificacion.tipo === 'exito' && ventaActual && (
+            <button
+              type="button"
+              onClick={() => setMostrarModalTicket(true)}
+              style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.22)',
+                color: '#ffffff',
+                border: '1px solid rgba(255, 255, 255, 0.5)',
+                borderRadius: '6px',
+                padding: '0.25rem 0.65rem',
+                fontSize: '0.82rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                transition: 'all 0.15s ease'
+              }}
+              title="El cliente pidió ticket después de cobrar. Haz clic aquí o presiona F7"
+            >
+              <Printer size={15} />
+              <span>Imprimir Ticket (F7)</span>
+            </button>
+          )}
         </div>
       )}
 
@@ -1197,8 +1239,8 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
           setMostrarModalCobro(false);
           inputRef.current?.focus();
         }}
-        onVentaCompletada={(venta) => {
-          handleVentaCompletada(venta);
+        onVentaCompletada={(venta, imprimirTicket) => {
+          handleVentaCompletada(venta, imprimirTicket);
           consultarTurnoActual();
         }}
       />

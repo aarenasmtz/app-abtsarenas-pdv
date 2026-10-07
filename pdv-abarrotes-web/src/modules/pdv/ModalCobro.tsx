@@ -7,7 +7,8 @@ import {
   Trash2, 
   CheckCircle,
   AlertCircle,
-  ArrowRightLeft
+  ArrowRightLeft,
+  Printer
 } from 'lucide-react';
 import type { ItemVenta, RegistrarVentaPeticion, VentaRealizada, VentaPago, MetodoPagoDto } from '../ventas/tipos';
 import servicioVentas from '../ventas/servicioVentas';
@@ -23,7 +24,7 @@ export interface PropiedadesModalCobro {
   idTurnoCaja?: number;
   modoInicial?: 'efectivo' | 'tarjeta' | 'mixto';
   onCerrar: () => void;
-  onVentaCompletada: (venta: VentaRealizada) => void;
+  onVentaCompletada: (venta: VentaRealizada, imprimirTicket?: boolean) => void;
 }
 
 interface PartidaPagoMixto {
@@ -65,6 +66,7 @@ export const ModalCobro: React.FC<PropiedadesModalCobro> = ({
   const [cargando, setCargando] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [tokenIdempotencia, setTokenIdempotencia] = useState<string>('');
+  const [imprimirTicketSeleccionado, setImprimirTicketSeleccionado] = useState<boolean>(false);
 
   // Referencia para auto-foco y selección de texto
   const inputMontoRef = useRef<HTMLInputElement>(null);
@@ -103,6 +105,7 @@ export const ModalCobro: React.FC<PropiedadesModalCobro> = ({
     if (abierto) {
       setError(null);
       setCargando(false);
+      setImprimirTicketSeleccionado(false);
       setTokenIdempotencia(crypto.randomUUID ? crypto.randomUUID() : `idemp-${Date.now()}`);
 
       if (modoInicial === 'tarjeta') {
@@ -220,8 +223,8 @@ export const ModalCobro: React.FC<PropiedadesModalCobro> = ({
     setPagosMixtos(prev => prev.filter(p => p.idTemporal !== idTemporal));
   };
 
-  // Procesar cobro definitivo
-  const handleConfirmarCobro = async () => {
+  // Procesar cobro definitivo (imprimirTicket = false por defecto al dar Enter)
+  const handleConfirmarCobro = async (imprimirTicket: boolean = false) => {
     setError(null);
 
     if (articulos.length === 0) {
@@ -290,7 +293,7 @@ export const ModalCobro: React.FC<PropiedadesModalCobro> = ({
 
       if (resultado.exito && resultado.datos) {
         reproducirBeepExito();
-        onVentaCompletada(resultado.datos);
+        onVentaCompletada(resultado.datos, imprimirTicket);
         onCerrar();
       } else {
         reproducirBeepError();
@@ -314,17 +317,18 @@ export const ModalCobro: React.FC<PropiedadesModalCobro> = ({
         e.preventDefault();
         onCerrar();
       } else if (e.key === 'Enter') {
-        // Si no está cargando y no estamos agregando una referencia en modo mixto
+        // Al dar Enter se finaliza el cobro de inmediato.
+        // Solo abrirá modal de ticket si se marcó explícitamente con el cursor.
         if (!cargando) {
           e.preventDefault();
-          handleConfirmarCobro();
+          handleConfirmarCobro(imprimirTicketSeleccionado);
         }
       }
     };
 
     window.addEventListener('keydown', manejarTeclasModal);
     return () => window.removeEventListener('keydown', manejarTeclasModal);
-  }, [abierto, cargando, modoCobro, montoRecibidoRapido, total, saldoRestantePorCobrar, pagosMixtos]);
+  }, [abierto, cargando, modoCobro, montoRecibidoRapido, total, saldoRestantePorCobrar, pagosMixtos, imprimirTicketSeleccionado]);
 
   if (!abierto) return null;
 
@@ -812,40 +816,100 @@ export const ModalCobro: React.FC<PropiedadesModalCobro> = ({
           backgroundColor: '#f8fafc',
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center'
+          alignItems: 'center',
+          gap: '1rem',
+          flexWrap: 'wrap'
         }}>
-          <button
-            type="button"
-            onClick={onCerrar}
-            disabled={cargando}
-            className="btn btn-secundario"
-            style={{ padding: '0.85rem 1.5rem', fontSize: '1rem' }}
-          >
-            Cancelar (Esc)
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+            <button
+              type="button"
+              onClick={onCerrar}
+              disabled={cargando}
+              className="btn btn-secundario"
+              style={{ padding: '0.85rem 1.4rem', fontSize: '1rem' }}
+            >
+              Cancelar (Esc)
+            </button>
 
-          <button
-            type="button"
-            onClick={handleConfirmarCobro}
-            disabled={cargando || (modoCobro === 'rapido' && metodoPagoRapido === 1 && montoRecibidoRapido < total) || (modoCobro === 'mixto' && saldoRestantePorCobrar > 0)}
-            className="btn btn-primario"
-            style={{ 
-              padding: '0.95rem 2.25rem', 
-              fontSize: '1.15rem', 
-              fontWeight: 800,
-              gap: '0.6rem',
-              boxShadow: '0 4px 14px rgba(5, 150, 105, 0.4)'
-            }}
-          >
-            {cargando ? (
-              <span>Procesando Venta...</span>
-            ) : (
-              <>
-                <CheckCircle size={22} />
-                <span>CONFIRMAR COBRO (Enter)</span>
-              </>
-            )}
-          </button>
+            {/* Selector con Cursor: Casilla opcional para imprimir ticket */}
+            <label 
+              style={{ 
+                display: 'inline-flex', 
+                alignItems: 'center', 
+                gap: '0.45rem', 
+                cursor: 'pointer', 
+                userSelect: 'none', 
+                fontSize: '0.88rem', 
+                color: '#334155', 
+                fontWeight: 600,
+                backgroundColor: '#ffffff',
+                padding: '0.6rem 0.85rem',
+                borderRadius: '8px',
+                border: imprimirTicketSeleccionado ? '1.5px solid #2563eb' : '1px solid #cbd5e1',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                transition: 'all 0.15s ease'
+              }}
+              title="Marcar con el cursor si deseas que se imprima ticket en esta venta"
+            >
+              <input 
+                type="checkbox" 
+                checked={imprimirTicketSeleccionado} 
+                onChange={(e) => setImprimirTicketSeleccionado(e.target.checked)}
+                style={{ width: '17px', height: '17px', cursor: 'pointer', accentColor: '#2563eb' }}
+              />
+              <Printer size={16} color={imprimirTicketSeleccionado ? '#2563eb' : '#64748b'} />
+              <span>Imprimir ticket</span>
+            </label>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            {/* Opción directa con cursor: Imprimir Ticket */}
+            <button
+              type="button"
+              onClick={() => handleConfirmarCobro(true)}
+              disabled={cargando || (modoCobro === 'rapido' && metodoPagoRapido === 1 && montoRecibidoRapido < total) || (modoCobro === 'mixto' && saldoRestantePorCobrar > 0)}
+              className="btn btn-secundario"
+              style={{ 
+                padding: '0.85rem 1.25rem', 
+                fontSize: '0.95rem', 
+                fontWeight: 600,
+                gap: '0.5rem',
+                borderColor: '#cbd5e1',
+                color: '#334155'
+              }}
+              title="Haz clic con el cursor si el cliente solicita expresamente ticket impreso"
+            >
+              <Printer size={18} />
+              <span>Cobrar e Imprimir Ticket</span>
+            </button>
+
+            {/* Acción principal por defecto al dar Enter: Finalizar sin imprimir */}
+            <button
+              type="button"
+              onClick={() => handleConfirmarCobro(imprimirTicketSeleccionado)}
+              disabled={cargando || (modoCobro === 'rapido' && metodoPagoRapido === 1 && montoRecibidoRapido < total) || (modoCobro === 'mixto' && saldoRestantePorCobrar > 0)}
+              className="btn btn-primario"
+              style={{ 
+                padding: '0.95rem 2rem', 
+                fontSize: '1.15rem', 
+                fontWeight: 800,
+                gap: '0.6rem',
+                backgroundColor: '#059669',
+                borderColor: '#059669',
+                boxShadow: '0 4px 14px rgba(5, 150, 105, 0.4)'
+              }}
+              title="Finalizar venta directamente (Enter). No abre modal de ticket a menos que lo selecciones con cursor."
+            >
+              {cargando ? (
+                <span>Procesando Venta...</span>
+              ) : (
+                <>
+                  <CheckCircle size={22} />
+                  <span>CONFIRMAR COBRO (Enter)</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
 
       </div>
