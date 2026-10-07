@@ -32,4 +32,15 @@ public class ProveedorServiciosPendiente : IProveedorServicios
             FechaHora = DateTime.Now
         });
     }
+
+    public Task<ResultadoConsultaAdeudoDto> ConsultarAdeudoServicioAsync(SolicitudConsultaAdeudoDto solicitud, CancellationToken ct = default)
+    {
+        return Task.FromResult(new ResultadoConsultaAdeudoDto
+        {
+            Exito = false,
+            MontoAdeudo = 0m,
+            EsMontoEditable = true,
+            MensajeProveedor = "Proveedor no configurado para consulta de adeudo en línea."
+        });
+    }
 }

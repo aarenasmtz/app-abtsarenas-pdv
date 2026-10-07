@@ -40,8 +40,16 @@ public static class ConfiguracionInfraestructura
         servicios.AddScoped<IServicioVentas, ServicioVentas>();
         servicios.AddScoped<IServicioTicketsPendientes, ServicioTicketsPendientes>();
         servicios.AddScoped<IServicioCaja, ServicioCaja>();
-        servicios.AddScoped<IProveedorRecargas, ProveedorRecargasPendiente>();
-        servicios.AddScoped<IProveedorServicios, ProveedorServiciosPendiente>();
+        servicios.Configure<PdvAbarrotes.Aplicacion.DTOs.Servicios.ConfiguracionRnpOptions>(
+            configuracion.GetSection(PdvAbarrotes.Aplicacion.DTOs.Servicios.ConfiguracionRnpOptions.Seccion));
+
+        servicios.AddHttpClient<IProveedorRnpSoapCliente, ProveedorRnpSoapCliente>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(35);
+        });
+
+        servicios.AddScoped<IProveedorRecargas, ProveedorRecargasRnp>();
+        servicios.AddScoped<IProveedorServicios, ProveedorServiciosRnp>();
         servicios.AddScoped<IServicioProveedores, ServicioProveedores>();
         servicios.AddScoped<IServicioCompras, ServicioCompras>();
         servicios.AddScoped<IServicioReportes, ServicioReportes>();

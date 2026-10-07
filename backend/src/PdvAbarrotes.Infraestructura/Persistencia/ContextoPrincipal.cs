@@ -43,6 +43,10 @@ public class ContextoPrincipal : DbContext, IContextoPrincipal
     public DbSet<BitacoraAuditoria> BitacoraAuditoria => Set<BitacoraAuditoria>();
     public DbSet<PedidoSugerido> PedidosSugeridos => Set<PedidoSugerido>();
     public DbSet<DetallePedidoSugerido> DetallePedidosSugeridos => Set<DetallePedidoSugerido>();
+    public DbSet<TransaccionServicio> TransaccionesServicios => Set<TransaccionServicio>();
+    public DbSet<BitacoraServicio> BitacoraServicios => Set<BitacoraServicio>();
+    public DbSet<LogErrorServicio> LogErroresServicios => Set<LogErrorServicio>();
+    public DbSet<ProductoServicioRnp> CatalogoProductosServicios => Set<ProductoServicioRnp>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -481,6 +485,80 @@ public class ContextoPrincipal : DbContext, IContextoPrincipal
                 .WithMany()
                 .HasForeignKey(e => e.IdProveedor)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Mapeo TransaccionesServicios
+        modelBuilder.Entity<TransaccionServicio>(entidad =>
+        {
+            entidad.ToTable("TransaccionesServicios");
+            entidad.HasKey(e => e.IdTransaccionServicio);
+            entidad.Property(e => e.FolioPos).HasMaxLength(30).IsRequired();
+            entidad.HasIndex(e => e.FolioPos).IsUnique();
+            entidad.Property(e => e.TipoTransaccion).HasMaxLength(20).IsRequired();
+            entidad.Property(e => e.CarrierId).HasMaxLength(50).IsRequired();
+            entidad.Property(e => e.CarrierNombre).HasMaxLength(100).IsRequired();
+            entidad.Property(e => e.Referencia).HasMaxLength(100).IsRequired();
+            entidad.Property(e => e.Monto).HasPrecision(18, 2);
+            entidad.Property(e => e.Comision).HasPrecision(18, 2);
+            entidad.Property(e => e.TotalCobrado).HasPrecision(18, 2);
+            entidad.Property(e => e.Estado).HasMaxLength(30).IsRequired();
+            entidad.Property(e => e.CodigoRespuesta).HasMaxLength(10);
+            entidad.Property(e => e.DescripcionRespuesta).HasMaxLength(250);
+            entidad.Property(e => e.FolioProveedor).HasMaxLength(50);
+            entidad.Property(e => e.FolioCarrier).HasMaxLength(50);
+            entidad.Property(e => e.AvisoNotice).HasMaxLength(250);
+            entidad.Property(e => e.SaldoPosterior).HasPrecision(18, 2);
+
+            entidad.HasOne(e => e.Usuario)
+                .WithMany()
+                .HasForeignKey(e => e.IdUsuario)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entidad.HasOne(e => e.Caja)
+                .WithMany()
+                .HasForeignKey(e => e.IdCaja)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entidad.HasOne(e => e.Venta)
+                .WithMany()
+                .HasForeignKey(e => e.IdVenta)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // Mapeo BitacoraServicios
+        modelBuilder.Entity<BitacoraServicio>(entidad =>
+        {
+            entidad.ToTable("BitacoraServicios");
+            entidad.HasKey(e => e.IdBitacoraServicio);
+            entidad.Property(e => e.FolioPos).HasMaxLength(30).IsRequired();
+            entidad.Property(e => e.Accion).HasMaxLength(60).IsRequired();
+            entidad.Property(e => e.Mensaje).HasMaxLength(500).IsRequired();
+            entidad.Property(e => e.Usuario).HasMaxLength(100);
+            entidad.Property(e => e.DireccionIp).HasMaxLength(50);
+        });
+
+        // Mapeo LogErroresServicios
+        modelBuilder.Entity<LogErrorServicio>(entidad =>
+        {
+            entidad.ToTable("LogErroresServicios");
+            entidad.HasKey(e => e.IdLogError);
+            entidad.Property(e => e.FolioPos).HasMaxLength(30);
+            entidad.Property(e => e.MetodoSoap).HasMaxLength(100).IsRequired();
+            entidad.Property(e => e.TipoError).HasMaxLength(100).IsRequired();
+            entidad.Property(e => e.CodigoError).HasMaxLength(20);
+            entidad.Property(e => e.MensajeError).IsRequired();
+        });
+
+        // Mapeo CatalogoProductosServicios
+        modelBuilder.Entity<ProductoServicioRnp>(entidad =>
+        {
+            entidad.ToTable("CatalogoProductosServicios");
+            entidad.HasKey(e => e.IdCatalogoProducto);
+            entidad.Property(e => e.CarrierId).HasMaxLength(50).IsRequired();
+            entidad.Property(e => e.Descripcion).HasMaxLength(200).IsRequired();
+            entidad.Property(e => e.Grupo).HasMaxLength(50).IsRequired();
+            entidad.Property(e => e.Monto).HasPrecision(18, 2);
+            entidad.Property(e => e.Observacion).HasMaxLength(300);
         });
     }
 }

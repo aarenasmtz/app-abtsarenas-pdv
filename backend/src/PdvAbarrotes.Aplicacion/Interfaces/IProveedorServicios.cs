@@ -12,4 +12,5 @@ public interface IProveedorServicios
     Task<bool> ProveedorEstaConfiguradoAsync();
     Task<string> ConsultarCatalogoServiciosAsync();
     Task<ResultadoPagoServicioDto> EjecutarPagoServicioAsync(SolicitudPagoServicioDto solicitud, CancellationToken ct = default);
+    Task<ResultadoConsultaAdeudoDto> ConsultarAdeudoServicioAsync(SolicitudConsultaAdeudoDto solicitud, CancellationToken ct = default);
 }

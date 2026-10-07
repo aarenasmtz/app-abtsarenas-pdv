@@ -1,0 +1,160 @@
+[
+  {
+    "Prueba": "Check_Balance (Consulta de saldo de bolsa)",
+    "Metodo": "Check_Balance",
+    "Entrada": {
+      "User": "6144135400"
+    },
+    "Salida": {
+      "Confirmation": "00",
+      "Saldo_Inicial": "0",
+      "Compras": "10000000",
+      "Ventas": "95790.14",
+      "Comision": "-138",
+      "Balance": "9904209.86"
+    },
+    "TiempoSegundos": 0.23,
+    "Estado": "EXITOSO"
+  },
+  {
+    "Prueba": "pos_prices_products (Catálogo de productos y SKUs)",
+    "Metodo": "pos_prices_products",
+    "Entrada": {
+      "User": "6144135400"
+    },
+    "TotalProductos": 412,
+    "TiempoSegundos": 0.14,
+    "Estado": "EXITOSO"
+  },
+  {
+    "Prueba": "check_service_pending_amount (Sky SKU 17)",
+    "Metodo": "check_service_pending_amount",
+    "Entrada": {
+      "id_operadora": "17",
+      "referencia": "501205133215"
+    },
+    "Salida": {
+      "Response": "1",
+      "editable": "True",
+      "rcode": "0",
+      "amount": "0",
+      "Message": "Consulta exitosa. Referencia con saldo=0"
+    },
+    "TiempoSegundos": 1.48,
+    "Estado": "EXITOSO"
+  },
+  {
+    "Prueba": "Caso 2222222222 (Transacción Exitosa Rápida (1s))",
+    "FolioPos": "1000826100623435629904",
+    "Telefono": "2222222222",
+    "CodigoInicial": "00",
+    "CodigoEsperado": "00",
+    "ReintentosCheck": 1,
+    "RespuestaFinal": {
+      "Confirmation": "00",
+      "Description": "TRANSACCION EXITOSA",
+      "Folio": "286819",
+      "Folio_Carrier": "286819",
+      "Notice": "Buen dia",
+      "Balance": "9904159.41",
+      "transaction_date": "06/10/2026 23:43:55",
+      "productVersion": "24"
+    },
+    "Cumplido": true
+  },
+  {
+    "Prueba": "Caso 5555555555 (Referencia no válida / Revisar operador)",
+    "FolioPos": "1000826100623435856005",
+    "Telefono": "5555555555",
+    "CodigoInicial": "01",
+    "CodigoEsperado": "01",
+    "ReintentosCheck": 1,
+    "RespuestaFinal": {
+      "Confirmation": "01",
+      "Description": "TELEFONO INVALIDO",
+      "Folio": "000000",
+      "Folio_Carrier": "000000",
+      "Notice": "Buen dia",
+      "Balance": "0",
+      "transaction_date": "06/10/2026 23:44:00",
+      "productVersion": "24"
+    },
+    "Cumplido": true
+  },
+  {
+    "Prueba": "Caso 4444444444 (Teléfono suscriptor no válido)",
+    "FolioPos": "1000826100623440083706",
+    "Telefono": "4444444444",
+    "CodigoInicial": "02",
+    "CodigoEsperado": "02",
+    "ReintentosCheck": 1,
+    "RespuestaFinal": {
+      "Confirmation": "02",
+      "Description": "REFERENCIA NO VALIDA",
+      "Folio": "000000",
+      "Folio_Carrier": "000000",
+      "Notice": "Buen dia",
+      "Balance": "0",
+      "transaction_date": "06/10/2026 23:44:02",
+      "productVersion": "24"
+    },
+    "Cumplido": true
+  },
+  {
+    "Prueba": "Caso 6666666666 (Saldo insuficiente)",
+    "FolioPos": "1000826100623440310907",
+    "Telefono": "6666666666",
+    "CodigoInicial": "10",
+    "CodigoEsperado": "05",
+    "ReintentosCheck": 0,
+    "RespuestaFinal": {
+      "Confirmation": "10",
+      "Description": "REGION NO PERMITIDA",
+      "Folio": "000000",
+      "Folio_Carrier": "000000",
+      "Notice": "Buen dia",
+      "Balance": "0",
+      "transaction_date": "06/10/2026 23:44:02",
+      "productVersion": "24"
+    },
+    "Cumplido": false
+  },
+  {
+    "Prueba": "Caso 5553333333 (Transacción Exitosa Alterna)",
+    "FolioPos": "1000826100623440324408",
+    "Telefono": "5553333333",
+    "CodigoInicial": "00",
+    "CodigoEsperado": "00",
+    "ReintentosCheck": 1,
+    "RespuestaFinal": {
+      "Confirmation": "00",
+      "Description": "TRANSACCION EXITOSA",
+      "Folio": "286822",
+      "Folio_Carrier": "286822",
+      "Notice": "Buen dia",
+      "Balance": "9904108.96",
+      "transaction_date": "06/10/2026 23:44:02",
+      "productVersion": "24"
+    },
+    "Cumplido": true
+  },
+  {
+    "Prueba": "Caso 5559999999 (Recarga en Espera -> Ciclo Check_transaction)",
+    "FolioPos": "1000826100623440551809",
+    "Telefono": "5559999999",
+    "CodigoInicial": "24",
+    "CodigoEsperado": "24",
+    "ReintentosCheck": 9,
+    "RespuestaFinal": {
+      "Confirmation": "24",
+      "Description": "RECARGA EN ESPERA",
+      "Folio": "000000",
+      "Folio_Carrier": "000000",
+      "Notice": "Buen dia",
+      "Balance": "0",
+      "transaction_date": "06/10/2026 23:44:05",
+      "productVersion": "24"
+    },
+    "Cumplido": true
+  }
+]
