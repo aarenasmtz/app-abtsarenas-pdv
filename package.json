@@ -1,0 +1,12 @@
+{
+  "name": "app-abtsarenas-pdv-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "cd pdv-abarrotes-web && npm install && npm run build",
+    "deploy": "wrangler deploy --compatibility-date 2026-10-06 --assets ./pdv-abarrotes-web/dist"
+  },
+  "devDependencies": {
+    "wrangler": "^4.148.0"
+  }
+}
