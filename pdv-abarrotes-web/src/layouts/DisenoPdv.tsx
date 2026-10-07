@@ -25,9 +25,7 @@ import { ModalReimpresion } from '../modules/pdv/ModalReimpresion';
 import { ModalPesajeGranel } from '../modules/pdv/ModalPesajeGranel';
 import { ModalTicketsPendientes } from '../modules/pdv/ModalTicketsPendientes';
 import { ModalBuscarProductos } from '../modules/pdv/ModalBuscarProductos';
-const PantallaRecargasYServicios = React.lazy(() =>
-  import('../modules/servicios/PantallaRecargasYServicios').then((m) => ({ default: m.PantallaRecargasYServicios }))
-);
+import { ModalRecargaPdv } from '../modules/pdv/ModalRecargaPdv';
 import { servicioTicketsPendientes } from '../modules/ventas/servicioTicketsPendientes';
 import { ModalAbrirTurno } from '../modules/caja/ModalAbrirTurno';
 import { ModalMovimientoCaja } from '../modules/caja/ModalMovimientoCaja';
@@ -257,6 +255,12 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
           setIdentificadorClienteEspera('');
           setMostrarDialogoPonerEnEspera(true);
         }
+        return;
+      }
+
+      if (e.key === 'F5') {
+        e.preventDefault();
+        setMostrarModalRecargas(true);
         return;
       }
 
@@ -697,6 +701,26 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
             <span>Reimprimir (F8)</span>
           </button>
 
+          {/* Botón destacado para Recargas Electrónicas y Pago de Servicios */}
+          <button 
+            className="btn btn-primario" 
+            style={{ 
+              padding: '0.45rem 0.9rem', 
+              fontSize: '0.85rem', 
+              gap: '0.45rem',
+              backgroundColor: '#0284c7',
+              borderColor: '#0284c7',
+              color: '#ffffff',
+              fontWeight: 700,
+              boxShadow: '0 2px 6px rgba(2, 132, 199, 0.3)'
+            }}
+            onClick={() => setMostrarModalRecargas(true)}
+            title="Recargas Electrónicas de Tiempo Aire y Pago de Servicios (F5)"
+          >
+            <Zap size={16} />
+            <span>Recargas (F5)</span>
+          </button>
+
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: 'var(--color-texto-secundario)' }}>
             <span>Cliente:</span>
             <strong style={{ color: 'var(--color-texto)' }}>{nombreCliente}</strong>
@@ -1024,6 +1048,7 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
               <div><strong>T:</strong> Solo Tarjeta</div>
               <div><strong>M:</strong> Mixto / Vales</div>
               <div><strong>F4:</strong> Limpiar</div>
+              <div><strong>F5:</strong> Recargas / Serv.</div>
               <div><strong>F6:</strong> En Espera</div>
               <div><strong>F7:</strong> Pendientes</div>
               <div><strong>F8:</strong> Reimprimir</div>
@@ -1228,47 +1253,30 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
       />
 
       {/* Modal de Recargas Electrónicas y Pago de Servicios */}
-      {mostrarModalRecargas && (
-        <div className="modal-overlay" style={{ zIndex: 1200 }}>
-          <div 
-            className="modal-contenido"
-            style={{ 
-              maxWidth: '1000px', 
-              width: '95%', 
-              maxHeight: '90vh',
-              overflowY: 'auto',
-              backgroundColor: '#ffffff',
-              borderRadius: '16px',
-              padding: '1.5rem',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-              border: '1px solid #e2e8f0',
-              position: 'relative'
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Zap size={24} color="#2563eb" />
-                <h2 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a' }}>Recargas Electrónicas y Pago de Servicios</h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setMostrarModalRecargas(false);
-                  inputRef.current?.focus();
-                }}
-                className="btn btn-secundario"
-                style={{ padding: '0.35rem 0.75rem', fontSize: '0.85rem' }}
-              >
-                Cerrar (Esc)
-              </button>
-            </div>
-
-            <React.Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-texto-secundario)' }}>Cargando módulo de recargas y servicios...</div>}>
-              <PantallaRecargasYServicios />
-            </React.Suspense>
-          </div>
-        </div>
-      )}
+      <ModalRecargaPdv
+        abierto={mostrarModalRecargas}
+        onCerrar={() => {
+          setMostrarModalRecargas(false);
+          inputRef.current?.focus();
+        }}
+        onAgregarAlCarrito={(item) => {
+          agregarArticulo({
+            idProducto: Math.floor(100000 + Math.random() * 900000),
+            codigoBarras: item.codigoBarras,
+            descripcion: item.descripcion,
+            cantidad: 1,
+            precioUnitario: item.monto,
+            permiteVentaFraccionada: false,
+            existenciaDisponible: 999,
+          });
+          setMensajeNotificacion({
+            tipo: 'exito',
+            texto: `✓ Recarga agregada a la venta: ${item.descripcion} ($${item.monto.toFixed(2)})`,
+          });
+          setTimeout(() => setMensajeNotificacion(null), 3000);
+          inputRef.current?.focus();
+        }}
+      />
 
       {/* Modal de Apertura de Turno con Fondo Inicial */}
       <ModalAbrirTurno

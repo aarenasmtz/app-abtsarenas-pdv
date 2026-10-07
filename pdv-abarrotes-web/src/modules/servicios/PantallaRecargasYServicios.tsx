@@ -17,9 +17,10 @@ import {
   Info,
 } from 'lucide-react';
 import { servicioRecargasYServicios } from './servicioRecargasYServicios';
+import { COMPANIAS_PREDETERMINADAS, enriquecerCompanias, type CompaniaVisual } from './datosCompanias';
+import { IconoCompania } from './IconoCompania';
 import type {
   EstadoIntegracionServiciosDto,
-  CompaniaTelefonicaDto,
   CatalogoServicioDto,
   ResultadoRecargaDto,
   ResultadoPagoServicioDto,
@@ -36,7 +37,7 @@ export const PantallaRecargasYServicios: React.FC = () => {
   const [cargandoEstado, setCargandoEstado] = useState<boolean>(true);
 
   // Catálogos
-  const [companias, setCompanias] = useState<CompaniaTelefonicaDto[]>([]);
+  const [companias, setCompanias] = useState<CompaniaVisual[]>(COMPANIAS_PREDETERMINADAS);
   const [servicios, setServicios] = useState<CatalogoServicioDto[]>([]);
 
   // Formulario Recargas
@@ -76,7 +77,8 @@ export const PantallaRecargasYServicios: React.FC = () => {
         servicioRecargasYServicios.obtenerCatalogoServicios(),
       ]);
       setEstadoIntegracion(estado);
-      setCompanias(companiasData);
+      const companiasVisuales = enriquecerCompanias(companiasData);
+      setCompanias(companiasVisuales);
       setServicios(serviciosData);
 
       if (serviciosData.length > 0) {
@@ -432,86 +434,183 @@ export const PantallaRecargasYServicios: React.FC = () => {
             )}
 
             <form onSubmit={ejecutarRecarga} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              {/* Selección de Compañía */}
+              {/* Selección de Compañía mediante Mosaico Visual */}
               <div className="grupo-formulario">
-                <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Compañía Telefónica:</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '0.5rem', marginTop: '0.4rem' }}>
-                  {companias.map((c) => (
-                    <button
-                      key={c.codigo}
-                      type="button"
-                      onClick={() => setCompaniaSeleccionada(c.codigo)}
-                      style={{
-                        padding: '0.6rem 0.5rem',
-                        border: companiaSeleccionada === c.codigo ? '2px solid var(--color-primario)' : '1px solid var(--color-borde)',
-                        backgroundColor: companiaSeleccionada === c.codigo ? 'rgba(59, 130, 246, 0.1)' : 'var(--color-fondo-suave)',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        fontWeight: companiaSeleccionada === c.codigo ? 700 : 500,
-                        fontSize: '0.85rem',
-                        color: 'var(--color-texto-principal)',
-                        textAlign: 'center',
-                      }}
-                    >
-                      {c.nombre}
-                    </button>
-                  ))}
+                <label className="etiqueta-formulario">
+                  <span>Compañía Telefónica (Operador):</span>
+                  {companiaActual && (
+                    <span style={{ fontSize: '0.78rem', color: '#64748b' }}>
+                      Seleccionada: <strong style={{ color: companiaActual.colorTexto }}>{companiaActual.nombre}</strong>
+                    </span>
+                  )}
+                </label>
+                <div className="mosaico-companias-grid" style={{ marginTop: '0.35rem' }}>
+                  {companias.map((c) => {
+                    const esSeleccionada = companiaSeleccionada === c.codigo;
+                    return (
+                      <div
+                        key={c.codigo}
+                        className={`tarjeta-mosaico-compania ${esSeleccionada ? 'seleccionada' : ''}`}
+                        onClick={() => {
+                          setCompaniaSeleccionada(c.codigo);
+                          if (!c.montosDisponibles.includes(montoRecarga) && c.montosDisponibles.length > 0) {
+                            setMontoRecarga(c.montosDisponibles[0]);
+                          }
+                        }}
+                        style={{
+                          borderColor: esSeleccionada ? c.colorPrimario : '#e2e8f0',
+                          backgroundColor: esSeleccionada ? c.colorFondo : '#ffffff',
+                        }}
+                      >
+                        {esSeleccionada && (
+                          <div
+                            className="indicador-check"
+                            style={{ backgroundColor: c.colorPrimario }}
+                          >
+                            ✓
+                          </div>
+                        )}
+
+                        <div style={{ marginBottom: '0.35rem' }}>
+                          <IconoCompania tipo={c.iconoTipo} size={32} />
+                        </div>
+
+                        <span
+                          style={{
+                            fontSize: '0.85rem',
+                            fontWeight: esSeleccionada ? 800 : 600,
+                            color: esSeleccionada ? c.colorTexto : '#0f172a',
+                          }}
+                        >
+                          {c.nombre}
+                        </span>
+
+                        <span
+                          style={{
+                            fontSize: '0.68rem',
+                            color: esSeleccionada ? c.colorTexto : '#94a3b8',
+                            marginTop: '0.1rem',
+                          }}
+                        >
+                          {c.subtitulo}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
-              {/* Número Telefónico */}
-              <div className="grupo-formulario">
-                <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Número Celular (10 Dígitos):</label>
-                <input
-                  type="tel"
-                  maxLength={10}
-                  className="control-formulario"
-                  placeholder="Ej. 5551234567"
-                  value={numeroTelefono}
-                  onChange={(e) => setNumeroTelefono(e.target.value)}
-                  style={{ marginTop: '0.35rem', fontSize: '1.1rem', letterSpacing: '2px', fontWeight: 600 }}
-                  required
-                />
-              </div>
-
-              {/* Confirmación Número */}
-              <div className="grupo-formulario">
-                <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Confirmar Número Celular:</label>
-                <input
-                  type="tel"
-                  maxLength={10}
-                  className="control-formulario"
-                  placeholder="Reingrese los 10 dígitos"
-                  value={confirmarNumero}
-                  onChange={(e) => setConfirmarNumero(e.target.value)}
-                  style={{ marginTop: '0.35rem', fontSize: '1.1rem', letterSpacing: '2px', fontWeight: 600 }}
-                  required
-                />
-              </div>
-
-              {/* Montos Predefinidos */}
-              <div className="grupo-formulario">
-                <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Monto a Recargar:</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', marginTop: '0.4rem' }}>
-                  {montosActuales.map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => setMontoRecarga(m)}
+              {/* Teléfono y Confirmación en 2 Columnas */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="grupo-formulario">
+                  <label className="etiqueta-formulario">
+                    <span>Número Celular (10 Dígitos):</span>
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <PhoneCall
+                      size={18}
                       style={{
-                        padding: '0.5rem',
-                        border: montoRecarga === m ? '2px solid var(--color-exito)' : '1px solid var(--color-borde)',
-                        backgroundColor: montoRecarga === m ? 'rgba(16, 185, 129, 0.15)' : 'var(--color-fondo-suave)',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        fontWeight: 700,
-                        fontSize: '0.9rem',
-                        color: montoRecarga === m ? 'var(--color-exito)' : 'var(--color-texto-principal)',
+                        position: 'absolute',
+                        left: '12px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        color: '#94a3b8',
                       }}
-                    >
-                      ${m}
-                    </button>
-                  ))}
+                    />
+                    <input
+                      type="tel"
+                      maxLength={10}
+                      className="control-formulario"
+                      placeholder="Ej. 4771234567"
+                      value={numeroTelefono}
+                      onChange={(e) => setNumeroTelefono(e.target.value.replace(/\D/g, ''))}
+                      style={{
+                        paddingLeft: '38px',
+                        fontSize: '1.15rem',
+                        fontWeight: 700,
+                        letterSpacing: '2px',
+                        fontFamily: 'var(--fuente-numerica)',
+                      }}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grupo-formulario">
+                  <label className="etiqueta-formulario">
+                    <span>Confirmar Número Celular:</span>
+                    {confirmarNumero && numeroTelefono && (
+                      <span
+                        style={{
+                          fontSize: '0.75rem',
+                          color: numeroTelefono === confirmarNumero ? '#059669' : '#dc2626',
+                          fontWeight: 700,
+                        }}
+                      >
+                        {numeroTelefono === confirmarNumero ? '✓ Coinciden' : '✗ No coinciden'}
+                      </span>
+                    )}
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <ShieldCheck
+                      size={18}
+                      style={{
+                        position: 'absolute',
+                        left: '12px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        color: '#94a3b8',
+                      }}
+                    />
+                    <input
+                      type="tel"
+                      maxLength={10}
+                      className={`control-formulario ${
+                        confirmarNumero && numeroTelefono !== confirmarNumero ? 'control-error' : ''
+                      }`}
+                      placeholder="Reescriba los 10 dígitos"
+                      value={confirmarNumero}
+                      onChange={(e) => setConfirmarNumero(e.target.value.replace(/\D/g, ''))}
+                      style={{
+                        paddingLeft: '38px',
+                        fontSize: '1.15rem',
+                        fontWeight: 700,
+                        letterSpacing: '2px',
+                        fontFamily: 'var(--fuente-numerica)',
+                      }}
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Montos Predefinidos con Selector Mosaico */}
+              <div className="grupo-formulario">
+                <label className="etiqueta-formulario">
+                  <span>Monto a Recargar:</span>
+                  <span style={{ fontSize: '0.85rem', color: '#059669', fontWeight: 700 }}>
+                    Monto seleccionado: {formatearDinero(montoRecarga)} MXN
+                  </span>
+                </label>
+                <div className="mosaico-montos-grid" style={{ marginTop: '0.35rem' }}>
+                  {montosActuales.map((m) => {
+                    const esActivo = montoRecarga === m;
+                    return (
+                      <button
+                        key={m}
+                        type="button"
+                        className={`boton-monto-recarga ${esActivo ? 'activo' : ''}`}
+                        onClick={() => setMontoRecarga(m)}
+                        style={{
+                          backgroundColor: esActivo ? (companiaActual?.colorPrimario || 'var(--color-primario)') : '#ffffff',
+                          borderColor: esActivo ? (companiaActual?.colorPrimario || 'var(--color-primario)') : '#cbd5e1',
+                          color: esActivo ? '#ffffff' : '#0f172a',
+                        }}
+                      >
+                        ${m}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -519,26 +618,33 @@ export const PantallaRecargasYServicios: React.FC = () => {
               <button
                 type="submit"
                 className="btn btn-primario"
-                disabled={procesandoRecarga}
+                disabled={
+                  procesandoRecarga ||
+                  numeroTelefono.length !== 10 ||
+                  numeroTelefono !== confirmarNumero
+                }
                 style={{
-                  padding: '0.85rem',
+                  padding: '0.9rem',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '0.5rem',
-                  fontSize: '1rem',
-                  fontWeight: 600,
+                  fontSize: '1.05rem',
+                  fontWeight: 800,
+                  marginTop: '0.5rem',
+                  backgroundColor: companiaActual?.colorPrimario || 'var(--color-primario)',
+                  borderColor: companiaActual?.colorPrimario || 'var(--color-primario)',
                 }}
               >
                 {procesandoRecarga ? (
                   <>
-                    <div className="animacion-giratoria" style={{ width: '18px', height: '18px', border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%' }} />
+                    <div className="animacion-giratoria" style={{ width: '20px', height: '20px', border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%' }} />
                     <span>Enviando Transacción a RNP...</span>
                   </>
                 ) : (
                   <>
-                    <Zap size={18} />
-                    <span>Aplicar Recarga de {formatearDinero(montoRecarga)}</span>
+                    <Zap size={20} />
+                    <span>Aplicar Recarga de {formatearDinero(montoRecarga)} MXN</span>
                   </>
                 )}
               </button>

@@ -611,3 +611,179 @@ h1, h2, h3, h4 {
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* ==============================================================================
+   CONTROLES DE FORMULARIO PREMIUM & INPUTS
+   ============================================================================== */
+.grupo-formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 0.25rem;
+}
+
+.etiqueta-formulario {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-texto);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.control-formulario,
+input[type="text"],
+input[type="tel"],
+input[type="number"],
+input[type="email"],
+input[type="password"],
+select,
+textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  font-family: var(--fuente-principal);
+  color: var(--color-texto);
+  background-color: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: var(--radio-md);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+  outline: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.control-formulario::placeholder,
+input::placeholder,
+textarea::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.control-formulario:hover:not(:disabled):not(:focus),
+input:hover:not(:disabled):not(:focus),
+select:hover:not(:disabled):not(:focus),
+textarea:hover:not(:disabled):not(:focus) {
+  border-color: #94a3b8;
+}
+
+.control-formulario:focus,
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--color-primario);
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+}
+
+.control-formulario:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background-color: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.control-formulario.control-error,
+input.control-error {
+  border-color: var(--color-peligro);
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+}
+
+/* ==============================================================================
+   MOSAICO DE COMPAÑÍAS Y RECARGAS
+   ============================================================================== */
+.mosaico-companias-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.tarjeta-mosaico-compania {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.85rem 0.5rem;
+  border-radius: var(--radio-md);
+  border: 2px solid var(--color-borde);
+  background-color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: center;
+  user-select: none;
+  min-height: 88px;
+  box-shadow: var(--sombra-sm);
+}
+
+.tarjeta-mosaico-compania:hover {
+  transform: translateY(-2px);
+  border-color: #94a3b8;
+  box-shadow: var(--sombra-md);
+}
+
+.tarjeta-mosaico-compania.seleccionada {
+  border-width: 2.5px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.tarjeta-mosaico-compania .indicador-check {
+  position: absolute;
+  top: 5px;
+  right: 6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background-color: var(--color-primario);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.mosaico-montos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.boton-monto-recarga {
+  padding: 0.65rem 0.4rem;
+  border: 1.5px solid var(--color-borde);
+  border-radius: var(--radio-sm);
+  background-color: #ffffff;
+  color: var(--color-texto);
+  font-family: var(--fuente-numerica);
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.boton-monto-recarga:hover {
+  border-color: var(--color-primario);
+  background-color: var(--color-primario-suave);
+  color: var(--color-primario-texto);
+  transform: translateY(-1px);
+}
+
+.boton-monto-recarga.activo {
+  border-color: var(--color-primario);
+  background-color: var(--color-primario);
+  color: #ffffff;
+  box-shadow: 0 3px 8px rgba(5, 150, 105, 0.3);
+  font-weight: 800;
+}
+
