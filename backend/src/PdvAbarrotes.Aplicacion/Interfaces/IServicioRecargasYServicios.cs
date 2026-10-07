@@ -32,4 +32,34 @@ public interface IServicioRecargasYServicios
     /// Valida y procesa el cobro y dispersión de un recibo de servicio público.
     /// </summary>
     Task<ResultadoPagoServicioDto> ProcesarPagoServicioAsync(SolicitudPagoServicioDto solicitud, CancellationToken ct = default);
+
+    /// <summary>
+    /// Consulta el adeudo de un recibo o servicio en los convenios que lo permiten.
+    /// </summary>
+    Task<ResultadoConsultaAdeudoDto> ConsultarAdeudoServicioAsync(SolicitudConsultaAdeudoDto solicitud, CancellationToken ct = default);
+
+    /// <summary>
+    /// Sincroniza el catálogo completo de 400+ productos y servicios desde el proveedor RNP a la base de datos.
+    /// </summary>
+    Task<int> SincronizarCatalogoRnpAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Obtiene las transacciones registradas de recargas y pagos de servicios con filtros.
+    /// </summary>
+    Task<IReadOnlyList<TransaccionServicioDetalleDto>> ConsultarTransaccionesAsync(FiltroTransaccionesServiciosDto filtro, CancellationToken ct = default);
+
+    /// <summary>
+    /// Obtiene el registro de eventos de la bitácora operativa de servicios.
+    /// </summary>
+    Task<IReadOnlyList<RegistroBitacoraDto>> ConsultarBitacoraAsync(string? folioPos, int limite = 50, CancellationToken ct = default);
+
+    /// <summary>
+    /// Obtiene el log de errores técnicos de la integración.
+    /// </summary>
+    Task<IReadOnlyList<RegistroLogErrorDto>> ConsultarLogErroresAsync(string? folioPos, int limite = 50, CancellationToken ct = default);
+
+    /// <summary>
+    /// Consulta el saldo detallado de la bolsa RNP (Balance, compras, ventas, comisión).
+    /// </summary>
+    Task<RnpBalanceResult> ConsultarSaldoBolsaDetalladoAsync(CancellationToken ct = default);
 }

@@ -1,5 +1,5 @@
 /**
- * Tipos y contratos TypeScript para el módulo de Recargas Electrónicas y Pago de Servicios.
+ * Tipos y contratos TypeScript para el módulo de Recargas Electrónicas y Pago de Servicios (RNP).
  */
 
 export interface CompaniaTelefonicaDto {
@@ -66,4 +66,73 @@ export interface EstadoIntegracionServiciosDto {
   mensajeEstatus: string;
   saldoBolsaDisponible: number;
   ultimaVerificacion?: string;
+}
+
+export interface SolicitudConsultaAdeudoDto {
+  codigoServicio: string;
+  referencia: string;
+}
+
+export interface ResultadoConsultaAdeudoDto {
+  exito: boolean;
+  montoAdeudo: number;
+  esMontoEditable: boolean;
+  mensajeProveedor?: string;
+  codigoResultado?: string;
+}
+
+export interface TransaccionServicioDetalleDto {
+  idTransaccionServicio: number;
+  folioPos: string;
+  tipoTransaccion: string;
+  carrierId: string;
+  carrierNombre: string;
+  referencia: string;
+  monto: number;
+  comision: number;
+  totalCobrado: number;
+  estado: string;
+  codigoRespuesta?: string;
+  descripcionRespuesta?: string;
+  folioProveedor?: string;
+  folioCarrier?: string;
+  avisoNotice?: string;
+  saldoPosterior?: number;
+  fechaCreacion: string;
+  reintentosConsulta: number;
+  ultimaConsultaEstado?: string;
+}
+
+export interface RegistroBitacoraDto {
+  idBitacoraServicio: number;
+  folioPos: string;
+  accion: string;
+  mensaje: string;
+  detallesJson?: string;
+  usuario?: string;
+  direccionIp?: string;
+  fechaHora: string;
+}
+
+export interface RegistroLogErrorDto {
+  idLogError: number;
+  folioPos?: string;
+  metodoSoap: string;
+  tipoError: string;
+  codigoError?: string;
+  mensajeError: string;
+  peticionXmlOJson?: string;
+  respuestaXmlOJson?: string;
+  stackTrace?: string;
+  fechaHora: string;
+}
+
+export interface FiltroTransaccionesServiciosDto {
+  folioPos?: string;
+  referencia?: string;
+  estado?: string;
+  tipoTransaccion?: string;
+  fechaDesde?: string;
+  fechaHasta?: string;
+  limite?: number;
 }

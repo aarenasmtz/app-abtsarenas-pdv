@@ -1,19 +1,27 @@
+using System.Text.Json;
 using System.Text.RegularExpressions;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using PdvAbarrotes.Aplicacion.DTOs.Servicios;
 using PdvAbarrotes.Aplicacion.Interfaces;
+using PdvAbarrotes.Dominio.Entidades;
 
 namespace PdvAbarrotes.Infraestructura.Servicios;
 
 /// <summary>
-/// Servicio de aplicación para recargas de tiempo aire y cobro de servicios públicos.
-/// Coordina la validación de negocio con los contratos de proveedores externos.
+/// Orquestador central para la gestión de recargas electrónicas de tiempo aire y pago de servicios públicos.
+/// Conecta la lógica de negocio con Red Nacional de Pagos (RNP), gestionando auditoría, bitácora y sincronización.
 /// </summary>
 public class ServicioRecargasYServicios : IServicioRecargasYServicios
 {
     private readonly IProveedorRecargas _proveedorRecargas;
     private readonly IProveedorServicios _proveedorServicios;
+    private readonly IProveedorRnpSoapCliente _clienteSoap;
+    private readonly IContextoPrincipal _contexto;
+    private readonly ConfiguracionRnpOptions _opciones;
+    private readonly ILogger<ServicioRecargasYServicios> _logger;
 
-    // Catálogo canónico de operadoras móviles en México
     private static readonly List<CompaniaTelefonicaDto> CompaniasPredefinidas = new()
     {
         new CompaniaTelefonicaDto
@@ -60,7 +68,6 @@ public class ServicioRecargasYServicios : IServicioRecargasYServicios
         }
     };
 
-    // Catálogo canónico de recibos y servicios habituales
     private static readonly List<CatalogoServicioDto> ServiciosPredefinidos = new()
     {
         new CatalogoServicioDto
@@ -74,15 +81,6 @@ public class ServicioRecargasYServicios : IServicioRecargasYServicios
         },
         new CatalogoServicioDto
         {
-            Codigo = "AGUA_MUNICIPAL",
-            Nombre = "Agua Potable y Alcantarillado (SAPAL / SIMAPAG)",
-            Categoria = "Agua Potable",
-            ComisionRecomendada = 12.00m,
-            PermiteVencidos = true,
-            FormatoReferencia = "Número de cuenta de 8 a 12 dígitos"
-        },
-        new CatalogoServicioDto
-        {
             Codigo = "TELMEX",
             Nombre = "Telmex (Telefonía e Internet Infinitum)",
             Categoria = "Telecomunicaciones",
@@ -92,12 +90,12 @@ public class ServicioRecargasYServicios : IServicioRecargasYServicios
         },
         new CatalogoServicioDto
         {
-            Codigo = "NATURGY",
-            Nombre = "Naturgy México (Gas Natural)",
-            Categoria = "Gas Natural",
-            ComisionRecomendada = 14.00m,
-            PermiteVencidos = false,
-            FormatoReferencia = "Referencia de pago del recibo"
+            Codigo = "SKY",
+            Nombre = "Sky México / VeTV",
+            Categoria = "Televisión Satelital",
+            ComisionRecomendada = 12.00m,
+            PermiteVencidos = true,
+            FormatoReferencia = "Número de cuenta de 12 dígitos"
         },
         new CatalogoServicioDto
         {
@@ -106,16 +104,7 @@ public class ServicioRecargasYServicios : IServicioRecargasYServicios
             Categoria = "Televisión e Internet",
             ComisionRecomendada = 12.00m,
             PermiteVencidos = true,
-            FormatoReferencia = "Referencia única de suscriptor"
-        },
-        new CatalogoServicioDto
-        {
-            Codigo = "SKY",
-            Nombre = "Sky México / VeTV",
-            Categoria = "Televisión Satelital",
-            ComisionRecomendada = 12.00m,
-            PermiteVencidos = true,
-            FormatoReferencia = "Número de cuenta inteligente de 12 dígitos"
+            FormatoReferencia = "Referencia de suscriptor"
         },
         new CatalogoServicioDto
         {
@@ -125,15 +114,41 @@ public class ServicioRecargasYServicios : IServicioRecargasYServicios
             ComisionRecomendada = 12.00m,
             PermiteVencidos = false,
             FormatoReferencia = "Número de cuenta de 10 dígitos"
+        },
+        new CatalogoServicioDto
+        {
+            Codigo = "MEGACABLE",
+            Nombre = "Megacable Comunicaciones",
+            Categoria = "Televisión e Internet",
+            ComisionRecomendada = 12.00m,
+            PermiteVencidos = true,
+            FormatoReferencia = "Número de suscriptor de 10 dígitos"
+        },
+        new CatalogoServicioDto
+        {
+            Codigo = "AGUA_MUNICIPAL",
+            Nombre = "JMAS / Agua Potable Municipal",
+            Categoria = "Agua Potable",
+            ComisionRecomendada = 12.00m,
+            PermiteVencidos = true,
+            FormatoReferencia = "Número de cuenta de contrato"
         }
     };
 
     public ServicioRecargasYServicios(
         IProveedorRecargas proveedorRecargas,
-        IProveedorServicios proveedorServicios)
+        IProveedorServicios proveedorServicios,
+        IProveedorRnpSoapCliente clienteSoap,
+        IContextoPrincipal contexto,
+        IOptions<ConfiguracionRnpOptions> opciones,
+        ILogger<ServicioRecargasYServicios> logger)
     {
         _proveedorRecargas = proveedorRecargas;
         _proveedorServicios = proveedorServicios;
+        _clienteSoap = clienteSoap;
+        _contexto = contexto;
+        _opciones = opciones.Value;
+        _logger = logger;
     }
 
     /// <inheritdoc />
@@ -143,42 +158,96 @@ public class ServicioRecargasYServicios : IServicioRecargasYServicios
         bool serviciosConfigurado = await _proveedorServicios.ProveedorEstaConfiguradoAsync();
         bool generalConfigurado = recargasConfigurado && serviciosConfigurado;
 
+        decimal saldoBolsa = 0m;
         string mensaje;
+
         if (generalConfigurado)
         {
-            mensaje = "Proveedores externos de recargas y servicios conectados y operando en línea.";
+            try
+            {
+                var saldoDto = await _clienteSoap.ConsultarSaldoAsync(ct);
+                if (decimal.TryParse(saldoDto.Balance, out var balance))
+                {
+                    saldoBolsa = balance;
+                }
+                mensaje = $"Conectado exitosamente con Red Nacional de Pagos (RNP). Saldo disponible: ${saldoBolsa:N2} MXN.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error al consultar saldo en vivo para estado de integración.");
+                mensaje = "Proveedor RNP configurado pero con aviso de conectividad: " + ex.Message;
+            }
         }
         else
         {
-            mensaje = "Módulo en Modo Preparado: Interfaces y contratos definidos. Pendiente de suscripción y alta con proveedor comercial externo (ej. TAE México, Qiubo, Taecel o RecargaPlus).";
+            mensaje = "Módulo en Modo Preparado: Credenciales de integración RNP pendientes de configurar en appsettings.json.";
         }
 
         return new EstadoIntegracionServiciosDto
         {
             EstaConfigurado = generalConfigurado,
-            NombreProveedor = generalConfigurado ? "Proveedor Externo Activo" : "Pendiente de Contratación Comercial",
+            NombreProveedor = generalConfigurado ? "Red Nacional de Pagos (RNP / VentaMovil)" : "Pendiente de Configuración",
             MensajeEstatus = mensaje,
-            SaldoBolsaDisponible = 0m,
+            SaldoBolsaDisponible = saldoBolsa,
             UltimaVerificacion = DateTime.Now
         };
     }
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<CompaniaTelefonicaDto>> ObtenerCompaniasRecargasAsync(CancellationToken ct = default)
+    public async Task<IReadOnlyList<CompaniaTelefonicaDto>> ObtenerCompaniasRecargasAsync(CancellationToken ct = default)
     {
-        return Task.FromResult<IReadOnlyList<CompaniaTelefonicaDto>>(CompaniasPredefinidas.AsReadOnly());
+        // Si hay productos sincronizados en la base de datos para TAE, usarlos dinámicamente
+        var productosDb = await _contexto.CatalogoProductosServicios
+            .Where(p => p.Activo && p.Grupo == "TAE")
+            .ToListAsync(ct);
+
+        if (productosDb.Count == 0)
+        {
+            return CompaniasPredefinidas.AsReadOnly();
+        }
+
+        var agrupados = productosDb
+            .GroupBy(p => p.Descripcion.Trim())
+            .Select(g => new CompaniaTelefonicaDto
+            {
+                Codigo = g.First().CarrierId,
+                Nombre = g.Key,
+                LogotipoUrl = $"/iconos/companias/{g.Key.ToLowerInvariant().Replace(" ", "_")}.png",
+                MontosDisponibles = g.Where(p => p.Monto > 0).Select(p => p.Monto).Distinct().OrderBy(m => m).ToList()
+            })
+            .ToList();
+
+        return agrupados.Count > 0 ? agrupados.AsReadOnly() : CompaniasPredefinidas.AsReadOnly();
     }
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<CatalogoServicioDto>> ObtenerCatalogoServiciosAsync(CancellationToken ct = default)
+    public async Task<IReadOnlyList<CatalogoServicioDto>> ObtenerCatalogoServiciosAsync(CancellationToken ct = default)
     {
-        return Task.FromResult<IReadOnlyList<CatalogoServicioDto>>(ServiciosPredefinidos.AsReadOnly());
+        var productosDb = await _contexto.CatalogoProductosServicios
+            .Where(p => p.Activo && p.Grupo == "SERVICIO")
+            .ToListAsync(ct);
+
+        if (productosDb.Count == 0)
+        {
+            return ServiciosPredefinidos.AsReadOnly();
+        }
+
+        var servicios = productosDb.Select(p => new CatalogoServicioDto
+        {
+            Codigo = p.CarrierId,
+            Nombre = p.Descripcion.Trim(),
+            Categoria = "Servicios Públicos",
+            ComisionRecomendada = _opciones.ComisionDefaultServicio,
+            PermiteVencidos = true,
+            FormatoReferencia = p.Observacion ?? "Número de recibo o cuenta"
+        }).ToList();
+
+        return servicios.AsReadOnly();
     }
 
     /// <inheritdoc />
     public async Task<ResultadoRecargaDto> ProcesarRecargaAsync(SolicitudRecargaDto solicitud, CancellationToken ct = default)
     {
-        // 1. Validaciones previas de seguridad
         if (string.IsNullOrWhiteSpace(solicitud.NumeroTelefono))
         {
             throw new ArgumentException("El número telefónico es obligatorio.");
@@ -204,24 +273,13 @@ public class ServicioRecargasYServicios : IServicioRecargasYServicios
             throw new ArgumentException("El monto de recarga debe ser mayor a $0.00.");
         }
 
-        var compania = CompaniasPredefinidas.FirstOrDefault(c =>
-            c.Codigo.Equals(solicitud.CodigoCompania, StringComparison.OrdinalIgnoreCase));
-
-        if (compania == null)
-        {
-            throw new ArgumentException($"La compañía telefónica '{solicitud.CodigoCompania}' no es válida.");
-        }
-
         solicitud.NumeroTelefono = telefonoLimpio;
-
-        // 2. Ejecutar mediante el contrato de proveedor externo
         return await _proveedorRecargas.EjecutarRecargaAsync(solicitud, ct);
     }
 
     /// <inheritdoc />
     public async Task<ResultadoPagoServicioDto> ProcesarPagoServicioAsync(SolicitudPagoServicioDto solicitud, CancellationToken ct = default)
     {
-        // 1. Validaciones previas de seguridad
         if (string.IsNullOrWhiteSpace(solicitud.ReferenciaRecibo))
         {
             throw new ArgumentException("La referencia o código del recibo es obligatoria.");
@@ -237,15 +295,212 @@ public class ServicioRecargasYServicios : IServicioRecargasYServicios
             throw new ArgumentException("La comisión del servicio no puede ser negativa.");
         }
 
-        var servicio = ServiciosPredefinidos.FirstOrDefault(s =>
-            s.Codigo.Equals(solicitud.CodigoServicio, StringComparison.OrdinalIgnoreCase));
+        return await _proveedorServicios.EjecutarPagoServicioAsync(solicitud, ct);
+    }
 
-        if (servicio == null)
+    /// <inheritdoc />
+    public Task<ResultadoConsultaAdeudoDto> ConsultarAdeudoServicioAsync(SolicitudConsultaAdeudoDto solicitud, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(solicitud.Referencia))
         {
-            throw new ArgumentException($"El servicio '{solicitud.CodigoServicio}' no se encuentra en el catálogo.");
+            throw new ArgumentException("La referencia a consultar es obligatoria.");
         }
 
-        // 2. Ejecutar mediante el contrato de proveedor externo
-        return await _proveedorServicios.EjecutarPagoServicioAsync(solicitud, ct);
+        return _proveedorServicios.ConsultarAdeudoServicioAsync(solicitud, ct);
+    }
+
+    /// <inheritdoc />
+    public async Task<int> SincronizarCatalogoRnpAsync(CancellationToken ct = default)
+    {
+        _logger.LogInformation("Iniciando sincronización completa del catálogo RNP pos_prices_products...");
+        var catalogo = await _clienteSoap.ConsultarCatalogoProductosAsync(ct);
+
+        if (catalogo.PosPricesProducts == null || catalogo.PosPricesProducts.Count == 0)
+        {
+            throw new InvalidOperationException("El proveedor RNP no devolvió productos para sincronizar.");
+        }
+
+        // Limpiar catálogo previo e insertar el nuevo
+        var existentes = await _contexto.CatalogoProductosServicios.ToListAsync(ct);
+        _contexto.CatalogoProductosServicios.RemoveRange(existentes);
+
+        int insertados = 0;
+        foreach (var item in catalogo.PosPricesProducts)
+        {
+            decimal.TryParse(item.Monto, out var monto);
+            bool checkAmount = item.CheckAmount?.Equals("true", StringComparison.OrdinalIgnoreCase) ?? false;
+            int.TryParse(item.Orden, out var orden);
+
+            _contexto.CatalogoProductosServicios.Add(new ProductoServicioRnp
+            {
+                CarrierId = item.Carrier_ID,
+                Descripcion = item.Description.Trim(),
+                Grupo = item.Group,
+                Monto = monto,
+                Observacion = item.Observacion?.Trim(),
+                PermiteConsultarAdeudo = checkAmount,
+                Orden = orden > 0 ? orden : 1,
+                Activo = true,
+                FechaSincronizacion = DateTime.Now
+            });
+            insertados++;
+        }
+
+        _contexto.BitacoraServicios.Add(new BitacoraServicio
+        {
+            FolioPos = $"SINC_{DateTime.UtcNow:yyMMddHHmmss}",
+            Accion = "CATALOGO_ACTUALIZADO",
+            Mensaje = $"Catálogo de RNP sincronizado con éxito. Total registros: {insertados}",
+            FechaHora = DateTime.Now
+        });
+
+        await _contexto.SaveChangesAsync(ct);
+        _logger.LogInformation("Sincronización de catálogo RNP completada: {Total} productos guardados.", insertados);
+        return insertados;
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<TransaccionServicioDetalleDto>> ConsultarTransaccionesAsync(
+        FiltroTransaccionesServiciosDto filtro,
+        CancellationToken ct = default)
+    {
+        var query = _contexto.TransaccionesServicios.AsNoTracking().AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(filtro.FolioPos))
+        {
+            query = query.Where(t => t.FolioPos.Contains(filtro.FolioPos));
+        }
+
+        if (!string.IsNullOrWhiteSpace(filtro.Referencia))
+        {
+            query = query.Where(t => t.Referencia.Contains(filtro.Referencia));
+        }
+
+        if (!string.IsNullOrWhiteSpace(filtro.Estado))
+        {
+            query = query.Where(t => t.Estado == filtro.Estado);
+        }
+
+        if (!string.IsNullOrWhiteSpace(filtro.TipoTransaccion))
+        {
+            query = query.Where(t => t.TipoTransaccion == filtro.TipoTransaccion);
+        }
+
+        if (filtro.FechaDesde.HasValue)
+        {
+            query = query.Where(t => t.FechaCreacion >= filtro.FechaDesde.Value);
+        }
+
+        if (filtro.FechaHasta.HasValue)
+        {
+            query = query.Where(t => t.FechaCreacion <= filtro.FechaHasta.Value);
+        }
+
+        int limite = filtro.Limite > 0 ? Math.Min(filtro.Limite, 200) : 50;
+
+        var items = await query
+            .OrderByDescending(t => t.FechaCreacion)
+            .Take(limite)
+            .Select(t => new TransaccionServicioDetalleDto
+            {
+                IdTransaccionServicio = t.IdTransaccionServicio,
+                FolioPos = t.FolioPos,
+                TipoTransaccion = t.TipoTransaccion,
+                CarrierId = t.CarrierId,
+                CarrierNombre = t.CarrierNombre,
+                Referencia = t.Referencia,
+                Monto = t.Monto,
+                Comision = t.Comision,
+                TotalCobrado = t.TotalCobrado,
+                Estado = t.Estado,
+                CodigoRespuesta = t.CodigoRespuesta,
+                DescripcionRespuesta = t.DescripcionRespuesta,
+                FolioProveedor = t.FolioProveedor,
+                FolioCarrier = t.FolioCarrier,
+                AvisoNotice = t.AvisoNotice,
+                SaldoPosterior = t.SaldoPosterior,
+                FechaCreacion = t.FechaCreacion,
+                ReintentosConsulta = t.ReintentosConsulta,
+                UltimaConsultaEstado = t.UltimaConsultaEstado
+            })
+            .ToListAsync(ct);
+
+        return items.AsReadOnly();
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<RegistroBitacoraDto>> ConsultarBitacoraAsync(
+        string? folioPos,
+        int limite = 50,
+        CancellationToken ct = default)
+    {
+        var query = _contexto.BitacoraServicios.AsNoTracking().AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(folioPos))
+        {
+            query = query.Where(b => b.FolioPos.Contains(folioPos));
+        }
+
+        limite = limite > 0 ? Math.Min(limite, 200) : 50;
+
+        var items = await query
+            .OrderByDescending(b => b.FechaHora)
+            .Take(limite)
+            .Select(b => new RegistroBitacoraDto
+            {
+                IdBitacoraServicio = b.IdBitacoraServicio,
+                FolioPos = b.FolioPos,
+                Accion = b.Accion,
+                Mensaje = b.Mensaje,
+                DetallesJson = b.DetallesJson,
+                Usuario = b.Usuario,
+                DireccionIp = b.DireccionIp,
+                FechaHora = b.FechaHora
+            })
+            .ToListAsync(ct);
+
+        return items.AsReadOnly();
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<RegistroLogErrorDto>> ConsultarLogErroresAsync(
+        string? folioPos,
+        int limite = 50,
+        CancellationToken ct = default)
+    {
+        var query = _contexto.LogErroresServicios.AsNoTracking().AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(folioPos))
+        {
+            query = query.Where(e => e.FolioPos != null && e.FolioPos.Contains(folioPos));
+        }
+
+        limite = limite > 0 ? Math.Min(limite, 200) : 50;
+
+        var items = await query
+            .OrderByDescending(e => e.FechaHora)
+            .Take(limite)
+            .Select(e => new RegistroLogErrorDto
+            {
+                IdLogError = e.IdLogError,
+                FolioPos = e.FolioPos,
+                MetodoSoap = e.MetodoSoap,
+                TipoError = e.TipoError,
+                CodigoError = e.CodigoError,
+                MensajeError = e.MensajeError,
+                PeticionXmlOJson = e.PeticionXmlOJson,
+                RespuestaXmlOJson = e.RespuestaXmlOJson,
+                StackTrace = e.StackTrace,
+                FechaHora = e.FechaHora
+            })
+            .ToListAsync(ct);
+
+        return items.AsReadOnly();
+    }
+
+    /// <inheritdoc />
+    public async Task<RnpBalanceResult> ConsultarSaldoBolsaDetalladoAsync(CancellationToken ct = default)
+    {
+        return await _clienteSoap.ConsultarSaldoAsync(ct);
     }
 }

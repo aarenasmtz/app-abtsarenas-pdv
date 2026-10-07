@@ -8,10 +8,16 @@ import type {
   ResultadoRecargaDto,
   SolicitudPagoServicioDto,
   ResultadoPagoServicioDto,
+  SolicitudConsultaAdeudoDto,
+  ResultadoConsultaAdeudoDto,
+  TransaccionServicioDetalleDto,
+  RegistroBitacoraDto,
+  RegistroLogErrorDto,
+  FiltroTransaccionesServiciosDto,
 } from './tiposServicios';
 
 /**
- * Servicio cliente para el módulo de Recargas Electrónicas y Pago de Servicios Públicos.
+ * Servicio cliente para el módulo de Recargas Electrónicas y Pago de Servicios Públicos (RNP).
  */
 export const servicioRecargasYServicios = {
   /**
@@ -64,5 +70,81 @@ export const servicioRecargasYServicios = {
       solicitud
     );
     return respuesta.data.datos!;
+  },
+
+  /**
+   * Consulta el adeudo en tiempo real de un recibo o servicio.
+   */
+  async consultarAdeudo(solicitud: SolicitudConsultaAdeudoDto): Promise<ResultadoConsultaAdeudoDto> {
+    const respuesta = await clienteApi.post<RespuestaApi<ResultadoConsultaAdeudoDto>>(
+      '/recargas-servicios/consultar-adeudo',
+      solicitud
+    );
+    return respuesta.data.datos!;
+  },
+
+  /**
+   * Solicita la sincronización del catálogo completo de 400+ productos desde el API de RNP.
+   */
+  async sincronizarCatalogo(): Promise<number> {
+    const respuesta = await clienteApi.post<RespuestaApi<number>>(
+      '/recargas-servicios/sincronizar-catalogo'
+    );
+    return respuesta.data.datos ?? 0;
+  },
+
+  /**
+   * Consulta las transacciones de recargas y servicios registradas.
+   */
+  async obtenerTransacciones(filtro?: FiltroTransaccionesServiciosDto): Promise<TransaccionServicioDetalleDto[]> {
+    const params = new URLSearchParams();
+    if (filtro?.folioPos) params.append('folioPos', filtro.folioPos);
+    if (filtro?.referencia) params.append('referencia', filtro.referencia);
+    if (filtro?.estado) params.append('estado', filtro.estado);
+    if (filtro?.tipoTransaccion) params.append('tipoTransaccion', filtro.tipoTransaccion);
+    if (filtro?.limite) params.append('limite', filtro.limite.toString());
+
+    const respuesta = await clienteApi.get<RespuestaApi<TransaccionServicioDetalleDto[]>>(
+      `/recargas-servicios/transacciones?${params.toString()}`
+    );
+    return respuesta.data.datos || [];
+  },
+
+  /**
+   * Consulta el registro de bitácora operativa de servicios.
+   */
+  async obtenerBitacora(folioPos?: string, limite = 50): Promise<RegistroBitacoraDto[]> {
+    const params = new URLSearchParams();
+    if (folioPos) params.append('folioPos', folioPos);
+    params.append('limite', limite.toString());
+
+    const respuesta = await clienteApi.get<RespuestaApi<RegistroBitacoraDto[]>>(
+      `/recargas-servicios/bitacora?${params.toString()}`
+    );
+    return respuesta.data.datos || [];
+  },
+
+  /**
+   * Consulta el log de errores técnicos de la integración.
+   */
+  async obtenerErrores(folioPos?: string, limite = 50): Promise<RegistroLogErrorDto[]> {
+    const params = new URLSearchParams();
+    if (folioPos) params.append('folioPos', folioPos);
+    params.append('limite', limite.toString());
+
+    const respuesta = await clienteApi.get<RespuestaApi<RegistroLogErrorDto[]>>(
+      `/recargas-servicios/errores?${params.toString()}`
+    );
+    return respuesta.data.datos || [];
+  },
+
+  /**
+   * Consulta el saldo detallado de la bolsa RNP.
+   */
+  async obtenerSaldoBolsa(): Promise<any> {
+    const respuesta = await clienteApi.get<RespuestaApi<any>>(
+      '/recargas-servicios/saldo-bolsa'
+    );
+    return respuesta.data.datos;
   },
 };

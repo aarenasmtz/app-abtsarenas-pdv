@@ -10,8 +10,11 @@ import {
   PhoneCall,
   DollarSign,
   ShieldCheck,
-  Send,
-  Building,
+  History,
+  FileText,
+  Search,
+  Database,
+  Info,
 } from 'lucide-react';
 import { servicioRecargasYServicios } from './servicioRecargasYServicios';
 import type {
@@ -20,10 +23,13 @@ import type {
   CatalogoServicioDto,
   ResultadoRecargaDto,
   ResultadoPagoServicioDto,
+  TransaccionServicioDetalleDto,
+  RegistroBitacoraDto,
+  RegistroLogErrorDto,
 } from './tiposServicios';
 
 export const PantallaRecargasYServicios: React.FC = () => {
-  const [pestaña, setPestaña] = useState<'recargas' | 'servicios' | 'integracion'>('recargas');
+  const [pestaña, setPestaña] = useState<'recargas' | 'servicios' | 'historial' | 'bitacora' | 'integracion'>('recargas');
 
   // Estado de integración del proveedor
   const [estadoIntegracion, setEstadoIntegracion] = useState<EstadoIntegracionServiciosDto | null>(null);
@@ -48,8 +54,18 @@ export const PantallaRecargasYServicios: React.FC = () => {
   const [montoServicio, setMontoServicio] = useState<string>('');
   const [comisionServicio, setComisionServicio] = useState<number>(12);
   const [procesandoServicio, setProcesandoServicio] = useState<boolean>(false);
+  const [consultandoAdeudo, setConsultandoAdeudo] = useState<boolean>(false);
+  const [mensajeAdeudo, setMensajeAdeudo] = useState<string | null>(null);
   const [resultadoServicio, setResultadoServicio] = useState<ResultadoPagoServicioDto | null>(null);
   const [errorServicio, setErrorServicio] = useState<string | null>(null);
+
+  // Historial y Bitácora
+  const [transacciones, setTransacciones] = useState<TransaccionServicioDetalleDto[]>([]);
+  const [bitacora, setBitacora] = useState<RegistroBitacoraDto[]>([]);
+  const [errores, setErrores] = useState<RegistroLogErrorDto[]>([]);
+  const [cargandoAuditoria, setCargandoAuditoria] = useState<boolean>(false);
+  const [sincronizandoCatalogo, setSincronizandoCatalogo] = useState<boolean>(false);
+  const [mensajeSincronizacion, setMensajeSincronizacion] = useState<string | null>(null);
 
   const cargarDatos = async () => {
     setCargandoEstado(true);
@@ -73,17 +89,44 @@ export const PantallaRecargasYServicios: React.FC = () => {
     }
   };
 
+  const cargarHistorial = async () => {
+    setCargandoAuditoria(true);
+    try {
+      const [txs, bit, errs] = await Promise.all([
+        servicioRecargasYServicios.obtenerTransacciones({ limite: 50 }),
+        servicioRecargasYServicios.obtenerBitacora(undefined, 50),
+        servicioRecargasYServicios.obtenerErrores(undefined, 50),
+      ]);
+      setTransacciones(txs);
+      setBitacora(bit);
+      setErrores(errs);
+    } catch {
+      console.warn('Error al cargar historial y bitácora.');
+    } finally {
+      setCargandoAuditoria(false);
+    }
+  };
+
   useEffect(() => {
     cargarDatos();
   }, []);
 
+  useEffect(() => {
+    if (pestaña === 'historial' || pestaña === 'bitacora') {
+      cargarHistorial();
+    }
+  }, [pestaña]);
+
   const companiaActual = companias.find((c) => c.codigo === companiaSeleccionada);
-  const montosActuales = companiaActual?.montosDisponibles || [20, 30, 50, 100, 200, 500];
+  const montosActuales = companiaActual?.montosDisponibles?.length
+    ? companiaActual.montosDisponibles
+    : [20, 30, 50, 100, 200, 500];
 
   const servicioActual = servicios.find((s) => s.codigo === servicioSeleccionado);
 
   const manejarCambioServicio = (codigo: string) => {
     setServicioSeleccionado(codigo);
+    setMensajeAdeudo(null);
     const s = servicios.find((item) => item.codigo === codigo);
     if (s) {
       setComisionServicio(s.comisionRecomendada);
@@ -117,10 +160,44 @@ export const PantallaRecargasYServicios: React.FC = () => {
         monto: montoRecarga,
       });
       setResultadoRecarga(respuesta);
+      cargarDatos();
     } catch (err: unknown) {
       setErrorRecarga(err instanceof Error ? err.message : 'Error al procesar recarga.');
     } finally {
       setProcesandoRecarga(false);
+    }
+  };
+
+  const consultarAdeudoEnLinea = async () => {
+    if (!referenciaRecibo.trim()) {
+      setErrorServicio('Ingrese la referencia del recibo para consultar el adeudo.');
+      return;
+    }
+
+    setConsultandoAdeudo(true);
+    setErrorServicio(null);
+    setMensajeAdeudo(null);
+
+    try {
+      const resp = await servicioRecargasYServicios.consultarAdeudo({
+        codigoServicio: servicioSeleccionado,
+        referencia: referenciaRecibo.trim(),
+      });
+
+      if (resp.exito) {
+        if (resp.montoAdeudo > 0) {
+          setMontoServicio(resp.montoAdeudo.toFixed(2));
+          setMensajeAdeudo(`Adeudo consultado: $${resp.montoAdeudo.toFixed(2)} MXN`);
+        } else {
+          setMensajeAdeudo(resp.mensajeProveedor || 'Consulta exitosa. Referencia al corriente o sin saldo pendiente.');
+        }
+      } else {
+        setMensajeAdeudo(resp.mensajeProveedor || 'No se obtuvo información de adeudo para esta referencia.');
+      }
+    } catch (err: unknown) {
+      setErrorServicio(err instanceof Error ? err.message : 'Error al consultar adeudo en línea.');
+    } finally {
+      setConsultandoAdeudo(false);
     }
   };
 
@@ -149,10 +226,25 @@ export const PantallaRecargasYServicios: React.FC = () => {
         comision: comisionServicio,
       });
       setResultadoServicio(respuesta);
+      cargarDatos();
     } catch (err: unknown) {
       setErrorServicio(err instanceof Error ? err.message : 'Error al procesar pago de servicio.');
     } finally {
       setProcesandoServicio(false);
+    }
+  };
+
+  const sincronizarCatalogoRnp = async () => {
+    setSincronizandoCatalogo(true);
+    setMensajeSincronizacion(null);
+    try {
+      const total = await servicioRecargasYServicios.sincronizarCatalogo();
+      setMensajeSincronizacion(`Catálogo RNP sincronizado con éxito (${total} productos guardados en BD).`);
+      cargarDatos();
+    } catch (err: unknown) {
+      setMensajeSincronizacion(err instanceof Error ? err.message : 'Error al sincronizar catálogo con RNP.');
+    } finally {
+      setSincronizandoCatalogo(false);
     }
   };
 
@@ -179,14 +271,17 @@ export const PantallaRecargasYServicios: React.FC = () => {
             </h1>
           </div>
           <p style={{ color: 'var(--color-texto-secundario)', margin: '0.25rem 0 0 0', fontSize: '0.9rem' }}>
-            Venta de tiempo aire electrónico para telefonía móvil y recepción de recibos de servicios públicos en caja
+            Integración con Red Nacional de Pagos (RNP / VentaMovil) · Tiempo aire, cobro de recibos y bitácora de auditoría
           </p>
         </div>
 
         <button
           type="button"
           className="btn btn-secundario"
-          onClick={cargarDatos}
+          onClick={() => {
+            cargarDatos();
+            if (pestaña === 'historial' || pestaña === 'bitacora') cargarHistorial();
+          }}
           disabled={cargandoEstado}
           style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
         >
@@ -223,12 +318,12 @@ export const PantallaRecargasYServicios: React.FC = () => {
           <div>
             <div style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--color-texto-principal)' }}>
               {estadoIntegracion?.estaConfigurado
-                ? 'Conexión con Proveedor Externo Activa'
+                ? 'Conexión con Red Nacional de Pagos (RNP) Activa'
                 : 'Módulo Preparado para Integración (En Espera de Contratación)'}
             </div>
             <div style={{ fontSize: '0.8rem', color: 'var(--color-texto-secundario)', marginTop: '0.15rem' }}>
               {estadoIntegracion?.mensajeEstatus ||
-                'Interfaces y contratos listos para conectar las credenciales del proveedor comercial.'}
+                'Web Services SOAP (.asmx) conectados con tolerancia a fallos y persistencia de Folio_POS.'}
             </div>
           </div>
         </div>
@@ -236,7 +331,7 @@ export const PantallaRecargasYServicios: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <div style={{ textAlign: 'right' }}>
             <span style={{ fontSize: '0.75rem', color: 'var(--color-texto-secundario)', textTransform: 'uppercase' }}>
-              Saldo Bolsa Prepago
+              Saldo Bolsa Prepago RNP
             </span>
             <div style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--color-exito)' }}>
               {formatearDinero(estadoIntegracion?.saldoBolsaDisponible || 0)}
@@ -248,41 +343,61 @@ export const PantallaRecargasYServicios: React.FC = () => {
             onClick={() => setPestaña('integracion')}
             style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
           >
-            Ver Detalles de API
+            Detalles API
           </button>
         </div>
       </div>
 
       {/* Selector de pestañas */}
-      <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid var(--color-borde)', paddingBottom: '0.5rem' }}>
+      <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid var(--color-borde)', paddingBottom: '0.5rem', flexWrap: 'wrap' }}>
         <button
           type="button"
           className={`btn ${pestaña === 'recargas' ? 'btn-primario' : 'btn-secundario'}`}
           onClick={() => setPestaña('recargas')}
-          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1.25rem' }}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1.1rem' }}
         >
           <Smartphone size={17} />
-          <span>Tiempo Aire Electrónico</span>
+          <span>Tiempo Aire</span>
         </button>
 
         <button
           type="button"
           className={`btn ${pestaña === 'servicios' ? 'btn-primario' : 'btn-secundario'}`}
           onClick={() => setPestaña('servicios')}
-          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1.25rem' }}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1.1rem' }}
         >
           <Receipt size={17} />
-          <span>Pago de Servicios Públicos</span>
+          <span>Pago de Servicios</span>
+        </button>
+
+        <button
+          type="button"
+          className={`btn ${pestaña === 'historial' ? 'btn-primario' : 'btn-secundario'}`}
+          onClick={() => setPestaña('historial')}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1.1rem' }}
+        >
+          <History size={17} />
+          <span>Historial de Transacciones</span>
+        </button>
+
+        <button
+          type="button"
+          className={`btn ${pestaña === 'bitacora' ? 'btn-primario' : 'btn-secundario'}`}
+          onClick={() => setPestaña('bitacora')}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1.1rem' }}
+        >
+          <FileText size={17} />
+          <span>Bitácora & Errores</span>
         </button>
 
         <button
           type="button"
           className={`btn ${pestaña === 'integracion' ? 'btn-primario' : 'btn-secundario'}`}
           onClick={() => setPestaña('integracion')}
-          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1.25rem' }}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1.1rem' }}
         >
           <Server size={17} />
-          <span>Configuración & Guía de Proveedor</span>
+          <span>Configuración RNP</span>
         </button>
       </div>
 
@@ -318,11 +433,9 @@ export const PantallaRecargasYServicios: React.FC = () => {
 
             <form onSubmit={ejecutarRecarga} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               {/* Selección de Compañía */}
-              <div>
-                <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-texto-secundario)' }}>
-                  Compañía Operadora:
-                </label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', marginTop: '0.5rem' }}>
+              <div className="grupo-formulario">
+                <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Compañía Telefónica:</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '0.5rem', marginTop: '0.4rem' }}>
                   {companias.map((c) => (
                     <button
                       key={c.codigo}
@@ -330,76 +443,70 @@ export const PantallaRecargasYServicios: React.FC = () => {
                       onClick={() => setCompaniaSeleccionada(c.codigo)}
                       style={{
                         padding: '0.6rem 0.5rem',
-                        borderRadius: '8px',
                         border: companiaSeleccionada === c.codigo ? '2px solid var(--color-primario)' : '1px solid var(--color-borde)',
                         backgroundColor: companiaSeleccionada === c.codigo ? 'rgba(59, 130, 246, 0.1)' : 'var(--color-fondo-suave)',
-                        color: companiaSeleccionada === c.codigo ? 'var(--color-primario)' : 'var(--color-texto-principal)',
-                        fontWeight: 700,
-                        fontSize: '0.85rem',
+                        borderRadius: '6px',
                         cursor: 'pointer',
+                        fontWeight: companiaSeleccionada === c.codigo ? 700 : 500,
+                        fontSize: '0.85rem',
+                        color: 'var(--color-texto-principal)',
                         textAlign: 'center',
                       }}
                     >
-                      {c.nombre.split(' ')[0]}
+                      {c.nombre}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Teléfono */}
+              {/* Número Telefónico */}
               <div className="grupo-formulario">
-                <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>
-                  Número de Teléfono Celular (10 dígitos):
-                </label>
+                <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Número Celular (10 Dígitos):</label>
                 <input
                   type="tel"
-                  className="control-formulario"
-                  placeholder="Ej. 4771234567"
                   maxLength={10}
+                  className="control-formulario"
+                  placeholder="Ej. 5551234567"
                   value={numeroTelefono}
-                  onChange={(e) => setNumeroTelefono(e.target.value.replace(/\D/g, ''))}
-                  style={{ fontSize: '1.1rem', letterSpacing: '0.1em', fontWeight: 600 }}
+                  onChange={(e) => setNumeroTelefono(e.target.value)}
+                  style={{ marginTop: '0.35rem', fontSize: '1.1rem', letterSpacing: '2px', fontWeight: 600 }}
                   required
                 />
               </div>
 
-              {/* Confirmación de Teléfono */}
+              {/* Confirmación Número */}
               <div className="grupo-formulario">
-                <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>
-                  Confirmar Número de Celular:
-                </label>
+                <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Confirmar Número Celular:</label>
                 <input
                   type="tel"
-                  className="control-formulario"
-                  placeholder="Reescriba el mismo número"
                   maxLength={10}
+                  className="control-formulario"
+                  placeholder="Reingrese los 10 dígitos"
                   value={confirmarNumero}
-                  onChange={(e) => setConfirmarNumero(e.target.value.replace(/\D/g, ''))}
-                  style={{ fontSize: '1.1rem', letterSpacing: '0.1em', fontWeight: 600 }}
+                  onChange={(e) => setConfirmarNumero(e.target.value)}
+                  style={{ marginTop: '0.35rem', fontSize: '1.1rem', letterSpacing: '2px', fontWeight: 600 }}
                   required
                 />
               </div>
 
-              {/* Montos Rápidos */}
-              <div>
-                <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-texto-secundario)' }}>
-                  Monto de Recarga:
-                </label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', marginTop: '0.5rem' }}>
+              {/* Montos Predefinidos */}
+              <div className="grupo-formulario">
+                <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Monto a Recargar:</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', marginTop: '0.4rem' }}>
                   {montosActuales.map((m) => (
                     <button
                       key={m}
                       type="button"
                       onClick={() => setMontoRecarga(m)}
                       style={{
-                        padding: '0.65rem 0.5rem',
-                        borderRadius: '8px',
+                        padding: '0.5rem',
                         border: montoRecarga === m ? '2px solid var(--color-exito)' : '1px solid var(--color-borde)',
-                        backgroundColor: montoRecarga === m ? 'rgba(16, 185, 129, 0.12)' : 'var(--color-fondo-suave)',
-                        color: montoRecarga === m ? '#059669' : 'var(--color-texto-principal)',
-                        fontWeight: 700,
-                        fontSize: '1rem',
+                        backgroundColor: montoRecarga === m ? 'rgba(16, 185, 129, 0.15)' : 'var(--color-fondo-suave)',
+                        borderRadius: '6px',
                         cursor: 'pointer',
+                        fontWeight: 700,
+                        fontSize: '0.9rem',
+                        color: montoRecarga === m ? 'var(--color-exito)' : 'var(--color-texto-principal)',
                       }}
                     >
                       ${m}
@@ -421,29 +528,28 @@ export const PantallaRecargasYServicios: React.FC = () => {
                   gap: '0.5rem',
                   fontSize: '1rem',
                   fontWeight: 600,
-                  marginTop: '0.5rem',
                 }}
               >
                 {procesandoRecarga ? (
                   <>
                     <div className="animacion-giratoria" style={{ width: '18px', height: '18px', border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%' }} />
-                    <span>Conectando con Proveedor...</span>
+                    <span>Enviando Transacción a RNP...</span>
                   </>
                 ) : (
                   <>
-                    <Send size={18} />
-                    <span>Enviar Recarga de ${montoRecarga} MXN</span>
+                    <Zap size={18} />
+                    <span>Aplicar Recarga de {formatearDinero(montoRecarga)}</span>
                   </>
                 )}
               </button>
             </form>
           </div>
 
-          {/* Panel Derecho: Resultado y Comprobante */}
+          {/* Panel Derecho: Comprobante de Recarga */}
           <div className="tarjeta" style={{ margin: 0, padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
             <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.15rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <ShieldCheck size={20} style={{ color: 'var(--color-exito)' }} />
-              <span>Estado de la Transacción</span>
+              <span>Comprobante de Recarga</span>
             </h3>
 
             {resultadoRecarga ? (
@@ -480,6 +586,14 @@ export const PantallaRecargasYServicios: React.FC = () => {
                     <div style={{ fontWeight: 600 }}>{resultadoRecarga.numeroTelefono}</div>
                   </div>
                   <div>
+                    <span style={{ color: 'var(--color-texto-secundario)' }}>Folio RNP:</span>
+                    <div style={{ fontWeight: 600 }}>{resultadoRecarga.folioProveedor || 'N/A'}</div>
+                  </div>
+                  <div>
+                    <span style={{ color: 'var(--color-texto-secundario)' }}>Folio Carrier:</span>
+                    <div style={{ fontWeight: 600 }}>{resultadoRecarga.codigoAutorizacion || 'N/A'}</div>
+                  </div>
+                  <div>
                     <span style={{ color: 'var(--color-texto-secundario)' }}>Monto:</span>
                     <div style={{ fontWeight: 700, color: 'var(--color-exito)' }}>
                       {formatearDinero(resultadoRecarga.monto)}
@@ -498,7 +612,7 @@ export const PantallaRecargasYServicios: React.FC = () => {
                 <Smartphone size={48} style={{ opacity: 0.35, marginBottom: '0.75rem' }} />
                 <h4 style={{ margin: '0 0 0.4rem 0', fontWeight: 600 }}>Sin operaciones recientes</h4>
                 <p style={{ margin: 0, fontSize: '0.85rem', maxWidth: '320px', marginInline: 'auto' }}>
-                  Al procesar una recarga telefónica, los detalles de autorización, folio y saldo restante se mostrarán aquí.
+                  Al procesar una recarga telefónica, los folios de autorización de RNP y de la compañía telefónica se mostrarán aquí.
                 </p>
               </div>
             )}
@@ -506,14 +620,14 @@ export const PantallaRecargasYServicios: React.FC = () => {
         </div>
       )}
 
-      {/* PESTAÑA 2: PAGO DE SERVICIOS PÚBLICOS */}
+      {/* PESTAÑA 2: PAGO DE SERVICIOS */}
       {pestaña === 'servicios' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 1fr) minmax(300px, 1fr)', gap: '1.5rem' }}>
           {/* Panel Izquierdo: Formulario de Servicio */}
           <div className="tarjeta" style={{ margin: 0, padding: '1.5rem' }}>
             <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.15rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Receipt size={20} style={{ color: 'var(--color-primario)' }} />
-              <span>Cobro de Recibos y Servicios</span>
+              <span>Cobro de Recibos y Servicios Públicos</span>
             </h3>
 
             {errorServicio && (
@@ -536,12 +650,30 @@ export const PantallaRecargasYServicios: React.FC = () => {
               </div>
             )}
 
+            {mensajeAdeudo && (
+              <div
+                style={{
+                  padding: '0.75rem 1rem',
+                  backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  borderRadius: '6px',
+                  color: 'var(--color-exito)',
+                  fontSize: '0.85rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  marginBottom: '1rem',
+                }}
+              >
+                <Info size={16} />
+                <span>{mensajeAdeudo}</span>
+              </div>
+            )}
+
             <form onSubmit={ejecutarPagoServicio} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               {/* Selección de Servicio */}
               <div className="grupo-formulario">
-                <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>
-                  Empresa / Servicio a Pagar:
-                </label>
+                <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Empresa / Servicio a Pagar:</label>
                 <select
                   className="control-formulario"
                   value={servicioSeleccionado}
@@ -556,31 +688,42 @@ export const PantallaRecargasYServicios: React.FC = () => {
                 </select>
               </div>
 
-              {/* Referencia o Código de Barras */}
+              {/* Referencia o Código de Barras + Botón Consultar Adeudo */}
               <div className="grupo-formulario">
                 <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>
                   Referencia o Código de Barras del Recibo:
                 </label>
-                <input
-                  type="text"
-                  className="control-formulario"
-                  placeholder={servicioActual?.formatoReferencia || 'Escanee o teclee la referencia'}
-                  value={referenciaRecibo}
-                  onChange={(e) => setReferenciaRecibo(e.target.value)}
-                  style={{ marginTop: '0.35rem', fontSize: '1rem', fontFamily: 'monospace' }}
-                  required
-                />
+                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.35rem' }}>
+                  <input
+                    type="text"
+                    className="control-formulario"
+                    placeholder={servicioActual?.formatoReferencia || 'Escanee o teclee la referencia'}
+                    value={referenciaRecibo}
+                    onChange={(e) => setReferenciaRecibo(e.target.value)}
+                    style={{ fontSize: '1rem', fontFamily: 'monospace' }}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-secundario"
+                    onClick={consultarAdeudoEnLinea}
+                    disabled={consultandoAdeudo}
+                    title="Consulta el saldo pendiente del recibo ante el proveedor"
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', whiteSpace: 'nowrap', padding: '0.5rem 0.75rem' }}
+                  >
+                    <Search size={15} className={consultandoAdeudo ? 'animacion-giratoria' : ''} />
+                    <span>{consultandoAdeudo ? 'Consultando...' : 'Consultar Adeudo'}</span>
+                  </button>
+                </div>
                 <small style={{ color: 'var(--color-texto-secundario)', fontSize: '0.75rem', marginTop: '0.25rem', display: 'block' }}>
-                  Puede usar la pistola de código de barras para leer el código inferior del recibo.
+                  Soporta Sky, Izzi, Megacable, CFE, Totalplay y convenios de agua municipal.
                 </small>
               </div>
 
               {/* Montos y Comisión */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div className="grupo-formulario">
-                  <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>
-                    Monto del Recibo ($):
-                  </label>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Monto del Recibo ($):</label>
                   <input
                     type="number"
                     step="0.01"
@@ -595,9 +738,7 @@ export const PantallaRecargasYServicios: React.FC = () => {
                 </div>
 
                 <div className="grupo-formulario">
-                  <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>
-                    Comisión del Servicio ($):
-                  </label>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Comisión del Servicio ($):</label>
                   <input
                     type="number"
                     step="1"
@@ -653,7 +794,7 @@ export const PantallaRecargasYServicios: React.FC = () => {
                 {procesandoServicio ? (
                   <>
                     <div className="animacion-giratoria" style={{ width: '18px', height: '18px', border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%' }} />
-                    <span>Procesando Pago de Servicio...</span>
+                    <span>Dispersando Pago en RNP...</span>
                   </>
                 ) : (
                   <>
@@ -706,6 +847,10 @@ export const PantallaRecargasYServicios: React.FC = () => {
                     <div style={{ fontWeight: 600, fontFamily: 'monospace' }}>{resultadoServicio.referencia}</div>
                   </div>
                   <div>
+                    <span style={{ color: 'var(--color-texto-secundario)' }}>Folio Autorización:</span>
+                    <div style={{ fontWeight: 600 }}>{resultadoServicio.folioAutorizacion || 'N/A'}</div>
+                  </div>
+                  <div>
                     <span style={{ color: 'var(--color-texto-secundario)' }}>Total Cobrado:</span>
                     <div style={{ fontWeight: 700, color: 'var(--color-exito)' }}>
                       {formatearDinero(resultadoServicio.totalCobrado)}
@@ -724,7 +869,7 @@ export const PantallaRecargasYServicios: React.FC = () => {
                 <Receipt size={48} style={{ opacity: 0.35, marginBottom: '0.75rem' }} />
                 <h4 style={{ margin: '0 0 0.4rem 0', fontWeight: 600 }}>Sin recibos cobrados recientemente</h4>
                 <p style={{ margin: 0, fontSize: '0.85rem', maxWidth: '320px', marginInline: 'auto' }}>
-                  Al registrar el cobro de un recibo (CFE, Agua, Telmex), el comprobante con folio y desglose de comisión se generará aquí.
+                  Al registrar el cobro de un recibo (CFE, Agua, Telmex), el comprobante con folio de autorización y desglose de comisión se generará aquí.
                 </p>
               </div>
             )}
@@ -732,52 +877,268 @@ export const PantallaRecargasYServicios: React.FC = () => {
         </div>
       )}
 
-      {/* PESTAÑA 3: ARQUITECTURA DE INTEGRACIÓN */}
+      {/* PESTAÑA 3: HISTORIAL DE TRANSACCIONES */}
+      {pestaña === 'historial' && (
+        <div className="tarjeta" style={{ margin: 0, padding: '1.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '1.15rem' }}>Historial Transaccional de Servicios & Recargas</h3>
+              <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem', color: 'var(--color-texto-secundario)' }}>
+                Operaciones persistidas con Folio_POS, códigos de respuesta de RNP y folios devueltos por el carrier.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="btn btn-secundario"
+              onClick={cargarHistorial}
+              disabled={cargandoAuditoria}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.85rem' }}
+            >
+              <RefreshCw size={14} className={cargandoAuditoria ? 'animacion-giratoria' : ''} />
+              <span>Actualizar Tabla</span>
+            </button>
+          </div>
+
+          <div style={{ overflowX: 'auto' }}>
+            <table className="tabla-general" style={{ width: '100%', fontSize: '0.85rem' }}>
+              <thead>
+                <tr>
+                  <th>Folio POS</th>
+                  <th>Tipo</th>
+                  <th>Carrier</th>
+                  <th>Referencia</th>
+                  <th>Monto</th>
+                  <th>Estado</th>
+                  <th>Cód. RNP</th>
+                  <th>Folio Prov.</th>
+                  <th>Folio Carrier</th>
+                  <th>Fecha</th>
+                </tr>
+              </thead>
+              <tbody>
+                {transacciones.length === 0 ? (
+                  <tr>
+                    <td colSpan={10} style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-texto-secundario)' }}>
+                      No hay transacciones registradas en el periodo actual.
+                    </td>
+                  </tr>
+                ) : (
+                  transacciones.map((tx) => (
+                    <tr key={tx.idTransaccionServicio}>
+                      <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{tx.folioPos}</td>
+                      <td>
+                        <span
+                          style={{
+                            padding: '0.2rem 0.5rem',
+                            borderRadius: '4px',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            backgroundColor: tx.tipoTransaccion === 'RECARGA' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(168, 85, 247, 0.15)',
+                            color: tx.tipoTransaccion === 'RECARGA' ? '#2563eb' : '#7e22ce',
+                          }}
+                        >
+                          {tx.tipoTransaccion}
+                        </span>
+                      </td>
+                      <td>{tx.carrierNombre}</td>
+                      <td style={{ fontFamily: 'monospace' }}>{tx.referencia}</td>
+                      <td style={{ fontWeight: 700 }}>{formatearDinero(tx.monto)}</td>
+                      <td>
+                        <span
+                          style={{
+                            padding: '0.2rem 0.5rem',
+                            borderRadius: '4px',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            backgroundColor:
+                              tx.estado === 'EXITOSA'
+                                ? 'rgba(16, 185, 129, 0.15)'
+                                : tx.estado === 'EN_ESPERA'
+                                ? 'rgba(245, 158, 11, 0.15)'
+                                : 'rgba(239, 68, 68, 0.15)',
+                            color:
+                              tx.estado === 'EXITOSA'
+                                ? '#059669'
+                                : tx.estado === 'EN_ESPERA'
+                                ? '#d97706'
+                                : '#dc2626',
+                          }}
+                        >
+                          {tx.estado}
+                        </span>
+                      </td>
+                      <td>{tx.codigoRespuesta || '-'}</td>
+                      <td>{tx.folioProveedor || '-'}</td>
+                      <td>{tx.folioCarrier || '-'}</td>
+                      <td>{new Date(tx.fechaCreacion).toLocaleString('es-MX')}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* PESTAÑA 4: BITÁCORA Y ERRORES */}
+      {pestaña === 'bitacora' && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 1.2fr) minmax(300px, 1fr)', gap: '1.5rem' }}>
+          {/* Bitácora de Eventos */}
+          <div className="tarjeta" style={{ margin: 0, padding: '1.5rem' }}>
+            <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.15rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <FileText size={20} style={{ color: 'var(--color-primario)' }} />
+              <span>Bitácora de Operaciones (Auditoría)</span>
+            </h3>
+
+            <div style={{ maxHeight: '450px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {bitacora.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-texto-secundario)' }}>
+                  Sin eventos en la bitácora.
+                </div>
+              ) : (
+                bitacora.map((b) => (
+                  <div
+                    key={b.idBitacoraServicio}
+                    style={{
+                      padding: '0.75rem',
+                      border: '1px solid var(--color-borde)',
+                      borderRadius: '6px',
+                      backgroundColor: 'var(--color-fondo-suave)',
+                      fontSize: '0.85rem',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                      <span style={{ fontWeight: 700, color: 'var(--color-primario)' }}>{b.accion}</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--color-texto-secundario)' }}>
+                        {new Date(b.fechaHora).toLocaleTimeString('es-MX')}
+                      </span>
+                    </div>
+                    <div style={{ color: 'var(--color-texto-principal)' }}>{b.mensaje}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--color-texto-secundario)', marginTop: '0.25rem', fontFamily: 'monospace' }}>
+                      Folio_POS: {b.folioPos}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Log de Errores Técnicos */}
+          <div className="tarjeta" style={{ margin: 0, padding: '1.5rem' }}>
+            <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.15rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <AlertTriangle size={20} style={{ color: 'var(--color-peligro)' }} />
+              <span>Log de Errores & Excepciones SOAP</span>
+            </h3>
+
+            <div style={{ maxHeight: '450px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {errores.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-exito)' }}>
+                  <CheckCircle size={32} style={{ margin: '0 auto 0.5rem auto', opacity: 0.8 }} />
+                  <div>No se han registrado errores técnicos recientes.</div>
+                </div>
+              ) : (
+                errores.map((err) => (
+                  <div
+                    key={err.idLogError}
+                    style={{
+                      padding: '0.75rem',
+                      border: '1px solid rgba(239, 68, 68, 0.3)',
+                      borderRadius: '6px',
+                      backgroundColor: 'rgba(239, 68, 68, 0.05)',
+                      fontSize: '0.85rem',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                      <span style={{ fontWeight: 700, color: 'var(--color-peligro)' }}>
+                        [{err.tipoError}] {err.codigoError || ''}
+                      </span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--color-texto-secundario)' }}>
+                        {new Date(err.fechaHora).toLocaleTimeString('es-MX')}
+                      </span>
+                    </div>
+                    <div style={{ fontWeight: 600, color: 'var(--color-texto-principal)' }}>{err.metodoSoap}</div>
+                    <div style={{ color: 'var(--color-peligro)', marginTop: '0.2rem' }}>{err.mensajeError}</div>
+                    {err.folioPos && (
+                      <div style={{ fontSize: '0.75rem', color: 'var(--color-texto-secundario)', marginTop: '0.25rem', fontFamily: 'monospace' }}>
+                        Folio_POS: {err.folioPos}
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PESTAÑA 5: CONFIGURACIÓN E INTEGRACIÓN RNP */}
       {pestaña === 'integracion' && (
         <div className="tarjeta" style={{ margin: 0, padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div>
             <h3 style={{ margin: '0 0 0.35rem 0', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Building size={22} style={{ color: 'var(--color-primario)' }} />
-              <span>Arquitectura Desacoplada de Proveedores Externos</span>
+              <Server size={22} style={{ color: 'var(--color-primario)' }} />
+              <span>Configuración del Web Service Red Nacional de Pagos (RNP)</span>
             </h3>
             <p style={{ margin: 0, color: 'var(--color-texto-secundario)', fontSize: '0.875rem' }}>
-              Especificación técnica de cómo se enlazará la API comercial cuando el negocio firme el contrato con el proveedor mayorista.
+              Credenciales asignadas a Aaron Arenas Martínez para el ambiente de certificación y producción.
             </p>
           </div>
 
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-              gap: '1rem',
-            }}
-          >
+          {mensajeSincronizacion && (
+            <div
+              style={{
+                padding: '0.75rem 1rem',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                border: '1px solid var(--color-exito)',
+                borderRadius: '6px',
+                color: 'var(--color-exito)',
+                fontSize: '0.85rem',
+              }}
+            >
+              {mensajeSincronizacion}
+            </div>
+          )}
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
             <div style={{ padding: '1rem', border: '1px solid var(--color-borde)', borderRadius: '8px', backgroundColor: 'var(--color-fondo-suave)' }}>
               <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.5rem', color: 'var(--color-primario)' }}>
-                1. Contratos e Interfaces en C#
+                1. Endpoint WSDL y Métodos SOAP
               </div>
-              <p style={{ fontSize: '0.85rem', color: 'var(--color-texto-secundario)', lineHeight: 1.4, margin: 0 }}>
-                El sistema ya cuenta con <code>IProveedorRecargas</code> e <code>IProveedorServicios</code>.
-                Al contratar al proveedor (ej. TAE México, Qiubo o RecargaPlus), solo se crea una clase que implemente dichos métodos y se inyecta en <code>ConfiguracionInfraestructura.cs</code>.
-              </p>
+              <ul style={{ fontSize: '0.85rem', color: 'var(--color-texto-secundario)', lineHeight: 1.6, margin: 0, paddingLeft: '1.2rem' }}>
+                <li><strong>Endpoint:</strong> http://ws_stage.cloud-services.mx:9192/service.asmx</li>
+                <li><strong>Protocolo:</strong> SOAP 1.1 con envolvente <code>&lt;jrquest&gt;</code> en JSON</li>
+                <li><strong>Operaciones:</strong> Request_Transaction, check_transaction, Check_Balance, pos_prices_products, check_service_pending_amount</li>
+              </ul>
             </div>
 
             <div style={{ padding: '1rem', border: '1px solid var(--color-borde)', borderRadius: '8px', backgroundColor: 'var(--color-fondo-suave)' }}>
               <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.5rem', color: 'var(--color-exito)' }}>
-                2. Modelo de Bolsa Prepago
+                2. Reglas de Transacción y Conexión
               </div>
-              <p style={{ fontSize: '0.85rem', color: 'var(--color-texto-secundario)', lineHeight: 1.4, margin: 0 }}>
-                La tienda deposita saldo a la cuenta concentradora del proveedor mayorista. Cada recarga descuenta el importe de la bolsa y suma el efectivo cobrado al turno activo de la caja en el PDV.
-              </p>
+              <ul style={{ fontSize: '0.85rem', color: 'var(--color-texto-secundario)', lineHeight: 1.6, margin: 0, paddingLeft: '1.2rem' }}>
+                <li><strong>Prefijo Folio_POS:</strong> <code>10008</code> + ID único persistido antes de enviar</li>
+                <li><strong>Respuesta 24 (En espera):</strong> Polling cada 2s hasta 90s</li>
+                <li><strong>Tolerancia a Caídas:</strong> Verificación de estado obligatoria sin reenviar venta</li>
+              </ul>
             </div>
 
             <div style={{ padding: '1rem', border: '1px solid var(--color-borde)', borderRadius: '8px', backgroundColor: 'var(--color-fondo-suave)' }}>
               <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.5rem', color: 'var(--color-advertencia)' }}>
-                3. Comisiones por Recibo
+                3. Sincronización de Catálogo RNP
               </div>
-              <p style={{ fontSize: '0.85rem', color: 'var(--color-texto-secundario)', lineHeight: 1.4, margin: 0 }}>
-                El cobro de servicios (CFE, Telmex, Agua) genera una ganancia directa por comisión (ej. $12.00 por ticket). El sistema registra contablemente tanto el importe del recibo como el ingreso neto por comisión.
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-texto-secundario)', margin: '0 0 0.75rem 0' }}>
+                Descargue los 412 productos y operadoras autorizadas directamente desde los servidores de RNP.
               </p>
+              <button
+                type="button"
+                className="btn btn-primario"
+                onClick={sincronizarCatalogoRnp}
+                disabled={sincronizandoCatalogo}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem' }}
+              >
+                <Database size={15} className={sincronizandoCatalogo ? 'animacion-giratoria' : ''} />
+                <span>{sincronizandoCatalogo ? 'Sincronizando...' : 'Sincronizar Catálogo RNP'}</span>
+              </button>
             </div>
           </div>
         </div>

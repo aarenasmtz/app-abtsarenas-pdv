@@ -39,6 +39,10 @@ public interface IContextoPrincipal
     DbSet<BitacoraAuditoria> BitacoraAuditoria { get; }
     DbSet<PedidoSugerido> PedidosSugeridos { get; }
     DbSet<DetallePedidoSugerido> DetallePedidosSugeridos { get; }
+    DbSet<TransaccionServicio> TransaccionesServicios { get; }
+    DbSet<BitacoraServicio> BitacoraServicios { get; }
+    DbSet<LogErrorServicio> LogErroresServicios { get; }
+    DbSet<ProductoServicioRnp> CatalogoProductosServicios { get; }
 
     DatabaseFacade Database { get; }
 
