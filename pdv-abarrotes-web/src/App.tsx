@@ -57,8 +57,10 @@ export function App() {
     cargarSesionInicial();
   }, [cargarSesionInicial]);
 
-  // Verificar conexión con la API y SQL Server
+  // Verificar conexión con la API y SQL Server (solo cuando hay sesión activa en el PDV)
   useEffect(() => {
+    if (!estaAutenticado) return;
+
     const verificarConectividad = async () => {
       try {
         const respuesta = await clienteApi.get('/diagnostico/estado');
@@ -73,9 +75,9 @@ export function App() {
     };
 
     verificarConectividad();
-    const intervalo = setInterval(verificarConectividad, 15000);
+    const intervalo = setInterval(verificarConectividad, 60000);
     return () => clearInterval(intervalo);
-  }, []);
+  }, [estaAutenticado]);
 
   // Si no está autenticado, mostrar pantalla de inicio de sesión
   if (!estaAutenticado) {

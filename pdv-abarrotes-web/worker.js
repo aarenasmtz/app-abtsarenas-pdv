@@ -4,7 +4,12 @@ export default {
 
     // Si la petición es hacia la API, actuar como proxy inverso hacia el VPS de producción
     if (url.pathname.startsWith('/api/')) {
-      const targetUrl = new URL(url.pathname + url.search, 'https://abarrotesarenas.com');
+      // Mapear nombres de controladores kebab-case hacia ASP.NET Core si es necesario
+      let targetPath = url.pathname;
+      if (targetPath.includes('/recargas-servicios/')) {
+        targetPath = targetPath.replace('/recargas-servicios/', '/RecargasServicios/');
+      }
+      const targetUrl = new URL(targetPath + url.search, 'https://abarrotesarenas.com');
 
       // Responder preflight OPTIONS para CORS
       if (request.method === 'OPTIONS') {

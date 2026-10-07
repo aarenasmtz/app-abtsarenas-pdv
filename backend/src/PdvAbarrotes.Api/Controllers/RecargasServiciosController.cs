@@ -11,6 +11,8 @@ namespace PdvAbarrotes.Api.Controllers;
 /// Ruta base: /api/v1/recargas-servicios
 /// </summary>
 [Authorize]
+[Route("api/v1/recargas-servicios")]
+[Route("api/v1/RecargasServicios")]
 public class RecargasServiciosController : ControladorBase
 {
     private readonly IServicioRecargasYServicios _servicioRecargas;
