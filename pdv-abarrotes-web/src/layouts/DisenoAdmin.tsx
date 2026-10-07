@@ -101,10 +101,10 @@ export const DisenoAdmin: React.FC<PropiedadesDisenoAdmin> = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
             <span className={`badge ${servidorEnLinea ? 'badge-exito' : 'badge-peligro'}`}>
               <Wifi size={12} />
-              {servidorEnLinea ? 'SQL Server 2022' : 'Sin Conexión'}
+              {servidorEnLinea ? 'Sistema en Línea' : 'Sin Conexión'}
             </span>
           </div>
-          <span>.NET 9 + React + TS</span>
+          <span>Abarrotes Arenas PDV</span>
         </div>
       </aside>
 

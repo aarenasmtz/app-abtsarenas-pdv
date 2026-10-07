@@ -37,6 +37,16 @@ const PantallaRecargasYServicios = lazy(() =>
 const PantallaReportes = lazy(() =>
   import('./modules/reportes/PantallaReportes').then((m) => ({ default: m.PantallaReportes }))
 );
+const PantallaControlCaja = lazy(() =>
+  import('./modules/caja/PantallaControlCaja').then((m) => ({ default: m.PantallaControlCaja }))
+);
+const PantallaClientes = lazy(() =>
+  import('./modules/clientes/PantallaClientes').then((m) => ({ default: m.PantallaClientes }))
+);
+const PantallaConfiguracion = lazy(() =>
+  import('./modules/configuracion/PantallaConfiguracion').then((m) => ({ default: m.PantallaConfiguracion }))
+);
+
 
 // Componente de espera para carga bajo demanda
 const CargadorModulo = () => (
@@ -127,6 +137,12 @@ export function App() {
 
         {moduloActivo === 'reportes' && <PantallaReportes />}
 
+        {moduloActivo === 'caja' && <PantallaControlCaja />}
+
+        {moduloActivo === 'clientes' && <PantallaClientes />}
+
+        {moduloActivo === 'configuracion' && <PantallaConfiguracion />}
+
         {moduloActivo !== 'dashboard' && 
          moduloActivo !== 'productos' && 
          moduloActivo !== 'usuarios' && 
@@ -136,7 +152,10 @@ export function App() {
          moduloActivo !== 'compras' && 
          moduloActivo !== 'pedidos-sugeridos' && 
          moduloActivo !== 'servicios' && 
-         moduloActivo !== 'reportes' && (
+         moduloActivo !== 'reportes' && 
+         moduloActivo !== 'caja' && 
+         moduloActivo !== 'clientes' && 
+         moduloActivo !== 'configuracion' && (
           <div className="tarjeta" style={{ textAlign: 'center', padding: '4rem 1rem' }}>
             <AlertTriangle size={48} style={{ color: 'var(--color-advertencia)', marginBottom: '1rem', opacity: 0.8 }} />
             <h3>Módulo '{moduloActivo}' Preparado para Implementación</h3>

@@ -209,6 +209,35 @@ export const PantallaCompras: React.FC = () => {
         </button>
       </div>
 
+      {/* Banner Informativo: Explicación del funcionamiento de Compras para la tienda */}
+      <div
+        style={{
+          backgroundColor: '#eff6ff',
+          border: '1px solid #bfdbfe',
+          borderRadius: '12px',
+          padding: '1rem 1.25rem',
+          marginBottom: '1.25rem',
+          display: 'flex',
+          gap: '1rem',
+          alignItems: 'flex-start',
+        }}
+      >
+        <div style={{ padding: '0.4rem', borderRadius: '8px', backgroundColor: '#dbeafe', color: '#1d4ed8', marginTop: '2px' }}>
+          <ShoppingCart size={22} />
+        </div>
+        <div style={{ fontSize: '0.88rem', color: '#1e3a8a', lineHeight: 1.5 }}>
+          <strong style={{ display: 'block', fontSize: '0.95rem', marginBottom: '0.2rem', color: '#1e40af' }}>
+            💡 ¿Para qué sirve el Módulo de Compras en tu Tienda?
+          </strong>
+          Este módulo se utiliza cuando recibes mercancía de tus proveedores mayoristas (por ejemplo, el camión de Bimbo, Sabritas, Coca-Cola o abarrotes generales):
+          <ul style={{ margin: '0.4rem 0 0 1.2rem', padding: 0 }}>
+            <li><strong>Aumenta el inventario automáticamente:</strong> Cada cantidad recibida se suma de inmediato a tus existencias en mostrador.</li>
+            <li><strong>Actualiza costos de adquisición:</strong> Registra el costo al que te vendió el proveedor para calcular tu margen de ganancia real en los reportes de ventas.</li>
+            <li><strong>Historial y auditoría:</strong> Consulta facturas, notas de remisión pasadas y desgloses de compra haciendo clic en <em>"Ver Detalle"</em> (se abre en modal flotante).</li>
+          </ul>
+        </div>
+      </div>
+
       {/* Alerta de notificación */}
       {mensajeAlerta && (
         <div

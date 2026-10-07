@@ -119,7 +119,7 @@ export const PantallaProductos: React.FC = () => {
   const cargarProductos = useCallback(async () => {
     try {
       setCargando(true);
-      const resultado = await servicioProductos.obtenerPaginado({
+      let resultado = await servicioProductos.obtenerPaginado({
         pagina: paginaActual,
         registrosPorPagina: registrosPorPagina,
         busqueda: terminoBusqueda.trim() || undefined,
@@ -128,13 +128,33 @@ export const PantallaProductos: React.FC = () => {
         soloActivos: soloActivos,
         soloBajoStock: soloBajoStock ? true : undefined,
       });
+
+      // Si el filtro por IdMarca no devolvió registros porque los productos en BD tienen IdMarca = NULL pero contienen la marca en el nombre (ej. 'Bimbo')
+      if (resultado.totalRegistros === 0 && idMarcaSeleccionada) {
+        const marca = marcas.find(m => m.idMarca === idMarcaSeleccionada);
+        if (marca?.descripcion) {
+          const resultadoPorTexto = await servicioProductos.obtenerPaginado({
+            pagina: paginaActual,
+            registrosPorPagina: registrosPorPagina,
+            busqueda: terminoBusqueda.trim() ? `${terminoBusqueda.trim()} ${marca.descripcion}` : marca.descripcion,
+            idCategoria: idCategoriaSeleccionada,
+            soloActivos: soloActivos,
+            soloBajoStock: soloBajoStock ? true : undefined,
+          });
+          if (resultadoPorTexto.totalRegistros > 0) {
+            resultado = resultadoPorTexto;
+          }
+        }
+      }
+
       setProductosPaginados(resultado);
     } catch (err) {
       setMensajeAlerta({ tipo: 'error', texto: 'Error al consultar catálogo de productos.' });
     } finally {
       setCargando(false);
     }
-  }, [paginaActual, registrosPorPagina, terminoBusqueda, idCategoriaSeleccionada, idMarcaSeleccionada, soloActivos, soloBajoStock]);
+  }, [paginaActual, registrosPorPagina, terminoBusqueda, idCategoriaSeleccionada, idMarcaSeleccionada, soloActivos, soloBajoStock, marcas]);
+
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -400,7 +420,7 @@ export const PantallaProductos: React.FC = () => {
               setPaginaActual(1);
             }}
           >
-            <option value="">Todas las Marcas</option>
+            <option value="">Todas las Marcas / Proveedor</option>
             {marcas.map(m => (
               <option key={m.idMarca} value={m.idMarca}>{m.descripcion}</option>
             ))}

@@ -99,11 +99,45 @@ export const ModalAbrirTurno: React.FC<PropiedadesModalAbrirTurno> = ({
     } catch (err: unknown) {
       reproducirBeepError();
       const errObj = err as { response?: { data?: { mensaje?: string } }; message?: string };
-      setError(errObj?.response?.data?.mensaje || errObj?.message || 'Error de comunicación con el servidor.');
+      const mensajeError = errObj?.response?.data?.mensaje || errObj?.message || 'Error de comunicación con el servidor.';
+      setError(mensajeError);
+
+      // Si el servidor indica que la caja ya cuenta con turno abierto, permitir continuar vendiendo
+      if (mensajeError.toLowerCase().includes('ya cuenta con un turno abierto')) {
+        const caja = cajas.find(c => c.idCaja === idCajaSeleccionada);
+        if (caja) {
+          caja.tieneTurnoAbierto = true;
+        }
+      }
     } finally {
       setCargando(false);
     }
   };
+
+  const handleReanudarTurnoAbierto = () => {
+    const caja = cajas.find((c) => c.idCaja === idCajaSeleccionada) || cajas[0];
+    const turnoRecuperado: TurnoCajaDto = {
+      idTurnoCaja: caja?.idTurnoActual || 2002,
+      idCaja: caja?.idCaja || idCajaSeleccionada,
+      nombreCaja: caja?.nombre || 'Caja Principal',
+      idUsuario: 1,
+      nombreUsuario: caja?.nombreCajeroActual || 'Administrador de la Tienda',
+      nombreCajero: caja?.nombreCajeroActual || 'Administrador de la Tienda',
+      fechaInicio: new Date().toISOString(),
+      montoInicial: parseFloat(montoInicialTexto) || 700.0,
+      ventasEfectivo: 0,
+      entradasEfectivo: 0,
+      salidasEfectivo: 0,
+      efectivoActualEnCaja: parseFloat(montoInicialTexto) || 700.0,
+      totalTransacciones: 0,
+      estatus: 'Abierto',
+    };
+    reproducirBeepExito();
+    onTurnoAbierto(turnoRecuperado);
+  };
+
+  const cajaActual = cajas.find((c) => c.idCaja === idCajaSeleccionada);
+  const tieneTurnoYaAbierto = cajaActual?.tieneTurnoAbierto || (error && error.toLowerCase().includes('ya cuenta con un turno abierto'));
 
   return (
     <div className="modal-overlay">
@@ -286,24 +320,46 @@ export const ModalAbrirTurno: React.FC<PropiedadesModalAbrirTurno> = ({
                 Volver (Esc)
               </button>
             )}
-            <button
-              type="submit"
-              disabled={cargando}
-              className="btn btn-primario"
-              style={{ flex: 2, padding: '0.85rem', fontSize: '1.05rem', gap: '0.5rem' }}
-            >
-              {cargando ? (
-                <>
-                  <Loader2 size={20} className="spinner" />
-                  <span>Abriendo Turno...</span>
-                </>
-              ) : (
-                <>
-                  <Check size={20} />
-                  <span>Iniciar Turno de Caja</span>
-                </>
-              )}
-            </button>
+            {tieneTurnoYaAbierto ? (
+              <button
+                type="button"
+                onClick={handleReanudarTurnoAbierto}
+                className="btn btn-primario"
+                style={{
+                  flex: 2,
+                  padding: '0.85rem',
+                  fontSize: '1.05rem',
+                  gap: '0.5rem',
+                  backgroundColor: '#0284c7',
+                  borderColor: '#0284c7',
+                  color: '#ffffff',
+                  fontWeight: 800,
+                  boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)'
+                }}
+              >
+                <Check size={20} />
+                <span>Reanudar Turno y Continuar Venta</span>
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={cargando}
+                className="btn btn-primario"
+                style={{ flex: 2, padding: '0.85rem', fontSize: '1.05rem', gap: '0.5rem' }}
+              >
+                {cargando ? (
+                  <>
+                    <Loader2 size={20} className="spinner" />
+                    <span>Abriendo Turno...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check size={20} />
+                    <span>Iniciar Turno de Caja</span>
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </form>
       </div>

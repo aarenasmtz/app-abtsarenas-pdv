@@ -84,18 +84,24 @@ export const PantallaProveedores: React.FC = () => {
     await cargarProveedores();
   };
 
-  const alternarEstado = async (proveedor: ProveedorDto) => {
-    const nuevoEstado = !proveedor.activo;
-    const accion = nuevoEstado ? 'activar' : 'desactivar';
-    if (!confirm(`¿Estás seguro de ${accion} al proveedor '${proveedor.nombre}'?`)) {
-      return;
-    }
+  const [proveedorParaBaja, setProveedorParaBaja] = useState<ProveedorDto | null>(null);
+
+  const solicitarAlternarEstado = (proveedor: ProveedorDto) => {
+    setProveedorParaBaja(proveedor);
+  };
+
+  const ejecutarAlternarEstado = async () => {
+    if (!proveedorParaBaja) return;
+    const nuevoEstado = !proveedorParaBaja.activo;
+    const nombre = proveedorParaBaja.nombre;
+    const id = proveedorParaBaja.idProveedor;
+    setProveedorParaBaja(null);
 
     try {
-      await servicioProveedores.cambiarEstado(proveedor.idProveedor, nuevoEstado);
+      await servicioProveedores.cambiarEstado(id, nuevoEstado);
       setMensajeAlerta({
         tipo: 'exito',
-        texto: `Proveedor '${proveedor.nombre}' ${nuevoEstado ? 'activado' : 'desactivado'} con éxito.`,
+        texto: `Proveedor '${nombre}' ${nuevoEstado ? 'activado' : 'desactivado (baja lógica)'} con éxito.`,
       });
       await cargarProveedores();
     } catch (err: unknown) {
@@ -103,6 +109,7 @@ export const PantallaProveedores: React.FC = () => {
       setMensajeAlerta({ tipo: 'error', texto: msg });
     }
   };
+
 
   const columnas = [
     {
@@ -187,8 +194,8 @@ export const PantallaProveedores: React.FC = () => {
           </button>
           <button
             className={`btn-icono ${p.activo ? 'btn-icono-peligro' : 'btn-icono-exito'}`}
-            title={p.activo ? 'Desactivar Proveedor' : 'Activar Proveedor'}
-            onClick={() => alternarEstado(p)}
+            title={p.activo ? 'Desactivar Proveedor (Baja Lógica)' : 'Activar Proveedor'}
+            onClick={() => solicitarAlternarEstado(p)}
           >
             <Power size={16} />
           </button>
@@ -294,13 +301,83 @@ export const PantallaProveedores: React.FC = () => {
         />
       </div>
 
-      {/* Modal de Proveedor */}
+      {/* Modal de Proveedor (Alta / Edición) */}
       <ModalProveedor
         abierto={modalAbierto}
         proveedorEnEdicion={proveedorEnEdicion}
         onCerrar={() => setModalAbierto(false)}
         onGuardar={manejarGuardarProveedor}
       />
+
+      {/* Modal de Confirmación de Baja Lógica / Cambio de Estado */}
+      {proveedorParaBaja && (
+        <div className="modal-superposicion">
+          <div className="modal-contenedor" style={{ maxWidth: '460px', padding: 0 }}>
+            <div className="modal-cabecera">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <div
+                  style={{
+                    padding: '0.4rem',
+                    borderRadius: '8px',
+                    backgroundColor: proveedorParaBaja.activo ? '#fee2e2' : '#dcfce7',
+                    color: proveedorParaBaja.activo ? '#dc2626' : '#16a34a',
+                  }}
+                >
+                  <AlertTriangle size={22} />
+                </div>
+                <h3 style={{ margin: 0, fontSize: '1.1rem' }}>
+                  {proveedorParaBaja.activo ? 'Desactivar Proveedor (Baja Lógica)' : 'Reactivar Proveedor'}
+                </h3>
+              </div>
+              <button className="btn-icono" onClick={() => setProveedorParaBaja(null)}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="modal-cuerpo" style={{ fontSize: '0.92rem', lineHeight: 1.5 }}>
+              <p style={{ margin: 0 }}>
+                {proveedorParaBaja.activo ? (
+                  <>
+                    ¿Estás seguro de que deseas dar de <strong>baja lógica</strong> al proveedor{' '}
+                    <strong>{proveedorParaBaja.nombre}</strong> (ID #{proveedorParaBaja.idProveedor})?
+                    <br /><br />
+                    <span style={{ fontSize: '0.82rem', color: 'var(--color-texto-secundario)' }}>
+                      El proveedor ya no aparecerá como opción activa al registrar nuevas compras o pedidos, pero se conservará su historial contable.
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    ¿Deseas <strong>reactivar</strong> al proveedor <strong>{proveedorParaBaja.nombre}</strong>?
+                    Volverá a estar disponible en el catálogo de compras y pedidos sugeridos.
+                  </>
+                )}
+              </p>
+            </div>
+
+            <div className="modal-pie">
+              <button
+                type="button"
+                className="btn btn-secundario"
+                onClick={() => setProveedorParaBaja(null)}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className={`btn ${proveedorParaBaja.activo ? 'btn-peligro' : 'btn-primario'}`}
+                style={{
+                  backgroundColor: proveedorParaBaja.activo ? '#dc2626' : '#16a34a',
+                  borderColor: proveedorParaBaja.activo ? '#dc2626' : '#16a34a',
+                  color: '#ffffff',
+                }}
+                onClick={ejecutarAlternarEstado}
+              >
+                {proveedorParaBaja.activo ? 'Confirmar Baja Lógica' : 'Confirmar Reactivación'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

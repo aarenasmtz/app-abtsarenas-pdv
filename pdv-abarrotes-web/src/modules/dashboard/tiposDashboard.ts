@@ -5,6 +5,7 @@
 export interface VentaPorMetodoPagoDto {
   metodoPago: string;
   total: number;
+  montoTotal?: number;
   porcentaje: number;
   cantidadTransacciones: number;
 }

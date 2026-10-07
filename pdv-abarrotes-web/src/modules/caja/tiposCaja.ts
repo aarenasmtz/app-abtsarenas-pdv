@@ -17,6 +17,7 @@ export interface TurnoCajaDto {
   nombreCaja: string;
   idUsuario: number;
   nombreUsuario: string;
+  nombreCajero?: string;
   fechaInicio: string;
   fechaCierre?: string;
   estatus: string;
@@ -47,6 +48,7 @@ export interface MovimientoCajaDto {
   monto: number;
   descripcion: string;
   fechaMovimiento: string;
+  nombreUsuario?: string;
 }
 
 export interface RegistrarMovimientoCajaDto {
@@ -90,17 +92,25 @@ export interface CorteCajaDto {
   nombreCaja: string;
   idUsuario: number;
   nombreUsuario: string;
+  nombreCajero?: string;
   fechaCorte: string;
+  fechaHora?: string;
   tipoCorte: string;
   montoInicial: number;
   ventasEfectivo: number;
+  totalVentas?: number;
+  totalVentasEfectivo?: number;
   ventasTarjeta: number;
   ventasVales: number;
   ventasCredito: number;
   entradasEfectivo: number;
   salidasEfectivo: number;
   totalEsperado: number;
+  totalEfectivoEsperado?: number;
+  totalEfectivoCalculado?: number;
   totalContado: number;
+  montoFinalReal?: number;
   diferencia: number;
   observaciones?: string;
 }
+

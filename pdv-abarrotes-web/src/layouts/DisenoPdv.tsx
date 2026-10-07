@@ -13,7 +13,9 @@ import {
   Calculator,
   Layers,
   Zap,
-  Package
+  Package,
+  Calendar,
+  Lock
 } from 'lucide-react';
 import { useStoreCarritoPdv } from '../modules/pdv/storeCarrito';
 import { useEscanerCodigoBarras } from '../hooks/useEscanerCodigoBarras';
@@ -27,6 +29,7 @@ import { ModalTicketsPendientes } from '../modules/pdv/ModalTicketsPendientes';
 import { ModalBuscarProductos } from '../modules/pdv/ModalBuscarProductos';
 import { ModalRecargaPdv } from '../modules/pdv/ModalRecargaPdv';
 import { servicioTicketsPendientes } from '../modules/ventas/servicioTicketsPendientes';
+import { ModalVentasDelDia } from '../modules/pdv/ModalVentasDelDia';
 import { ModalAbrirTurno } from '../modules/caja/ModalAbrirTurno';
 import { ModalMovimientoCaja } from '../modules/caja/ModalMovimientoCaja';
 import { ModalCorteCaja } from '../modules/caja/ModalCorteCaja';
@@ -43,7 +46,7 @@ interface PropiedadesDisenoPdv {
 
 export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
   onVolverAAdmin,
-  servidorEnLinea
+  servidorEnLinea: _servidorEnLinea
 }) => {
   const [codigoInput, setCodigoInput] = useState('');
   const [mensajeNotificacion, setMensajeNotificacion] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
@@ -83,6 +86,7 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
   const [mostrarModalAbrirTurno, setMostrarModalAbrirTurno] = useState(false);
   const [mostrarModalMovimientoCaja, setMostrarModalMovimientoCaja] = useState(false);
   const [mostrarModalCorteCaja, setMostrarModalCorteCaja] = useState(false);
+  const [mostrarModalVentasDelDia, setMostrarModalVentasDelDia] = useState(false);
 
   // Escáner HID global
   useEscanerCodigoBarras({
@@ -112,7 +116,8 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
         mostrarModalMovimientoCaja || 
         mostrarModalCorteCaja ||
         mostrarModalBuscarProductos ||
-        mostrarModalRecargas;
+        mostrarModalRecargas ||
+        mostrarModalVentasDelDia;
 
       if (!esInteractivo && !hayModalAbierto) {
         inputRef.current?.focus();
@@ -131,7 +136,8 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
     mostrarModalMovimientoCaja,
     mostrarModalCorteCaja,
     mostrarModalBuscarProductos,
-    mostrarModalRecargas
+    mostrarModalRecargas,
+    mostrarModalVentasDelDia
   ]);
 
   // Consultar conteo de tickets pendientes en espera
@@ -152,6 +158,7 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
       const resp = await servicioCaja.obtenerTurnoActual();
       if (resp.exito && resp.datos) {
         setTurnoActual(resp.datos);
+        setMostrarModalAbrirTurno(false);
       } else {
         setTurnoActual(null);
         setMostrarModalAbrirTurno(true);
@@ -160,6 +167,7 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
       // Silencioso
     }
   }, []);
+
 
   useEffect(() => {
     refrescarConteoTicketsPendientes();
@@ -210,7 +218,8 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
         mostrarModalMovimientoCaja || 
         mostrarModalCorteCaja ||
         mostrarModalBuscarProductos ||
-        mostrarModalRecargas;
+        mostrarModalRecargas ||
+        mostrarModalVentasDelDia;
 
       if (hayModalAbierto) {
         return;
@@ -220,6 +229,12 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
       if (e.key === 'F12') {
         e.preventDefault();
         abrirCobro('efectivo');
+        return;
+      }
+
+      if (e.key === 'F11') {
+        e.preventDefault();
+        setMostrarModalVentasDelDia(true);
         return;
       }
 
@@ -604,110 +619,60 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
               <button
                 type="button"
                 onClick={() => setMostrarModalCorteCaja(true)}
-                className="badge badge-exito"
-                style={{ fontSize: '0.75rem', cursor: 'pointer', border: 'none' }}
-                title="Ver detalles contables o corte del turno (F9)"
+                style={{
+                  fontSize: '0.8rem',
+                  cursor: 'pointer',
+                  border: 'none',
+                  backgroundColor: '#10b981',
+                  color: '#ffffff',
+                  padding: '0.4rem 0.85rem',
+                  borderRadius: '20px',
+                  fontWeight: 700,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  boxShadow: '0 2px 6px rgba(16, 185, 129, 0.35)',
+                }}
+                title="Caja abierta • Haz clic para arqueo o corte (F9)"
               >
-                {turnoActual.nombreCaja} • Turno #{turnoActual.idTurnoCaja} • Efectivo: ${turnoActual.efectivoActualEnCaja.toFixed(2)}
+                <DollarSign size={14} />
+                <span>{turnoActual.nombreCaja} • Turno #{turnoActual.idTurnoCaja} (${turnoActual.efectivoActualEnCaja.toFixed(2)})</span>
               </button>
             ) : (
               <button
                 type="button"
                 onClick={() => setMostrarModalAbrirTurno(true)}
-                className="badge badge-peligro"
-                style={{ fontSize: '0.75rem', cursor: 'pointer', border: 'none' }}
+                style={{
+                  fontSize: '0.8rem',
+                  cursor: 'pointer',
+                  border: 'none',
+                  backgroundColor: '#ef4444',
+                  color: '#ffffff',
+                  padding: '0.4rem 0.85rem',
+                  borderRadius: '20px',
+                  fontWeight: 700,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  boxShadow: '0 2px 6px rgba(239, 68, 68, 0.35)',
+                }}
                 title="Haz clic para abrir el turno con fondo inicial"
               >
-                Caja Cerrada (Abrir Turno)
+                <Lock size={14} />
+                <span>Caja Cerrada (Abrir Turno)</span>
               </button>
             )}
           </h1>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-          {/* Botón de Recargas y Servicios */}
-          <button 
-            className="btn btn-secundario" 
-            style={{ 
-              padding: '0.4rem 0.75rem', 
-              fontSize: '0.85rem', 
-              gap: '0.4rem', 
-              borderColor: '#3b82f6', 
-              backgroundColor: 'rgba(59, 130, 246, 0.08)',
-              color: '#2563eb',
-              fontWeight: 600
-            }}
-            onClick={() => setMostrarModalRecargas(true)}
-            title="Venta de tiempo aire y pago de servicios (CFE, Telmex, etc.)"
-          >
-            <Zap size={16} />
-            <span>Recargas y Servicios</span>
-          </button>
-
-          {/* Botón Movimiento de Caja (Entrada/Salida) */}
-          <button 
-            className="btn btn-secundario" 
-            style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem', gap: '0.4rem' }}
-            onClick={() => {
-              if (turnoActual) setMostrarModalMovimientoCaja(true);
-              else setMostrarModalAbrirTurno(true);
-            }}
-            title="Entrada o salida manual de efectivo en caja (F10)"
-          >
-            <DollarSign size={16} />
-            <span>Mov. Caja (F10)</span>
-          </button>
-
-          {/* Botón Corte X/Z */}
-          <button 
-            className="btn btn-secundario" 
-            style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem', gap: '0.4rem' }}
-            onClick={() => {
-              if (turnoActual) setMostrarModalCorteCaja(true);
-              else setMostrarModalAbrirTurno(true);
-            }}
-            title="Corte X preliminar o Corte Z de cierre (F9)"
-          >
-            <Calculator size={16} />
-            <span>Corte X/Z (F9)</span>
-          </button>
-
-          {/* Botón de Tickets en Espera con contador reactivo */}
-          <button 
-            className="btn btn-secundario" 
-            style={{ 
-              padding: '0.4rem 0.75rem', 
-              fontSize: '0.85rem', 
-              gap: '0.4rem',
-              borderColor: conteoTicketsPendientes > 0 ? '#f59e0b' : undefined,
-              backgroundColor: conteoTicketsPendientes > 0 ? 'rgba(245, 158, 11, 0.15)' : undefined,
-              color: conteoTicketsPendientes > 0 ? '#d97706' : undefined,
-              fontWeight: conteoTicketsPendientes > 0 ? 700 : 500
-            }}
-            onClick={() => setMostrarModalTicketsPendientes(true)}
-            title="Consultar y reanudar ventas en espera (F7)"
-          >
-            <Clock size={16} />
-            <span>En Espera ({conteoTicketsPendientes}) (F7)</span>
-          </button>
-
-          <button 
-            className="btn btn-secundario" 
-            style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem', gap: '0.4rem' }}
-            onClick={() => setMostrarModalReimpresion(true)}
-            title="Consultar y reimprimir tickets recientes (F8)"
-          >
-            <Printer size={16} />
-            <span>Reimprimir (F8)</span>
-          </button>
-
-          {/* Botón destacado para Recargas Electrónicas y Pago de Servicios */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          {/* Botón de Recargas Electrónicas y Pago de Servicios */}
           <button 
             className="btn btn-primario" 
             style={{ 
-              padding: '0.45rem 0.9rem', 
-              fontSize: '0.85rem', 
-              gap: '0.45rem',
+              padding: '0.42rem 0.85rem', 
+              fontSize: '0.83rem', 
+              gap: '0.4rem',
               backgroundColor: '#0284c7',
               borderColor: '#0284c7',
               color: '#ffffff',
@@ -715,20 +680,112 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
               boxShadow: '0 2px 6px rgba(2, 132, 199, 0.3)'
             }}
             onClick={() => setMostrarModalRecargas(true)}
-            title="Recargas Electrónicas de Tiempo Aire y Pago de Servicios (F5)"
+            title="Recargas de tiempo aire y pago de servicios CFE, Telmex (F5)"
           >
-            <Zap size={16} />
+            <Zap size={15} />
             <span>Recargas (F5)</span>
           </button>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: 'var(--color-texto-secundario)' }}>
+          {/* Botón Movimiento de Caja (Entrada/Salida) */}
+          <button 
+            className="btn btn-secundario" 
+            style={{ 
+              padding: '0.42rem 0.8rem', 
+              fontSize: '0.83rem', 
+              gap: '0.4rem',
+              borderColor: '#10b981',
+              backgroundColor: '#ecfdf5',
+              color: '#047857',
+              fontWeight: 700,
+              boxShadow: '0 1px 3px rgba(16, 185, 129, 0.15)'
+            }}
+            onClick={() => {
+              if (turnoActual) setMostrarModalMovimientoCaja(true);
+              else setMostrarModalAbrirTurno(true);
+            }}
+            title="Entrada o salida manual de efectivo en caja (F10)"
+          >
+            <DollarSign size={15} />
+            <span>Mov. Caja (F10)</span>
+          </button>
+
+          {/* Botón Corte X/Z */}
+          <button 
+            className="btn btn-secundario" 
+            style={{ 
+              padding: '0.42rem 0.8rem', 
+              fontSize: '0.83rem', 
+              gap: '0.4rem',
+              borderColor: '#f59e0b',
+              backgroundColor: '#fffbeb',
+              color: '#b45309',
+              fontWeight: 700,
+              boxShadow: '0 1px 3px rgba(245, 158, 11, 0.15)'
+            }}
+            onClick={() => {
+              if (turnoActual) setMostrarModalCorteCaja(true);
+              else setMostrarModalAbrirTurno(true);
+            }}
+            title="Corte X preliminar o Corte Z de cierre (F9)"
+          >
+            <Calculator size={15} />
+            <span>Corte X/Z (F9)</span>
+          </button>
+
+          {/* Botón destacado: Ventas del Día */}
+          <button 
+            className="btn btn-secundario" 
+            style={{ 
+              padding: '0.42rem 0.85rem', 
+              fontSize: '0.83rem', 
+              gap: '0.4rem',
+              borderColor: '#8b5cf6',
+              backgroundColor: '#f5f3ff',
+              color: '#6d28d9',
+              fontWeight: 700,
+              boxShadow: '0 2px 5px rgba(139, 92, 246, 0.2)'
+            }}
+            onClick={() => setMostrarModalVentasDelDia(true)}
+            title="Consultar total vendido hoy, tickets y detalle (F11)"
+          >
+            <Calendar size={15} />
+            <span>Ventas del Día (F11)</span>
+          </button>
+
+          {/* Botón de Tickets en Espera */}
+          <button 
+            className="btn btn-secundario" 
+            style={{ 
+              padding: '0.42rem 0.8rem', 
+              fontSize: '0.83rem', 
+              gap: '0.4rem',
+              borderColor: conteoTicketsPendientes > 0 ? '#f59e0b' : undefined,
+              backgroundColor: conteoTicketsPendientes > 0 ? 'rgba(245, 158, 11, 0.18)' : undefined,
+              color: conteoTicketsPendientes > 0 ? '#b45309' : undefined,
+              fontWeight: conteoTicketsPendientes > 0 ? 800 : 500
+            }}
+            onClick={() => setMostrarModalTicketsPendientes(true)}
+            title="Consultar y reanudar ventas en espera (F7)"
+          >
+            <Clock size={15} />
+            <span>En Espera ({conteoTicketsPendientes}) (F7)</span>
+          </button>
+
+          {/* Botón Reimprimir Ticket */}
+          <button 
+            className="btn btn-secundario" 
+            style={{ padding: '0.42rem 0.75rem', fontSize: '0.83rem', gap: '0.4rem' }}
+            onClick={() => setMostrarModalReimpresion(true)}
+            title="Consultar y reimprimir tickets recientes (F8)"
+          >
+            <Printer size={15} />
+            <span>Reimprimir (F8)</span>
+          </button>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', color: 'var(--color-texto-secundario)' }}>
             <span>Cliente:</span>
             <strong style={{ color: 'var(--color-texto)' }}>{nombreCliente}</strong>
           </div>
-
-          <span className={`badge ${servidorEnLinea ? 'badge-exito' : 'badge-peligro'}`}>
-            {servidorEnLinea ? 'SQL Conectado' : 'Sin Conexión'}
-          </span>
         </div>
       </header>
 
@@ -1314,6 +1371,19 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
         onTurnoCerrado={() => {
           consultarTurnoActual();
           inputRef.current?.focus();
+        }}
+      />
+
+      {/* Modal de Ventas del Día y Cancelación Segura (Solo Admin) */}
+      <ModalVentasDelDia
+        abierto={mostrarModalVentasDelDia}
+        onCerrar={() => {
+          setMostrarModalVentasDelDia(false);
+          inputRef.current?.focus();
+        }}
+        turnoActual={turnoActual}
+        onVerTicket={(_folio) => {
+          setMostrarModalReimpresion(true);
         }}
       />
     </div>

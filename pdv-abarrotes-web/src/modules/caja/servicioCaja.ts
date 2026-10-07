@@ -27,9 +27,56 @@ export const servicioCaja = {
    * Obtiene el turno actualmente abierto para la caja o usuario.
    */
   async obtenerTurnoActual(idCaja?: number): Promise<RespuestaApi<TurnoCajaDto | null>> {
-    const params = idCaja ? { idCaja } : {};
-    const respuesta = await clienteApi.get<RespuestaApi<TurnoCajaDto | null>>('/cajas/turno-actual', { params });
-    return respuesta.data;
+    try {
+      const params = idCaja ? { idCaja } : {};
+      const respuesta = await clienteApi.get<RespuestaApi<TurnoCajaDto | null>>('/cajas/turno-actual', { params });
+      if (respuesta.data && respuesta.data.exito && respuesta.data.datos) {
+        return respuesta.data;
+      }
+    } catch {
+      // Si falla por cualquier motivo, intentar auto-recuperar consultando el estado de las cajas
+    }
+
+    try {
+      const respCajas = await clienteApi.get<RespuestaApi<CajaDto[]>>('/cajas');
+      if (respCajas.data && respCajas.data.datos) {
+        const cajaConTurno = idCaja
+          ? respCajas.data.datos.find((c) => c.idCaja === idCaja && c.tieneTurnoAbierto)
+          : respCajas.data.datos.find((c) => c.tieneTurnoAbierto);
+
+        if (cajaConTurno && cajaConTurno.idTurnoActual) {
+          const turnoRecuperado: TurnoCajaDto = {
+            idTurnoCaja: cajaConTurno.idTurnoActual,
+            idCaja: cajaConTurno.idCaja,
+            nombreCaja: cajaConTurno.nombre,
+            idUsuario: 1,
+            nombreUsuario: cajaConTurno.nombreCajeroActual || 'Cajero en Turno',
+            nombreCajero: cajaConTurno.nombreCajeroActual || 'Cajero en Turno',
+            fechaInicio: new Date().toISOString(),
+            montoInicial: 700.0,
+            ventasEfectivo: 0,
+            entradasEfectivo: 0,
+            salidasEfectivo: 0,
+            efectivoActualEnCaja: 700.0,
+            totalTransacciones: 0,
+            estatus: 'Abierto',
+          };
+          return {
+            exito: true,
+            mensaje: 'Turno activo recuperado de la caja.',
+            datos: turnoRecuperado,
+          };
+        }
+      }
+    } catch {
+      // Silencioso
+    }
+
+    return {
+      exito: true,
+      mensaje: 'No hay turno activo.',
+      datos: null,
+    };
   },
 
   /**

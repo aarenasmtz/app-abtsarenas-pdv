@@ -10,16 +10,20 @@ import {
   PieChart
 } from 'lucide-react';
 import { servicioReportes } from './servicioReportes';
+import { servicioCaja } from '../caja/servicioCaja';
 import type { 
   ReporteVentaItemDto, 
   ResumenReporteVentasDto, 
   ReporteUtilidadItemDto 
 } from './tiposReportes';
+import type { CorteCajaDto } from '../caja/tiposCaja';
 import { TablaPaginada } from '../../components/comun/TablaPaginada';
 import type { ResultadoPaginado } from '../../types/comun';
+import { Calendar, UserCheck } from 'lucide-react';
 
 export const PantallaReportes: React.FC = () => {
-  const [pestanaActiva, setPestanaActiva] = useState<'ventas' | 'utilidades'>('ventas');
+  const [pestanaActiva, setPestanaActiva] = useState<'ventas' | 'cortes_dia' | 'utilidades'>('ventas');
+  const [cortes, setCortes] = useState<CorteCajaDto[]>([]);
 
   // Filtros de fecha y búsqueda
   const [fechaInicio, setFechaInicio] = useState<string>(() => {
@@ -109,13 +113,32 @@ export const PantallaReportes: React.FC = () => {
     }
   }, [fechaInicio, fechaFin]);
 
+  const cargarCortes = useCallback(async () => {
+    setCargando(true);
+    setError(null);
+    try {
+      const resp = await servicioCaja.obtenerHistorialCortes();
+      if (resp.exito && resp.datos) {
+        setCortes(resp.datos);
+      }
+    } catch {
+      // Silencioso
+    } finally {
+      setCargando(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (pestanaActiva === 'ventas') {
+      cargarVentas();
+    } else if (pestanaActiva === 'cortes_dia') {
+      cargarCortes();
       cargarVentas();
     } else {
       cargarUtilidades();
     }
-  }, [pestanaActiva, cargarVentas, cargarUtilidades]);
+  }, [pestanaActiva, cargarVentas, cargarCortes, cargarUtilidades]);
+
 
   // Atajos rápidos de fecha
   const aplicarRangoRapido = (opcion: 'hoy' | 'ayer' | 'semana' | 'mes') => {
@@ -311,6 +334,15 @@ export const PantallaReportes: React.FC = () => {
         </button>
 
         <button
+          className={`btn ${pestanaActiva === 'cortes_dia' ? 'btn-primario' : 'btn-secundario'}`}
+          onClick={() => setPestanaActiva('cortes_dia')}
+          style={{ gap: '0.4rem' }}
+        >
+          <Calendar size={16} />
+          <span>Ventas por Día & Cortes de Cajero</span>
+        </button>
+
+        <button
           className={`btn ${pestanaActiva === 'utilidades' ? 'btn-primario' : 'btn-secundario'}`}
           onClick={() => setPestanaActiva('utilidades')}
           style={{ gap: '0.4rem' }}
@@ -480,6 +512,172 @@ export const PantallaReportes: React.FC = () => {
           </div>
         </>
       )}
+
+      {/* Contenido Pestaña: Ventas por Día & Cortes de Cajero (Arqueos) */}
+      {pestanaActiva === 'cortes_dia' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          {/* Banner de explicación amigable para control familiar */}
+          <div
+            style={{
+              backgroundColor: '#f0fdf4',
+              border: '1px solid #bbf7d0',
+              borderRadius: '12px',
+              padding: '1rem 1.25rem',
+              display: 'flex',
+              gap: '1rem',
+              alignItems: 'center',
+            }}
+          >
+            <div style={{ padding: '0.5rem', borderRadius: '10px', backgroundColor: '#dcfce7', color: '#16a34a' }}>
+              <UserCheck size={26} />
+            </div>
+            <div>
+              <h4 style={{ margin: 0, color: '#166534', fontSize: '1.05rem', fontWeight: 700 }}>
+                Control Diario de Ventas por Cajero y Arqueos de Caja
+              </h4>
+              <p style={{ margin: '0.2rem 0 0 0', color: '#15803d', fontSize: '0.85rem' }}>
+                Aquí puedes consultar turno por turno cuánto vendió cada cajero, con cuánto fondo arrancó, cuánto dinero en efectivo debía haber en el cajón y si hubo faltante o sobrante al hacer el corte.
+              </p>
+            </div>
+          </div>
+
+          {/* Tarjetas de Resumen del Periodo */}
+          {resumenVentas && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+              <div className="tarjeta" style={{ padding: '1rem' }}>
+                <span style={{ fontSize: '0.78rem', color: 'var(--color-texto-secundario)', fontWeight: 600 }}>Total Vendido en el Periodo</span>
+                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-primario)', marginTop: '0.25rem' }}>
+                  {formatearMoneda(resumenVentas.totalVentas)}
+                </div>
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-texto-secundario)' }}>{resumenVentas.totalTickets} tickets generados</span>
+              </div>
+
+              <div className="tarjeta" style={{ padding: '1rem' }}>
+                <span style={{ fontSize: '0.78rem', color: 'var(--color-texto-secundario)', fontWeight: 600 }}>Ingresos en Efectivo</span>
+                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#16a34a', marginTop: '0.25rem' }}>
+                  {formatearMoneda(resumenVentas.desgloseMetodosPago?.find(m => m.metodoPago?.toLowerCase().includes('efectivo'))?.total ?? resumenVentas.desgloseMetodosPago?.find(m => m.metodoPago?.toLowerCase().includes('efectivo'))?.montoTotal ?? resumenVentas.totalVentas)}
+                </div>
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-texto-secundario)' }}>Dinero cobrado en caja</span>
+              </div>
+
+              <div className="tarjeta" style={{ padding: '1rem' }}>
+                <span style={{ fontSize: '0.78rem', color: 'var(--color-texto-secundario)', fontWeight: 600 }}>Ventas con Tarjeta</span>
+                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0284c7', marginTop: '0.25rem' }}>
+                  {formatearMoneda(resumenVentas.desgloseMetodosPago?.find(m => m.metodoPago?.toLowerCase().includes('tarjeta'))?.total ?? resumenVentas.desgloseMetodosPago?.find(m => m.metodoPago?.toLowerCase().includes('tarjeta'))?.montoTotal ?? 0)}
+                </div>
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-texto-secundario)' }}>Terminal bancaria</span>
+              </div>
+
+              <div className="tarjeta" style={{ padding: '1rem' }}>
+                <span style={{ fontSize: '0.78rem', color: 'var(--color-texto-secundario)', fontWeight: 600 }}>Cortes Realizados</span>
+                <div style={{ fontSize: '1.5rem', fontWeight: 800, marginTop: '0.25rem' }}>
+                  {cortes.length}
+                </div>
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-texto-secundario)' }}>Turnos auditados</span>
+              </div>
+            </div>
+          )}
+
+          {/* Tabla de Cortes de Cajero */}
+          <div className="tarjeta" style={{ padding: 0, overflow: 'hidden' }}>
+            <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--color-borde)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>Historial de Cortes de Turno y Arqueos Físicos</h4>
+                <span style={{ fontSize: '0.8rem', color: 'var(--color-texto-secundario)' }}>
+                  Detalle de dinero contado vs dinero en sistema para cada cajero
+                </span>
+              </div>
+              <button className="btn btn-secundario" style={{ padding: '0.35rem 0.65rem', fontSize: '0.8rem', gap: '0.35rem' }} onClick={cargarCortes}>
+                <RefreshCw size={14} className={cargando ? 'animacion-giratoria' : ''} />
+                <span>Actualizar</span>
+              </button>
+            </div>
+
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
+                <thead>
+                  <tr style={{ backgroundColor: 'var(--color-fondo-suave)', textAlign: 'left', borderBottom: '1px solid var(--color-borde)' }}>
+                    <th style={{ padding: '0.75rem 0.85rem' }}>Turno #</th>
+                    <th style={{ padding: '0.75rem 0.85rem' }}>Fecha y Hora</th>
+                    <th style={{ padding: '0.75rem 0.85rem' }}>Cajero Responsable</th>
+                    <th style={{ padding: '0.75rem 0.85rem' }}>Terminal</th>
+                    <th style={{ padding: '0.75rem 0.85rem', textAlign: 'right' }}>Fondo Inicial</th>
+                    <th style={{ padding: '0.75rem 0.85rem', textAlign: 'right' }}>Ventas del Turno</th>
+                    <th style={{ padding: '0.75rem 0.85rem', textAlign: 'right' }}>Efectivo Sistema</th>
+                    <th style={{ padding: '0.75rem 0.85rem', textAlign: 'right' }}>Efectivo Contado</th>
+                    <th style={{ padding: '0.75rem 0.85rem', textAlign: 'center' }}>Diferencia</th>
+                    <th style={{ padding: '0.75rem 0.85rem', textAlign: 'center' }}>Tipo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cortes.length > 0 ? (
+                    cortes.map((c) => (
+                      <tr key={c.idCorteCaja} style={{ borderBottom: '1px solid var(--color-borde)' }}>
+                        <td style={{ padding: '0.75rem 0.85rem', fontWeight: 700 }} className="mono">
+                          #{c.idTurnoCaja}
+                        </td>
+                        <td style={{ padding: '0.75rem 0.85rem', fontSize: '0.82rem', color: 'var(--color-texto-secundario)' }}>
+                          {new Date(c.fechaHora || c.fechaCorte || new Date()).toLocaleString('es-MX', {
+                            dateStyle: 'short',
+                            timeStyle: 'short',
+                          })}
+                        </td>
+                        <td style={{ padding: '0.75rem 0.85rem', fontWeight: 600 }}>
+                          {c.nombreUsuario}
+                        </td>
+                        <td style={{ padding: '0.75rem 0.85rem' }}>
+                          <span className="badge badge-secundario" style={{ fontSize: '0.75rem' }}>
+                            {c.nombreCaja}
+                          </span>
+                        </td>
+                        <td style={{ padding: '0.75rem 0.85rem', textAlign: 'right' }} className="mono">
+                          ${(c.montoInicial ?? 0).toFixed(2)}
+                        </td>
+                        <td style={{ padding: '0.75rem 0.85rem', textAlign: 'right', fontWeight: 700 }} className="mono">
+                          ${(c.totalVentasEfectivo ?? c.ventasEfectivo ?? 0).toFixed(2)}
+                        </td>
+                        <td style={{ padding: '0.75rem 0.85rem', textAlign: 'right' }} className="mono">
+                          ${(c.totalEfectivoEsperado ?? c.totalEsperado ?? 0).toFixed(2)}
+                        </td>
+                        <td style={{ padding: '0.75rem 0.85rem', textAlign: 'right', fontWeight: 700, color: 'var(--color-primario)' }} className="mono">
+                          ${(c.montoFinalReal ?? c.totalContado ?? 0).toFixed(2)}
+                        </td>
+                        <td style={{ padding: '0.75rem 0.85rem', textAlign: 'center' }}>
+                          {Math.abs(c.diferencia) < 0.01 ? (
+                            <span className="badge badge-exito" style={{ fontSize: '0.78rem' }}>
+                              Exacto ($0.00)
+                            </span>
+                          ) : c.diferencia < 0 ? (
+                            <span className="badge badge-peligro" style={{ fontSize: '0.78rem', fontWeight: 800 }}>
+                              Faltó -${Math.abs(c.diferencia).toFixed(2)}
+                            </span>
+                          ) : (
+                            <span className="badge badge-primario" style={{ fontSize: '0.78rem', fontWeight: 800 }}>
+                              Sobró +${c.diferencia.toFixed(2)}
+                            </span>
+                          )}
+                        </td>
+                        <td style={{ padding: '0.75rem 0.85rem', textAlign: 'center' }}>
+                          <span className={`badge ${c.tipoCorte === 'Z' ? 'badge-advertencia' : 'badge-secundario'}`} style={{ fontSize: '0.75rem' }}>
+                            {c.tipoCorte === 'Z' ? 'Corte Z (Cierre)' : 'Corte X (Parcial)'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={10} style={{ padding: '3rem', textAlign: 'center', color: 'var(--color-texto-secundario)' }}>
+                        No hay registros de cortes de caja en el historial reciente.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {/* Contenido Pestaña 2: Rentabilidad por Producto */}
       {pestanaActiva === 'utilidades' && (
