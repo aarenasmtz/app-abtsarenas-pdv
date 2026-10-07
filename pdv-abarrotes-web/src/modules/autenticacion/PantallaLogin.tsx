@@ -1,10 +1,11 @@
 import { useState, type FormEvent } from 'react';
-import { LogIn, Lock, User, AlertCircle, ShieldCheck } from 'lucide-react';
+import { LogIn, Lock, User, AlertCircle, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { useStoreAutenticacion } from './storeAutenticacion';
 
 export function PantallaLogin() {
-  const [nombreUsuario, setNombreUsuario] = useState('admin');
-  const [clave, setClave] = useState('Admin123*');
+  const [nombreUsuario, setNombreUsuario] = useState('');
+  const [clave, setClave] = useState('');
+  const [mostrarClave, setMostrarClave] = useState(false);
   const { iniciarSesion, cargando, error } = useStoreAutenticacion();
 
   const manejarEnvio = async (e: FormEvent) => {
@@ -13,81 +14,99 @@ export function PantallaLogin() {
     await iniciarSesion({ nombreUsuario: nombreUsuario.trim(), clave: clave.trim() });
   };
 
-  const seleccionarUsuarioRapido = (usr: string, pass: string) => {
-    setNombreUsuario(usr);
-    setClave(pass);
-  };
-
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: '#090d16',
-      padding: '1.5rem'
-    }}>
-      <div className="tarjeta" style={{
-        width: '100%',
-        maxWidth: '440px',
-        backgroundColor: '#0f172a',
-        border: '1px solid #334155',
-        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4)',
-        padding: '2.5rem'
-      }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'var(--color-fondo)',
+        padding: '1.5rem',
+      }}
+    >
+      <div
+        className="tarjeta"
+        style={{
+          width: '100%',
+          maxWidth: '420px',
+          backgroundColor: '#ffffff',
+          borderRadius: '16px',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 20px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04)',
+          padding: '2.5rem',
+        }}
+      >
         {/* Cabecera del login */}
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <div style={{
-            width: '56px',
-            height: '56px',
-            borderRadius: '12px',
-            background: 'linear-gradient(135deg, var(--color-primario), #2563eb)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 1rem auto',
-            color: 'white'
-          }}>
+          <div
+            style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '14px',
+              background: 'linear-gradient(135deg, var(--color-primario), #2563eb)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 1rem auto',
+              color: 'white',
+              boxShadow: '0 4px 12px rgba(5, 150, 105, 0.25)',
+            }}
+          >
             <ShieldCheck size={32} />
           </div>
-          <h2 style={{ fontSize: '1.6rem', margin: 0, fontWeight: 800 }}>Abarrotes Arenas</h2>
-          <p style={{ color: 'var(--color-texto-secundario)', fontSize: '0.9rem', marginTop: '0.35rem' }}>
+          <h2 style={{ fontSize: '1.5rem', margin: 0, fontWeight: 800, color: '#0f172a' }}>
+            Abarrotes Arenas
+          </h2>
+          <p style={{ color: '#64748b', fontSize: '0.88rem', marginTop: '0.35rem' }}>
             Acceso Seguro al Punto de Venta
           </p>
         </div>
 
         {/* Mensaje de error si falla */}
         {error && (
-          <div style={{
-            backgroundColor: 'rgba(239, 68, 68, 0.15)',
-            border: '1px solid rgba(239, 68, 68, 0.4)',
-            color: '#f87171',
-            padding: '0.75rem 1rem',
-            borderRadius: 'var(--radio-md)',
-            marginBottom: '1.25rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            fontSize: '0.9rem'
-          }}>
+          <div
+            style={{
+              backgroundColor: '#fef2f2',
+              border: '1px solid #fca5a5',
+              color: '#dc2626',
+              padding: '0.75rem 1rem',
+              borderRadius: '10px',
+              marginBottom: '1.25rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              fontSize: '0.88rem',
+            }}
+          >
             <AlertCircle size={18} />
             <span>{error}</span>
           </div>
         )}
 
-        {/* Formulario */}
+        {/* Formulario de Acceso */}
         <form onSubmit={manejarEnvio} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--color-texto-secundario)', marginBottom: '0.4rem', fontWeight: 600 }}>
-              Nombre de Usuario
+          <div className="grupo-formulario">
+            <label className="etiqueta-formulario">
+              <span>Nombre de Usuario</span>
             </label>
             <div style={{ position: 'relative' }}>
-              <User size={18} style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--color-texto-secundario)' }} />
+              <User
+                size={18}
+                style={{
+                  position: 'absolute',
+                  left: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: '#94a3b8',
+                }}
+              />
               <input
                 type="text"
-                className="input-escaner input-escaner-permitido"
-                style={{ width: '100%', paddingLeft: '40px', fontSize: '1rem' }}
-                placeholder="Ej. admin o cajero"
+                autoComplete="username"
+                className="control-formulario"
+                style={{ paddingLeft: '38px', fontSize: '0.95rem' }}
+                placeholder="Ingresa tu usuario"
                 value={nombreUsuario}
                 onChange={(e) => setNombreUsuario(e.target.value)}
                 autoFocus
@@ -96,58 +115,102 @@ export function PantallaLogin() {
             </div>
           </div>
 
-          <div>
-            <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--color-texto-secundario)', marginBottom: '0.4rem', fontWeight: 600 }}>
-              Contraseña
+          <div className="grupo-formulario">
+            <label className="etiqueta-formulario">
+              <span>Contraseña</span>
             </label>
             <div style={{ position: 'relative' }}>
-              <Lock size={18} style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--color-texto-secundario)' }} />
+              <Lock
+                size={18}
+                style={{
+                  position: 'absolute',
+                  left: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: '#94a3b8',
+                }}
+              />
               <input
-                type="password"
-                className="input-escaner input-escaner-permitido"
-                style={{ width: '100%', paddingLeft: '40px', fontSize: '1rem' }}
+                type={mostrarClave ? 'text' : 'password'}
+                autoComplete="current-password"
+                className="control-formulario"
+                style={{ paddingLeft: '38px', paddingRight: '40px', fontSize: '0.95rem' }}
                 placeholder="Ingresa tu contraseña"
                 value={clave}
                 onChange={(e) => setClave(e.target.value)}
                 required
               />
+              <button
+                type="button"
+                onClick={() => setMostrarClave(!mostrarClave)}
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: '#94a3b8',
+                  padding: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+                tabIndex={-1}
+              >
+                {mostrarClave ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
           </div>
 
           <button
             type="submit"
             className="btn btn-primario"
-            style={{ width: '100%', padding: '0.85rem', fontSize: '1.05rem', marginTop: '0.5rem', gap: '0.5rem' }}
-            disabled={cargando}
+            style={{
+              width: '100%',
+              padding: '0.85rem',
+              fontSize: '1rem',
+              fontWeight: 700,
+              marginTop: '0.5rem',
+              gap: '0.5rem',
+              boxShadow: '0 2px 6px rgba(5, 150, 105, 0.25)',
+            }}
+            disabled={cargando || !nombreUsuario.trim() || !clave.trim()}
           >
-            <LogIn size={20} />
-            <span>{cargando ? 'Autenticando...' : 'Iniciar Sesión'}</span>
+            {cargando ? (
+              <>
+                <div
+                  className="animacion-giratoria"
+                  style={{
+                    width: '18px',
+                    height: '18px',
+                    border: '2px solid #ffffff',
+                    borderTopColor: 'transparent',
+                    borderRadius: '50%',
+                  }}
+                />
+                <span>Autenticando...</span>
+              </>
+            ) : (
+              <>
+                <LogIn size={18} />
+                <span>Iniciar Sesión</span>
+              </>
+            )}
           </button>
         </form>
 
-        {/* Accesos rápidos para desarrollo */}
-        <div style={{ marginTop: '1.75rem', paddingTop: '1.25rem', borderTop: '1px solid var(--color-borde)', textAlign: 'center' }}>
-          <span style={{ fontSize: '0.75rem', color: 'var(--color-texto-secundario)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Accesos de prueba rápidos
-          </span>
-          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginTop: '0.6rem' }}>
-            <button
-              type="button"
-              className="btn btn-secundario"
-              style={{ fontSize: '0.8rem', padding: '0.35rem 0.65rem' }}
-              onClick={() => seleccionarUsuarioRapido('admin', 'Admin123*')}
-            >
-              Admin (Admin123*)
-            </button>
-            <button
-              type="button"
-              className="btn btn-secundario"
-              style={{ fontSize: '0.8rem', padding: '0.35rem 0.65rem' }}
-              onClick={() => seleccionarUsuarioRapido('cajero', 'Cajero123*')}
-            >
-              Cajero (Cajero123*)
-            </button>
-          </div>
+        <div
+          style={{
+            marginTop: '2rem',
+            paddingTop: '1rem',
+            borderTop: '1px solid #f1f5f9',
+            textAlign: 'center',
+            fontSize: '0.78rem',
+            color: '#94a3b8',
+          }}
+        >
+          <span>Punto de Venta Autorizado · Todos los accesos son auditados</span>
         </div>
       </div>
     </div>

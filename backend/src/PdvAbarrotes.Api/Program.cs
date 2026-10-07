@@ -87,15 +87,32 @@ builder.Services.AddResponseCompression(opciones =>
     opciones.EnableForHttps = true;
 });
 
-// 6. Política CORS para el frontend React Vite
+// 6. Política CORS para el frontend React Vite y Cloudflare Workers
 builder.Services.AddCors(opciones =>
 {
     opciones.AddPolicy("PoliticaPdvWeb", politica =>
     {
-        politica.WithOrigins("http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173")
-                .AllowAnyHeader()
-                .AllowAnyMethod()
-                .AllowCredentials();
+        politica.SetIsOriginAllowed(origen =>
+        {
+            if (string.IsNullOrEmpty(origen)) return false;
+            try
+            {
+                var uri = new Uri(origen);
+                return uri.Host == "localhost"
+                    || uri.Host == "127.0.0.1"
+                    || uri.Host == "179.236.248.165"
+                    || uri.Host.EndsWith("abarrotesarenas.com", StringComparison.OrdinalIgnoreCase)
+                    || uri.Host.EndsWith("workers.dev", StringComparison.OrdinalIgnoreCase)
+                    || uri.Host.EndsWith("pages.dev", StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
+            }
+        })
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials();
     });
 });
 
