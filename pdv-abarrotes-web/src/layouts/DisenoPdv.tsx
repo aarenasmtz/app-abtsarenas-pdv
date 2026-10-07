@@ -25,7 +25,9 @@ import { ModalReimpresion } from '../modules/pdv/ModalReimpresion';
 import { ModalPesajeGranel } from '../modules/pdv/ModalPesajeGranel';
 import { ModalTicketsPendientes } from '../modules/pdv/ModalTicketsPendientes';
 import { ModalBuscarProductos } from '../modules/pdv/ModalBuscarProductos';
-import { PantallaRecargasYServicios } from '../modules/servicios/PantallaRecargasYServicios';
+const PantallaRecargasYServicios = React.lazy(() =>
+  import('../modules/servicios/PantallaRecargasYServicios').then((m) => ({ default: m.PantallaRecargasYServicios }))
+);
 import { servicioTicketsPendientes } from '../modules/ventas/servicioTicketsPendientes';
 import { ModalAbrirTurno } from '../modules/caja/ModalAbrirTurno';
 import { ModalMovimientoCaja } from '../modules/caja/ModalMovimientoCaja';
@@ -1261,7 +1263,9 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
               </button>
             </div>
 
-            <PantallaRecargasYServicios />
+            <React.Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-texto-secundario)' }}>Cargando módulo de recargas y servicios...</div>}>
+              <PantallaRecargasYServicios />
+            </React.Suspense>
           </div>
         </div>
       )}
