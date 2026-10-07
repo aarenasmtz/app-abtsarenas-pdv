@@ -371,13 +371,13 @@ export const PantallaReportes: React.FC = () => {
           </div>
 
           {/* Selectores de Fechas Personalizadas */}
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <span style={{ fontSize: '0.85rem', color: 'var(--color-texto-secundario)' }}>Desde:</span>
+          <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div className="filtro-fecha-grupo">
+              <Calendar size={15} style={{ color: '#2563eb' }} />
+              <label>Desde:</label>
               <input
                 type="date"
-                className="input-formulario"
-                style={{ width: 'auto', padding: '0.45rem 0.65rem' }}
+                className="filtro-fecha-input"
                 value={fechaInicio}
                 onChange={(e) => {
                   setFechaInicio(e.target.value);
@@ -386,12 +386,12 @@ export const PantallaReportes: React.FC = () => {
               />
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <span style={{ fontSize: '0.85rem', color: 'var(--color-texto-secundario)' }}>Hasta:</span>
+            <div className="filtro-fecha-grupo">
+              <Calendar size={15} style={{ color: '#2563eb' }} />
+              <label>Hasta:</label>
               <input
                 type="date"
-                className="input-formulario"
-                style={{ width: 'auto', padding: '0.45rem 0.65rem' }}
+                className="filtro-fecha-input"
                 value={fechaFin}
                 onChange={(e) => {
                   setFechaFin(e.target.value);

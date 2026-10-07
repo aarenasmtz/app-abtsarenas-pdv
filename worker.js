@@ -73,6 +73,7 @@ export default {
                 totalEntradasManuales: 0,
                 totalSalidasManuales: 0,
                 totalEfectivoEsperado: 700.0,
+                efectivoActualEnCaja: 700.0,
                 totalVentasTurno: 0,
                 estado: 'Abierto'
               },

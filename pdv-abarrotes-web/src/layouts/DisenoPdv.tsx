@@ -636,7 +636,7 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
                 title="Caja abierta • Haz clic para arqueo o corte (F9)"
               >
                 <DollarSign size={14} />
-                <span>{turnoActual.nombreCaja} • Turno #{turnoActual.idTurnoCaja} (${turnoActual.efectivoActualEnCaja.toFixed(2)})</span>
+                <span>{(turnoActual.nombreCaja || 'Caja Principal')} • Turno #{turnoActual.idTurnoCaja} (${((turnoActual.efectivoActualEnCaja ?? (turnoActual as any).totalEfectivoEsperado ?? turnoActual.montoInicial) || 0).toFixed(2)})</span>
               </button>
             ) : (
               <button

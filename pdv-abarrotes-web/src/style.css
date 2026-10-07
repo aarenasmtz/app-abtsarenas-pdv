@@ -658,16 +658,18 @@ h1, h2, h3, h4 {
 }
 
 .control-formulario,
+.input-formulario,
 input[type="text"],
 input[type="tel"],
 input[type="number"],
 input[type="email"],
 input[type="password"],
+input[type="date"],
 select,
 textarea {
   width: 100%;
-  padding: 0.75rem 1rem;
-  font-size: 0.95rem;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.9rem;
   font-family: var(--fuente-principal);
   color: var(--color-texto);
   background-color: #ffffff;
@@ -911,5 +913,164 @@ input.control-error {
 .tarjeta-mosaico-servicio:active {
   transform: translateY(-1px);
 }
+
+/* ==============================================================================
+   BOTONES DE ACCIÓN E ICONOS MODERNOS
+   ============================================================================== */
+.btn-icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.btn-icono:hover:not(:disabled) {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
+}
+
+.btn-icono:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-icono:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn-icono-primario {
+  background-color: #eff6ff;
+  border-color: #bfdbfe;
+  color: #2563eb;
+}
+
+.btn-icono-primario:hover:not(:disabled) {
+  background-color: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+.btn-icono-peligro {
+  background-color: #fef2f2;
+  border-color: #fecaca;
+  color: #ef4444;
+}
+
+.btn-icono-peligro:hover:not(:disabled) {
+  background-color: #ef4444;
+  border-color: #ef4444;
+  color: #ffffff;
+}
+
+.btn-icono-exito {
+  background-color: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #059669;
+}
+
+.btn-icono-exito:hover:not(:disabled) {
+  background-color: #059669;
+  border-color: #059669;
+  color: #ffffff;
+}
+
+/* ==============================================================================
+   FILTROS DE FECHA Y DATEPICKERS MODERNOS
+   ============================================================================== */
+.filtro-fecha-grupo {
+  display: inline-flex;
+  align-items: center;
+  background-color: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0.25rem 0.6rem;
+  gap: 0.45rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+}
+
+.filtro-fecha-grupo:focus-within {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.filtro-fecha-grupo label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.filtro-fecha-input {
+  border: none !important;
+  background: transparent !important;
+  padding: 0.25rem 0.2rem !important;
+  font-size: 0.85rem !important;
+  font-family: inherit !important;
+  color: #1e293b !important;
+  font-weight: 600 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  cursor: pointer;
+  width: auto !important;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.7;
+  filter: invert(0.3) sepia(1) saturate(5) hue-rotate(190deg);
+  transition: opacity 0.2s ease;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* ==============================================================================
+   ENCABEZADOS DE TABLA & METRIC CARDS DE PEDIDO SUGERIDO
+   ============================================================================== */
+.tabla th {
+  background-color: #f8fafc;
+  color: #475569;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 2px solid #e2e8f0;
+  padding: 0.85rem 1rem;
+}
+
+.tarjeta-metrica-pedido {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tarjeta-metrica-pedido:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px -2px rgba(15, 23, 42, 0.08);
+}
+
 
 

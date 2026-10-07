@@ -7,7 +7,8 @@ import {
   RefreshCw, 
   AlertTriangle, 
   Check, 
-  X
+  X,
+  Calendar
 } from 'lucide-react';
 import { servicioCompras } from './servicioCompras';
 import { servicioProveedores } from '../proveedores/servicioProveedores';
@@ -293,10 +294,12 @@ export const PantallaCompras: React.FC = () => {
           </div>
 
           {/* Fecha Inicio */}
-          <div>
+          <div className="filtro-fecha-grupo">
+            <Calendar size={15} style={{ color: '#2563eb' }} />
+            <label>Desde:</label>
             <input
               type="date"
-              className="input-formulario"
+              className="filtro-fecha-input"
               value={fechaInicio}
               onChange={(e) => {
                 setFechaInicio(e.target.value);
@@ -307,10 +310,12 @@ export const PantallaCompras: React.FC = () => {
           </div>
 
           {/* Fecha Fin */}
-          <div>
+          <div className="filtro-fecha-grupo">
+            <Calendar size={15} style={{ color: '#2563eb' }} />
+            <label>Hasta:</label>
             <input
               type="date"
-              className="input-formulario"
+              className="filtro-fecha-input"
               value={fechaFin}
               onChange={(e) => {
                 setFechaFin(e.target.value);

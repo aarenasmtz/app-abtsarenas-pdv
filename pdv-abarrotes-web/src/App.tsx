@@ -5,6 +5,7 @@ import { PantallaLogin } from './modules/autenticacion/PantallaLogin';
 import { useStoreAutenticacion } from './modules/autenticacion/storeAutenticacion';
 import clienteApi from './api/clienteApi';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { ControladorError } from './components/comun/ControladorError';
 
 // Carga perezosa (Lazy loading) de módulos administrativos pesados para descarga ultrarrápida del PDV
 const PantallaDashboard = lazy(() =>
@@ -97,10 +98,15 @@ export function App() {
   // Si está en modo Punto de Venta (caja rápida de mostrador)
   if (modo === 'pdv') {
     return (
-      <DisenoPdv 
-        onVolverAAdmin={() => setModo('admin')} 
-        servidorEnLinea={servidorEnLinea} 
-      />
+      <ControladorError 
+        alVolver={() => setModo('admin')}
+        mensajeTitulo="No se pudo cargar el Punto de Venta"
+      >
+        <DisenoPdv 
+          onVolverAAdmin={() => setModo('admin')} 
+          servidorEnLinea={servidorEnLinea} 
+        />
+      </ControladorError>
     );
   }
 

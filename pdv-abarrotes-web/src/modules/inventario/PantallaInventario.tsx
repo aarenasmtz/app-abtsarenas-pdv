@@ -583,11 +583,12 @@ export const PantallaInventario: React.FC = () => {
               </select>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Calendar size={16} color="var(--color-texto-secundario)" />
+            <div className="filtro-fecha-grupo">
+              <Calendar size={15} style={{ color: '#2563eb' }} />
+              <label>Desde:</label>
               <input 
                 type="date" 
-                className="input-control" 
+                className="filtro-fecha-input" 
                 value={fechaInicioKardex}
                 onChange={(e) => {
                   setFechaInicioKardex(e.target.value);
@@ -595,10 +596,14 @@ export const PantallaInventario: React.FC = () => {
                 }}
                 title="Fecha Inicio"
               />
-              <span style={{ color: 'var(--color-texto-secundario)' }}>-</span>
+            </div>
+
+            <div className="filtro-fecha-grupo">
+              <Calendar size={15} style={{ color: '#2563eb' }} />
+              <label>Hasta:</label>
               <input 
                 type="date" 
-                className="input-control" 
+                className="filtro-fecha-input" 
                 value={fechaFinKardex}
                 onChange={(e) => {
                   setFechaFinKardex(e.target.value);

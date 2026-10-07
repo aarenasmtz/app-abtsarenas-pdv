@@ -34,6 +34,13 @@ export interface DetallePedidoSugeridoDto {
   precioCostoUnitario: number;
   subtotalSugerido: number;
   subtotalEfectivo: number;
+  // Campos de Inteligencia de Negocios (BI) y Control de Surtido
+  ventasSemanaActual?: number;
+  ventasHaceUnAnio?: number;
+  ventasHaceDosAnios?: number;
+  tendenciaBi?: string;
+  surtido?: boolean;
+  fechaSurtido?: string | null;
 }
 
 export interface ProveedorPedidoSugeridoGrupoDto {

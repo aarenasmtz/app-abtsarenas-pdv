@@ -7,6 +7,14 @@ import {
   Calendar,
   AlertCircle,
   FileSpreadsheet,
+  CheckSquare,
+  DollarSign,
+  Activity,
+  Hash,
+  Package,
+  Truck,
+  FileText,
+  Boxes
 } from 'lucide-react';
 import { servicioPedidos } from './servicioPedidos';
 import { ModalGenerarPedido } from './ModalGenerarPedido';
@@ -233,15 +241,51 @@ export const PantallaPedidoSugerido: React.FC = () => {
           <table className="tabla">
             <thead>
               <tr>
-                <th>Folio / Periodo</th>
-                <th>Fecha de Cálculo</th>
-                <th>Estado</th>
-                <th style={{ textAlign: 'right' }}>Artículos</th>
-                <th style={{ textAlign: 'right' }}>Marcas / Prov.</th>
-                <th style={{ textAlign: 'right' }}>Piezas Totales</th>
-                <th style={{ textAlign: 'right' }}>Inversión Estimada</th>
-                <th>Notas</th>
-                <th style={{ textAlign: 'center', width: '120px' }}>Acciones</th>
+                <th>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                    <Hash size={14} color="#64748b" /> Folio / Periodo
+                  </span>
+                </th>
+                <th>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                    <Calendar size={14} color="#64748b" /> Fecha de Cálculo
+                  </span>
+                </th>
+                <th>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                    <Activity size={14} color="#64748b" /> Estado
+                  </span>
+                </th>
+                <th style={{ textAlign: 'right' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', justifyContent: 'flex-end' }}>
+                    <Package size={14} color="#64748b" /> Artículos
+                  </span>
+                </th>
+                <th style={{ textAlign: 'right' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', justifyContent: 'flex-end' }}>
+                    <Truck size={14} color="#64748b" /> Marcas / Prov.
+                  </span>
+                </th>
+                <th style={{ textAlign: 'right' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', justifyContent: 'flex-end' }}>
+                    <Boxes size={14} color="#64748b" /> Piezas Totales
+                  </span>
+                </th>
+                <th style={{ textAlign: 'right' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', justifyContent: 'flex-end' }}>
+                    <DollarSign size={14} color="#64748b" /> Inversión Est.
+                  </span>
+                </th>
+                <th>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                    <FileText size={14} color="#64748b" /> Notas
+                  </span>
+                </th>
+                <th style={{ textAlign: 'center', width: '130px' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', justifyContent: 'center' }}>
+                    <CheckSquare size={14} color="#64748b" /> Acciones
+                  </span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -323,24 +367,24 @@ export const PantallaPedidoSugerido: React.FC = () => {
                       {p.observaciones || '—'}
                     </td>
                     <td style={{ textAlign: 'center' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.45rem' }}>
                         <button
                           type="button"
-                          className="btn-icono"
+                          className="btn-icono btn-icono-primario"
                           onClick={() => manejarVerDetalle(p.idPedidoSugerido)}
-                          title="Ver partidas y emitir órdenes"
+                          title="Ver partidas y gestionar surtido dominical"
                           disabled={cargandoDetalle}
                         >
-                          <Eye size={17} style={{ color: 'var(--color-primario)' }} />
+                          <Eye size={16} />
                         </button>
                         {p.estado !== 'PROCESADO' && (
                           <button
                             type="button"
-                            className="btn-icono"
+                            className="btn-icono btn-icono-peligro"
                             onClick={() => manejarEliminar(p.idPedidoSugerido)}
                             title="Eliminar pedido no procesado"
                           >
-                            <Trash2 size={17} style={{ color: 'var(--color-peligro)' }} />
+                            <Trash2 size={16} />
                           </button>
                         )}
                       </div>
