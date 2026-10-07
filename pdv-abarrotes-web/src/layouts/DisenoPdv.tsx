@@ -10,12 +10,12 @@ import {
   Minus,
   Printer,
   DollarSign,
-  Calculator,
   Layers,
   Zap,
   Package,
   Calendar,
-  Lock
+  Lock,
+  Edit3
 } from 'lucide-react';
 import { useStoreCarritoPdv } from '../modules/pdv/storeCarrito';
 import { useEscanerCodigoBarras } from '../hooks/useEscanerCodigoBarras';
@@ -58,6 +58,7 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
   const {
     articulos,
     nombreCliente,
+    establecerCliente,
     agregarArticulo,
     actualizarCantidad,
     eliminarArticulo,
@@ -80,6 +81,11 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
   const [conteoTicketsPendientes, setConteoTicketsPendientes] = useState(0);
   const [productoGranelSeleccionado, setProductoGranelSeleccionado] = useState<ProductoCobroDto | null>(null);
   const [ventaActual, setVentaActual] = useState<VentaRealizada | null>(null);
+
+  // Estados para Renombrar Ticket y Atajos F#
+  const [mostrarModalRenombrarTicket, setMostrarModalRenombrarTicket] = useState(false);
+  const [nombreTicketInput, setNombreTicketInput] = useState('');
+  const [tipoMovimientoInicial, setTipoMovimientoInicial] = useState<'ENTRADA' | 'SALIDA'>('ENTRADA');
 
   // Estados para Control de Caja y Turnos (Fase 10)
   const [turnoActual, setTurnoActual] = useState<TurnoCajaDto | null>(null);
@@ -185,7 +191,7 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
     }
   }, [turnoActual, articulos.length]);
 
-  // Escuchar atajos de teclado globales (C/P/F12 Cobrar Efectivo, T Tarjeta, M Mixto, F10 Mov Caja, F9 Corte X/Z, F8 Reimprimir, F7 Pendientes, F6 En Espera, F4 Limpiar, F3/F2 Catálogo, Esc Salir)
+  // Escuchar atajos de teclado globales F1-F12 estrictamente mapeados según requerimiento
   useEffect(() => {
     const manejarTeclasGlobales = (e: KeyboardEvent) => {
       // 1. Tecla Escape: Cerrar cualquier modal que esté abierto y devolver foco al escáner
@@ -197,11 +203,13 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
         setMostrarModalGranel(false);
         setMostrarModalTicketsPendientes(false);
         setMostrarDialogoPonerEnEspera(false);
+        setMostrarModalRenombrarTicket(false);
         setMostrarModalAbrirTurno(false);
         setMostrarModalMovimientoCaja(false);
         setMostrarModalCorteCaja(false);
         setMostrarModalBuscarProductos(false);
         setMostrarModalRecargas(false);
+        setMostrarModalVentasDelDia(false);
         setTimeout(() => inputRef.current?.focus(), 60);
         return;
       }
@@ -214,6 +222,7 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
         mostrarModalGranel || 
         mostrarModalTicketsPendientes || 
         mostrarDialogoPonerEnEspera || 
+        mostrarModalRenombrarTicket ||
         mostrarModalAbrirTurno || 
         mostrarModalMovimientoCaja || 
         mostrarModalCorteCaja ||
@@ -225,94 +234,106 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
         return;
       }
 
-      // 2. Teclas de Función F1-F12 (Funcionan de forma DIRECTA e INDEPENDIENTE)
-      if (e.key === 'F12') {
+      // 2. Mapeo estricto de Teclas F1-F12 (Tabla de Punto de Venta)
+      // F1: Pendiente por def (Foco al escáner / Mostrador principal por defecto)
+      if (e.key === 'F1') {
         e.preventDefault();
-        abrirCobro('efectivo');
+        inputRef.current?.focus();
+        inputRef.current?.select();
+        setMensajeNotificacion({ tipo: 'exito', texto: 'Listo para escanear en mostrador principal (F1)' });
+        setTimeout(() => setMensajeNotificacion(null), 2000);
         return;
       }
 
-      if (e.key === 'F11') {
+      // F2: Entrada (Modal Movimiento de Caja tipo ENTRADA)
+      if (e.key === 'F2') {
         e.preventDefault();
-        setMostrarModalVentasDelDia(true);
-        return;
-      }
-
-      if (e.key === 'F10') {
-        e.preventDefault();
+        setTipoMovimientoInicial('ENTRADA');
         if (turnoActual) setMostrarModalMovimientoCaja(true);
         else setMostrarModalAbrirTurno(true);
         return;
       }
 
-      if (e.key === 'F9') {
+      // F3: Salidas (Modal Movimiento de Caja tipo SALIDA)
+      if (e.key === 'F3') {
         e.preventDefault();
-        if (turnoActual) setMostrarModalCorteCaja(true);
+        setTipoMovimientoInicial('SALIDA');
+        if (turnoActual) setMostrarModalMovimientoCaja(true);
         else setMostrarModalAbrirTurno(true);
         return;
       }
 
-      if (e.key === 'F8') {
-        e.preventDefault();
-        setMostrarModalReimpresion(true);
-        return;
-      }
-
-      if (e.key === 'F7') {
-        e.preventDefault();
-        setMostrarModalTicketsPendientes(true);
-        return;
-      }
-
-      if (e.key === 'F6') {
-        e.preventDefault();
-        if (articulos.length > 0) {
-          setIdentificadorClienteEspera('');
-          setMostrarDialogoPonerEnEspera(true);
-        }
-        return;
-      }
-
-      if (e.key === 'F5') {
-        e.preventDefault();
-        setMostrarModalRecargas(true);
-        return;
-      }
-
+      // F4: Consultar productos (Modal Catálogo y Búsqueda de Productos)
       if (e.key === 'F4') {
-        e.preventDefault();
-        if (articulos.length > 0) {
-          limpiarCarrito();
-        }
-        return;
-      }
-
-      if (e.key === 'F3' || e.key === 'F2') {
         e.preventDefault();
         setMostrarModalBuscarProductos(true);
         return;
       }
 
-      // 3. Teclas de Cobro Rápido (C, P, T, M, Enter) cuando no se está escribiendo en el buscador
-      const target = e.target as HTMLElement | null;
-      const estaEnInput = target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.isContentEditable;
-      const esInputEscanerVacio = target === inputRef.current && codigoInput.trim() === '';
-
-      if (articulos.length > 0 && (!estaEnInput || esInputEscanerVacio)) {
-        if (e.key === 'c' || e.key === 'C' || e.key === 'p' || e.key === 'P') {
-          e.preventDefault();
-          abrirCobro('efectivo');
-        } else if (e.key === 't' || e.key === 'T') {
-          e.preventDefault();
-          abrirCobro('tarjeta');
-        } else if (e.key === 'm' || e.key === 'M') {
-          e.preventDefault();
-          abrirCobro('mixto');
-        } else if (e.key === 'Enter' && esInputEscanerVacio) {
-          e.preventDefault();
-          abrirCobro('efectivo');
-        }
+      // F5: Renombre de ticket (Modificar identificador / cliente del ticket actual)
+      if (e.key === 'F5') {
+        e.preventDefault();
+        setNombreTicketInput(nombreCliente || 'Público en General');
+        setMostrarModalRenombrarTicket(true);
+        return;
       }
+
+      // F6: En Espera (Poner en espera si hay artículos, o consultar pendientes si está vacío)
+      if (e.key === 'F6') {
+        e.preventDefault();
+        if (articulos.length > 0) {
+          setIdentificadorClienteEspera('');
+          setMostrarDialogoPonerEnEspera(true);
+        } else {
+          setMostrarModalTicketsPendientes(true);
+        }
+        return;
+      }
+
+      // F7: Reimprimir último (Modal de tickets recientes para reimpresión)
+      if (e.key === 'F7') {
+        e.preventDefault();
+        setMostrarModalReimpresion(true);
+        return;
+      }
+
+      // F8: Recargas // Pago de servicios (Modal de recargas telefónicas y pago de servicios)
+      if (e.key === 'F8') {
+        e.preventDefault();
+        setMostrarModalRecargas(true);
+        return;
+      }
+
+      // F9: Ventas Día (Modal de Ventas del Día y auditoría)
+      if (e.key === 'F9') {
+        e.preventDefault();
+        setMostrarModalVentasDelDia(true);
+        return;
+      }
+
+      // F10: Cobro Efectivo (Disparo directo de cobro en efectivo)
+      if (e.key === 'F10') {
+        e.preventDefault();
+        abrirCobro('efectivo');
+        return;
+      }
+
+      // F11: Cobro Mixto (Disparo directo de cobro mixto / vales)
+      if (e.key === 'F11') {
+        e.preventDefault();
+        abrirCobro('mixto');
+        return;
+      }
+
+      // F12: Cobro Tarjeta (Disparo directo de cobro con tarjeta bancaria)
+      if (e.key === 'F12') {
+        e.preventDefault();
+        abrirCobro('tarjeta');
+        return;
+      }
+
+      // ATENCIÓN: Se eliminaron los atajos de letras 'C', 'P', 'T', 'M' y 'Enter'
+      // para permitir teclear y escanear sin que se abra intempestivamente el modal de cobro.
     };
     window.addEventListener('keydown', manejarTeclasGlobales);
     return () => window.removeEventListener('keydown', manejarTeclasGlobales);
@@ -320,7 +341,7 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
     articulos.length, 
     limpiarCarrito, 
     turnoActual, 
-    codigoInput, 
+    nombreCliente,
     abrirCobro,
     mostrarModalCobro, 
     mostrarModalTicket, 
@@ -328,11 +349,13 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
     mostrarModalGranel, 
     mostrarModalTicketsPendientes, 
     mostrarDialogoPonerEnEspera, 
+    mostrarModalRenombrarTicket,
     mostrarModalAbrirTurno, 
     mostrarModalMovimientoCaja, 
     mostrarModalCorteCaja,
     mostrarModalBuscarProductos,
-    mostrarModalRecargas
+    mostrarModalRecargas,
+    mostrarModalVentasDelDia
   ]);
 
   const handleVentaCompletada = (venta: VentaRealizada) => {
@@ -665,34 +688,14 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
           </h1>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          {/* Botón de Recargas Electrónicas y Pago de Servicios */}
-          <button 
-            className="btn btn-primario" 
-            style={{ 
-              padding: '0.42rem 0.85rem', 
-              fontSize: '0.83rem', 
-              gap: '0.4rem',
-              backgroundColor: '#0284c7',
-              borderColor: '#0284c7',
-              color: '#ffffff',
-              fontWeight: 700,
-              boxShadow: '0 2px 6px rgba(2, 132, 199, 0.3)'
-            }}
-            onClick={() => setMostrarModalRecargas(true)}
-            title="Recargas de tiempo aire y pago de servicios CFE, Telmex (F5)"
-          >
-            <Zap size={15} />
-            <span>Recargas (F5)</span>
-          </button>
-
-          {/* Botón Movimiento de Caja (Entrada/Salida) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+          {/* F2: Entrada de Efectivo */}
           <button 
             className="btn btn-secundario" 
             style={{ 
-              padding: '0.42rem 0.8rem', 
-              fontSize: '0.83rem', 
-              gap: '0.4rem',
+              padding: '0.4rem 0.7rem', 
+              fontSize: '0.82rem', 
+              gap: '0.35rem',
               borderColor: '#10b981',
               backgroundColor: '#ecfdf5',
               color: '#047857',
@@ -700,92 +703,145 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
               boxShadow: '0 1px 3px rgba(16, 185, 129, 0.15)'
             }}
             onClick={() => {
+              setTipoMovimientoInicial('ENTRADA');
               if (turnoActual) setMostrarModalMovimientoCaja(true);
               else setMostrarModalAbrirTurno(true);
             }}
-            title="Entrada o salida manual de efectivo en caja (F10)"
+            title="Registrar entrada manual de efectivo (F2)"
           >
-            <DollarSign size={15} />
-            <span>Mov. Caja (F10)</span>
+            <Plus size={14} />
+            <span>Entrada (F2)</span>
           </button>
 
-          {/* Botón Corte X/Z */}
+          {/* F3: Salida de Efectivo */}
           <button 
             className="btn btn-secundario" 
             style={{ 
-              padding: '0.42rem 0.8rem', 
-              fontSize: '0.83rem', 
-              gap: '0.4rem',
-              borderColor: '#f59e0b',
-              backgroundColor: '#fffbeb',
-              color: '#b45309',
+              padding: '0.4rem 0.7rem', 
+              fontSize: '0.82rem', 
+              gap: '0.35rem',
+              borderColor: '#f87171',
+              backgroundColor: '#fef2f2',
+              color: '#b91c1c',
               fontWeight: 700,
-              boxShadow: '0 1px 3px rgba(245, 158, 11, 0.15)'
+              boxShadow: '0 1px 3px rgba(239, 68, 68, 0.15)'
             }}
             onClick={() => {
-              if (turnoActual) setMostrarModalCorteCaja(true);
+              setTipoMovimientoInicial('SALIDA');
+              if (turnoActual) setMostrarModalMovimientoCaja(true);
               else setMostrarModalAbrirTurno(true);
             }}
-            title="Corte X preliminar o Corte Z de cierre (F9)"
+            title="Registrar salida o retiro de efectivo (F3)"
           >
-            <Calculator size={15} />
-            <span>Corte X/Z (F9)</span>
+            <Minus size={14} />
+            <span>Salidas (F3)</span>
           </button>
 
-          {/* Botón destacado: Ventas del Día */}
+          {/* F6: Ventas en Espera */}
           <button 
             className="btn btn-secundario" 
             style={{ 
-              padding: '0.42rem 0.85rem', 
-              fontSize: '0.83rem', 
-              gap: '0.4rem',
+              padding: '0.4rem 0.7rem', 
+              fontSize: '0.82rem', 
+              gap: '0.35rem',
+              borderColor: conteoTicketsPendientes > 0 ? '#f59e0b' : undefined,
+              backgroundColor: conteoTicketsPendientes > 0 ? 'rgba(245, 158, 11, 0.18)' : undefined,
+              color: conteoTicketsPendientes > 0 ? '#b45309' : undefined,
+              fontWeight: conteoTicketsPendientes > 0 ? 800 : 600
+            }}
+            onClick={() => {
+              if (articulos.length > 0) {
+                setIdentificadorClienteEspera('');
+                setMostrarDialogoPonerEnEspera(true);
+              } else {
+                setMostrarModalTicketsPendientes(true);
+              }
+            }}
+            title="Poner venta en espera o consultar cola de tickets (F6)"
+          >
+            <Clock size={14} />
+            <span>En Espera ({conteoTicketsPendientes}) (F6)</span>
+          </button>
+
+          {/* F7: Reimprimir Último Ticket */}
+          <button 
+            className="btn btn-secundario" 
+            style={{ padding: '0.4rem 0.7rem', fontSize: '0.82rem', gap: '0.35rem' }}
+            onClick={() => setMostrarModalReimpresion(true)}
+            title="Consultar y reimprimir tickets recientes (F7)"
+          >
+            <Printer size={14} />
+            <span>Reimprimir (F7)</span>
+          </button>
+
+          {/* F8: Recargas Electrónicas y Pago de Servicios */}
+          <button 
+            className="btn btn-primario" 
+            style={{ 
+              padding: '0.4rem 0.75rem', 
+              fontSize: '0.82rem', 
+              gap: '0.35rem',
+              backgroundColor: '#0284c7',
+              borderColor: '#0284c7',
+              color: '#ffffff',
+              fontWeight: 700,
+              boxShadow: '0 2px 5px rgba(2, 132, 199, 0.25)'
+            }}
+            onClick={() => setMostrarModalRecargas(true)}
+            title="Recargas telefónicas y pago de servicios CFE, Telmex (F8)"
+          >
+            <Zap size={14} />
+            <span>Recargas (F8)</span>
+          </button>
+
+          {/* F9: Ventas del Día */}
+          <button 
+            className="btn btn-secundario" 
+            style={{ 
+              padding: '0.4rem 0.75rem', 
+              fontSize: '0.82rem', 
+              gap: '0.35rem',
               borderColor: '#8b5cf6',
               backgroundColor: '#f5f3ff',
               color: '#6d28d9',
               fontWeight: 700,
-              boxShadow: '0 2px 5px rgba(139, 92, 246, 0.2)'
+              boxShadow: '0 1px 4px rgba(139, 92, 246, 0.15)'
             }}
             onClick={() => setMostrarModalVentasDelDia(true)}
-            title="Consultar total vendido hoy, tickets y detalle (F11)"
+            title="Consultar total vendido hoy y tickets (F9)"
           >
-            <Calendar size={15} />
-            <span>Ventas del Día (F11)</span>
+            <Calendar size={14} />
+            <span>Ventas Día (F9)</span>
           </button>
 
-          {/* Botón de Tickets en Espera */}
-          <button 
-            className="btn btn-secundario" 
-            style={{ 
-              padding: '0.42rem 0.8rem', 
-              fontSize: '0.83rem', 
-              gap: '0.4rem',
-              borderColor: conteoTicketsPendientes > 0 ? '#f59e0b' : undefined,
-              backgroundColor: conteoTicketsPendientes > 0 ? 'rgba(245, 158, 11, 0.18)' : undefined,
-              color: conteoTicketsPendientes > 0 ? '#b45309' : undefined,
-              fontWeight: conteoTicketsPendientes > 0 ? 800 : 500
+          {/* F5: Renombrar Ticket / Cliente */}
+          <button
+            type="button"
+            onClick={() => {
+              setNombreTicketInput(nombreCliente || 'Público en General');
+              setMostrarModalRenombrarTicket(true);
             }}
-            onClick={() => setMostrarModalTicketsPendientes(true)}
-            title="Consultar y reanudar ventas en espera (F7)"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              fontSize: '0.82rem',
+              backgroundColor: '#f1f5f9',
+              border: '1px solid #cbd5e1',
+              borderRadius: '8px',
+              padding: '0.35rem 0.65rem',
+              cursor: 'pointer',
+              color: '#334155'
+            }}
+            title="Renombrar ticket o asignar cliente (F5)"
           >
-            <Clock size={15} />
-            <span>En Espera ({conteoTicketsPendientes}) (F7)</span>
+            <Edit3 size={13} style={{ color: '#2563eb' }} />
+            <span>Ticket:</span>
+            <strong style={{ color: '#0f172a', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {nombreCliente}
+            </strong>
+            <span style={{ fontSize: '0.7rem', backgroundColor: '#e2e8f0', padding: '0.1rem 0.35rem', borderRadius: '4px', fontWeight: 700, color: '#475569' }}>F5</span>
           </button>
-
-          {/* Botón Reimprimir Ticket */}
-          <button 
-            className="btn btn-secundario" 
-            style={{ padding: '0.42rem 0.75rem', fontSize: '0.83rem', gap: '0.4rem' }}
-            onClick={() => setMostrarModalReimpresion(true)}
-            title="Consultar y reimprimir tickets recientes (F8)"
-          >
-            <Printer size={15} />
-            <span>Reimprimir (F8)</span>
-          </button>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', color: 'var(--color-texto-secundario)' }}>
-            <span>Cliente:</span>
-            <strong style={{ color: 'var(--color-texto)' }}>{nombreCliente}</strong>
-          </div>
         </div>
       </header>
 
@@ -891,10 +947,10 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
                   className="btn btn-secundario" 
                   style={{ padding: '0 1.25rem', gap: '0.4rem', fontWeight: 600 }}
                   onClick={() => setMostrarModalBuscarProductos(true)}
-                  title="Abrir catálogo y búsqueda avanzada de productos (F3)"
+                  title="Abrir catálogo y búsqueda avanzada de productos (F4)"
                 >
                   <Package size={18} />
-                  <span>Catálogo (F3)</span>
+                  <span>Catálogo (F4)</span>
                 </button>
                 <button type="submit" className="btn btn-primario" style={{ padding: '0 1.5rem' }}>
                   <Search size={18} />
@@ -1001,26 +1057,47 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
                 </div>
               </div>
 
-              {/* Botones de acción de venta: Flujo ultra rápido */}
+              {/* Botones de acción de venta: Flujo ultra rápido con F10, F11, F12 */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', marginTop: '1.25rem' }}>
-                {/* 1. Cobrar en Efectivo (C / P / Enter / F12) */}
+                {/* 1. Cobrar en Efectivo (F10) */}
                 <button 
                   className="btn btn-primario" 
                   style={{ 
                     padding: '1rem', 
-                    fontSize: '1.1rem', 
+                    fontSize: '1.05rem', 
                     gap: '0.75rem',
                     boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)'
                   }}
                   disabled={articulos.length === 0}
                   onClick={() => abrirCobro('efectivo')}
-                  title="Cobrar en efectivo en segundos. Carga el total exacto (C, P, Enter o F12)"
+                  title="Cobrar en efectivo directo (F10)"
                 >
                   <DollarSign size={22} />
-                  <span style={{ fontWeight: 700 }}>💵 Cobrar Efectivo (C / P)</span>
+                  <span style={{ fontWeight: 700 }}>💵 Cobro Efectivo (F10)</span>
                 </button>
 
-                {/* 2. Solo Tarjeta (T) */}
+                {/* 2. Cobro Mixto / Vales (F11) */}
+                <button 
+                  className="btn" 
+                  style={{ 
+                    padding: '0.85rem', 
+                    fontSize: '0.95rem', 
+                    gap: '0.65rem',
+                    backgroundColor: '#7c3aed',
+                    color: '#ffffff',
+                    border: 'none',
+                    fontWeight: 600,
+                    boxShadow: '0 2px 8px rgba(124, 58, 237, 0.25)'
+                  }}
+                  disabled={articulos.length === 0}
+                  onClick={() => abrirCobro('mixto')}
+                  title="Combinar Efectivo con Tarjeta, Vales o Transferencia (F11)"
+                >
+                  <Layers size={18} />
+                  <span>🔀 Cobro Mixto (F11)</span>
+                </button>
+
+                {/* 3. Solo Tarjeta (F12) */}
                 <button 
                   className="btn" 
                   style={{ 
@@ -1035,31 +1112,10 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
                   }}
                   disabled={articulos.length === 0}
                   onClick={() => abrirCobro('tarjeta')}
-                  title="Cobro directo con tarjeta de débito o crédito (Atajo: T)"
+                  title="Cobro directo con tarjeta de débito o crédito (F12)"
                 >
                   <CreditCard size={18} />
-                  <span>💳 Solo Tarjeta (T)</span>
-                </button>
-
-                {/* 3. Pago Mixto / Vales (M) */}
-                <button 
-                  className="btn" 
-                  style={{ 
-                    padding: '0.8rem', 
-                    fontSize: '0.95rem', 
-                    gap: '0.65rem',
-                    backgroundColor: '#7c3aed',
-                    color: '#ffffff',
-                    border: 'none',
-                    fontWeight: 600,
-                    boxShadow: '0 2px 8px rgba(124, 58, 237, 0.25)'
-                  }}
-                  disabled={articulos.length === 0}
-                  onClick={() => abrirCobro('mixto')}
-                  title="Combinar Efectivo con Tarjeta, Vales o Transferencia (Atajo: M)"
-                >
-                  <Layers size={18} />
-                  <span>🔀 Mixto / Vales (M)</span>
+                  <span>💳 Cobro Tarjeta (F12)</span>
                 </button>
 
                 {/* 4. Poner en Espera (F6) */}
@@ -1074,42 +1130,46 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
                   title="Poner en espera la venta actual para atender a otro cliente (F6)"
                 >
                   <Clock size={16} />
-                  <span>Poner en Espera (F6)</span>
+                  <span>En Espera (F6)</span>
                 </button>
 
-                {/* 5. Cancelar / Limpiar (F4) */}
+                {/* 5. Cancelar / Limpiar */}
                 <button 
                   className="btn btn-secundario" 
                   style={{ padding: '0.7rem', fontSize: '0.85rem', color: 'var(--color-peligro)' }}
                   disabled={articulos.length === 0}
                   onClick={limpiarCarrito}
-                  title="Limpiar carrito actual (F4)"
+                  title="Limpiar carrito actual"
                 >
                   <Trash2 size={15} />
-                  <span>Cancelar Venta (F4)</span>
+                  <span>Cancelar Venta</span>
                 </button>
               </div>
             </div>
 
-            {/* Accesos rápidos de teclado */}
+            {/* Accesos rápidos de teclado: Mapeo exacto F1 - F12 */}
             <div style={{ 
               borderTop: '1px solid var(--color-borde)', 
-              paddingTop: '0.85rem', 
-              fontSize: '0.78rem', 
+              paddingTop: '0.75rem', 
+              fontSize: '0.74rem', 
               color: 'var(--color-texto-secundario)',
               display: 'grid',
               gridTemplateColumns: '1fr 1fr',
-              gap: '0.4rem'
+              gap: '0.35rem',
+              lineHeight: '1.25'
             }}>
-              <div><strong>C / P / Enter:</strong> Efectivo</div>
-              <div><strong>T:</strong> Solo Tarjeta</div>
-              <div><strong>M:</strong> Mixto / Vales</div>
-              <div><strong>F4:</strong> Limpiar</div>
-              <div><strong>F5:</strong> Recargas / Serv.</div>
+              <div><strong>F1:</strong> Pendiente por def</div>
+              <div><strong>F2:</strong> Entrada</div>
+              <div><strong>F3:</strong> Salidas</div>
+              <div><strong>F4:</strong> Consultar productos</div>
+              <div><strong>F5:</strong> Renombre de ticket</div>
               <div><strong>F6:</strong> En Espera</div>
-              <div><strong>F7:</strong> Pendientes</div>
-              <div><strong>F8:</strong> Reimprimir</div>
-              <div><strong>F9:</strong> Corte X / Z</div>
+              <div><strong>F7:</strong> Reimprimir último</div>
+              <div><strong>F8:</strong> Recargas // Servicios</div>
+              <div><strong>F9:</strong> Ventas Día</div>
+              <div><strong>F10:</strong> Cobro Efectivo</div>
+              <div><strong>F11:</strong> Cobro Mixto</div>
+              <div><strong>F12:</strong> Cobro Tarjeta</div>
             </div>
           </div>
         </div>
@@ -1346,10 +1406,11 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
         onCancelar={() => setMostrarModalAbrirTurno(false)}
       />
 
-      {/* Modal de Movimientos Manuales de Efectivo (Entrada/Salida) */}
+      {/* Modal de Movimientos Manuales de Efectivo (Entrada F2 / Salida F3) */}
       <ModalMovimientoCaja
         abierto={mostrarModalMovimientoCaja}
         turno={turnoActual}
+        tipoInicial={tipoMovimientoInicial}
         onCerrar={() => {
           setMostrarModalMovimientoCaja(false);
           inputRef.current?.focus();
@@ -1374,7 +1435,7 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
         }}
       />
 
-      {/* Modal de Ventas del Día y Cancelación Segura (Solo Admin) */}
+      {/* Modal de Ventas del Día y Cancelación Segura (F9) */}
       <ModalVentasDelDia
         abierto={mostrarModalVentasDelDia}
         onCerrar={() => {
@@ -1386,6 +1447,135 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
           setMostrarModalReimpresion(true);
         }}
       />
+
+      {/* Modal de Renombrar Ticket / Asignar Cliente (F5) */}
+      {mostrarModalRenombrarTicket && (
+        <div className="modal-overlay" style={{ zIndex: 1200 }}>
+          <div
+            className="modal-contenido"
+            style={{
+              maxWidth: '460px',
+              backgroundColor: '#ffffff',
+              borderRadius: '16px',
+              padding: '1.75rem',
+              boxShadow: '0 20px 40px -10px rgba(0, 0, 0, 0.3)',
+              border: '1px solid #e2e8f0'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+              <div style={{
+                padding: '0.6rem',
+                backgroundColor: '#eff6ff',
+                color: '#2563eb',
+                borderRadius: '10px',
+                display: 'flex'
+              }}>
+                <Edit3 size={20} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#0f172a' }}>Renombrar Ticket (F5)</h3>
+                <p style={{ margin: '0.2rem 0 0', fontSize: '0.85rem', color: '#64748b' }}>
+                  Identifica la venta actual con nombre de cliente o mesa.
+                </p>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '0.4rem' }}>
+                Nombre del Cliente o Identificador:
+              </label>
+              <input
+                type="text"
+                autoFocus
+                value={nombreTicketInput}
+                onChange={(e) => setNombreTicketInput(e.target.value)}
+                placeholder="Ej. Don Pedro / Mesa 4 / Para Llevar"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const finalNombre = nombreTicketInput.trim() || 'Público en General (Mostrador)';
+                    establecerCliente(1, finalNombre);
+                    setMostrarModalRenombrarTicket(false);
+                    setMensajeNotificacion({ tipo: 'exito', texto: `✓ Ticket renombrado a: ${finalNombre}` });
+                    setTimeout(() => setMensajeNotificacion(null), 2500);
+                    inputRef.current?.focus();
+                  } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    setMostrarModalRenombrarTicket(false);
+                    inputRef.current?.focus();
+                  }
+                }}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '8px',
+                  border: '1.5px solid #cbd5e1',
+                  backgroundColor: '#f8fafc',
+                  color: '#0f172a',
+                  fontSize: '1rem',
+                  outline: 'none'
+                }}
+              />
+            </div>
+
+            {/* Sugerencias rápidas */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '1.25rem' }}>
+              {['Público en General (Mostrador)', 'Mesa 1', 'Mesa 2', 'Para Llevar', 'A Domicilio', 'Cliente Frecuente'].map((sug) => (
+                <button
+                  key={sug}
+                  type="button"
+                  onClick={() => setNombreTicketInput(sug)}
+                  style={{
+                    border: '1px solid #e2e8f0',
+                    backgroundColor: '#f1f5f9',
+                    borderRadius: '20px',
+                    padding: '0.3rem 0.65rem',
+                    fontSize: '0.78rem',
+                    color: '#475569',
+                    cursor: 'pointer',
+                    fontWeight: 500
+                  }}
+                >
+                  {sug}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setMostrarModalRenombrarTicket(false);
+                  inputRef.current?.focus();
+                }}
+                className="btn btn-secundario"
+                style={{ padding: '0.6rem 1.15rem', fontSize: '0.9rem' }}
+              >
+                Cancelar (Esc)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const finalNombre = nombreTicketInput.trim() || 'Público en General (Mostrador)';
+                  establecerCliente(1, finalNombre);
+                  setMostrarModalRenombrarTicket(false);
+                  setMensajeNotificacion({ tipo: 'exito', texto: `✓ Ticket renombrado a: ${finalNombre}` });
+                  setTimeout(() => setMensajeNotificacion(null), 2500);
+                  inputRef.current?.focus();
+                }}
+                className="btn btn-primario"
+                style={{
+                  padding: '0.6rem 1.25rem',
+                  fontSize: '0.9rem',
+                  fontWeight: 700
+                }}
+              >
+                Guardar Nombre (Enter)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

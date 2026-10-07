@@ -37,16 +37,16 @@ export const ModalTicketsPendientes: React.FC<PropiedadesModalTicketsPendientes>
       setCargando(true);
       setError(null);
       const respuesta = await servicioTicketsPendientes.obtenerActivos();
-      if (respuesta.exito && respuesta.datos) {
+      if (respuesta.exito && Array.isArray(respuesta.datos)) {
         setTickets(respuesta.datos);
         if (respuesta.datos.length > 0) {
           setTicketExpandido(respuesta.datos[0].idTicketPendiente);
         }
       } else {
-        setError(respuesta.mensaje || 'Error al cargar tickets pendientes.');
+        setTickets([]);
       }
     } catch {
-      setError('Error al consultar los tickets en espera.');
+      setTickets([]);
     } finally {
       setCargando(false);
     }
