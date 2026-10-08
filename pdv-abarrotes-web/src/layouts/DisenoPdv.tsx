@@ -712,7 +712,7 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
         padding: '0 1.5rem',
         boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <button 
             type="button"
             style={{ 
@@ -720,12 +720,12 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
               color: '#ffffff', 
               border: 'none', 
               borderRadius: '6px', 
-              padding: '0.45rem 0.8rem', 
-              fontSize: '0.82rem', 
+              padding: '0.5rem 0.9rem', 
+              fontSize: '0.85rem', 
               fontWeight: 600, 
               display: 'inline-flex', 
               alignItems: 'center', 
-              gap: '0.4rem', 
+              gap: '0.45rem', 
               cursor: 'pointer',
               boxShadow: '0 2px 4px rgba(0,0,0,0.12)',
               transition: 'all 0.15s ease'
@@ -733,12 +733,12 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
             onClick={onVolverAAdmin}
             title="Volver al panel administrativo"
           >
-            <ArrowLeft size={15} />
+            <ArrowLeft size={16} />
             <span>Volver a Administración</span>
           </button>
           
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-texto)', letterSpacing: '0.02em' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <span style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--color-texto)', letterSpacing: '0.02em' }}>
               PUNTO DE VENTA
             </span>
             {turnoActual ? (
@@ -746,22 +746,22 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
                 type="button"
                 onClick={() => setMostrarModalCorteCaja(true)}
                 style={{
-                  fontSize: '0.78rem',
+                  fontSize: '0.82rem',
                   cursor: 'pointer',
                   border: 'none',
                   backgroundColor: '#059669',
                   color: '#ffffff',
-                  padding: '0.45rem 0.8rem',
+                  padding: '0.45rem 0.9rem',
                   borderRadius: '6px',
                   fontWeight: 700,
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '0.4rem',
-                  boxShadow: '0 2px 5px rgba(5, 150, 105, 0.3)',
+                  gap: '0.45rem',
+                  boxShadow: '0 2px 6px rgba(5, 150, 105, 0.3)',
                 }}
                 title="Caja abierta • Haz clic para arqueo o corte PDX (F4)"
               >
-                <DollarSign size={14} />
+                <DollarSign size={15} />
                 <span>{(turnoActual.nombreCaja || 'Caja Principal')} • Turno #{turnoActual.idTurnoCaja} (${((turnoActual.efectivoActualEnCaja ?? (turnoActual as any).totalEfectivoEsperado ?? turnoActual.montoInicial) || 0).toFixed(2)})</span>
               </button>
             ) : (
@@ -769,30 +769,30 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
                 type="button"
                 onClick={() => setMostrarModalAbrirTurno(true)}
                 style={{
-                  fontSize: '0.78rem',
+                  fontSize: '0.82rem',
                   cursor: 'pointer',
                   border: 'none',
                   backgroundColor: '#dc2626',
                   color: '#ffffff',
-                  padding: '0.45rem 0.8rem',
+                  padding: '0.45rem 0.9rem',
                   borderRadius: '6px',
                   fontWeight: 700,
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '0.4rem',
-                  boxShadow: '0 2px 5px rgba(220, 38, 38, 0.3)',
+                  gap: '0.45rem',
+                  boxShadow: '0 2px 6px rgba(220, 38, 38, 0.3)',
                 }}
                 title="Haz clic para abrir el turno con fondo inicial"
               >
-                <Lock size={14} />
+                <Lock size={15} />
                 <span>Caja Cerrada (Abrir Turno)</span>
               </button>
             )}
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
-          {/* F5: Renombrar Ticket / Cliente */}
+        {/* Derecha: Renombrar Ticket / Cliente (F5) */}
+        <div>
           <button
             type="button"
             onClick={() => {
@@ -802,229 +802,23 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '0.4rem',
-              fontSize: '0.8rem',
-              backgroundColor: '#2563eb',
-              color: '#ffffff',
-              border: 'none',
+              gap: '0.45rem',
+              fontSize: '0.85rem',
+              backgroundColor: '#eff6ff',
+              color: '#1d4ed8',
+              border: '1.5px solid #bfdbfe',
               borderRadius: '6px',
-              padding: '0.45rem 0.75rem',
+              padding: '0.45rem 0.9rem',
               cursor: 'pointer',
               fontWeight: 600,
-              boxShadow: '0 2px 4px rgba(37, 99, 235, 0.25)'
+              boxShadow: '0 1px 3px rgba(37, 99, 235, 0.1)',
+              transition: 'all 0.15s ease'
             }}
             title="Renombrar ticket o asignar cliente (F5)"
           >
-            <Edit3 size={14} />
-            <span>Ticket: <strong style={{ textDecoration: 'underline' }}>{nombreCliente}</strong></span>
-            <span style={{ fontSize: '0.68rem', backgroundColor: 'rgba(255, 255, 255, 0.25)', padding: '0.1rem 0.35rem', borderRadius: '4px', fontWeight: 800 }}>F5</span>
-          </button>
-
-          {/* F7: Entrada de Efectivo */}
-          <button 
-            type="button"
-            style={{ 
-              padding: '0.45rem 0.7rem', 
-              fontSize: '0.8rem', 
-              gap: '0.35rem',
-              backgroundColor: '#10b981',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '6px',
-              fontWeight: 700,
-              display: 'inline-flex',
-              alignItems: 'center',
-              cursor: 'pointer',
-              boxShadow: '0 2px 4px rgba(16, 185, 129, 0.25)'
-            }}
-            onClick={() => {
-              setTipoMovimientoInicial('ENTRADA');
-              if (turnoActual) setMostrarModalMovimientoCaja(true);
-              else setMostrarModalAbrirTurno(true);
-            }}
-            title="Registrar entrada manual de efectivo (F7)"
-          >
-            <Plus size={14} />
-            <span>Entrada (F7)</span>
-          </button>
-
-          {/* F8: Salida de Efectivo */}
-          <button 
-            type="button"
-            style={{ 
-              padding: '0.45rem 0.7rem', 
-              fontSize: '0.8rem', 
-              gap: '0.35rem',
-              backgroundColor: '#ef4444',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '6px',
-              fontWeight: 700,
-              display: 'inline-flex',
-              alignItems: 'center',
-              cursor: 'pointer',
-              boxShadow: '0 2px 4px rgba(239, 68, 68, 0.25)'
-            }}
-            onClick={() => {
-              setTipoMovimientoInicial('SALIDA');
-              if (turnoActual) setMostrarModalMovimientoCaja(true);
-              else setMostrarModalAbrirTurno(true);
-            }}
-            title="Registrar salida o retiro de efectivo (F8)"
-          >
-            <Minus size={14} />
-            <span>Salidas (F8)</span>
-          </button>
-
-          {/* F6: Ventas en Espera */}
-          <button 
-            type="button"
-            style={{ 
-              padding: '0.45rem 0.7rem', 
-              fontSize: '0.8rem', 
-              gap: '0.35rem',
-              backgroundColor: conteoTicketsPendientes > 0 ? '#d97706' : '#475569',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '6px',
-              fontWeight: 700,
-              display: 'inline-flex',
-              alignItems: 'center',
-              cursor: 'pointer',
-              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)'
-            }}
-            onClick={() => {
-              if (articulos.length > 0) {
-                setIdentificadorClienteEspera('');
-                setMostrarDialogoPonerEnEspera(true);
-              } else {
-                setMostrarModalTicketsPendientes(true);
-              }
-            }}
-            title="Poner venta en espera o consultar cola de tickets (F6)"
-          >
-            <Clock size={14} />
-            <span>En Espera ({conteoTicketsPendientes}) (F6)</span>
-          </button>
-
-          {/* F9: Verificador de Precio */}
-          <button 
-            type="button"
-            style={{ 
-              padding: '0.45rem 0.7rem', 
-              fontSize: '0.8rem', 
-              gap: '0.35rem',
-              backgroundColor: '#8b5cf6',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '6px',
-              fontWeight: 700,
-              display: 'inline-flex',
-              alignItems: 'center',
-              cursor: 'pointer',
-              boxShadow: '0 2px 4px rgba(139, 92, 246, 0.25)'
-            }}
-            onClick={() => setMostrarModalVerificador(true)}
-            title="Verificador previo de precios y existencias (F9)"
-          >
-            <Tag size={14} />
-            <span>Verificador (F9)</span>
-          </button>
-
-          {/* F10: Catálogo y Búsqueda */}
-          <button 
-            type="button"
-            style={{ 
-              padding: '0.45rem 0.7rem', 
-              fontSize: '0.8rem', 
-              gap: '0.35rem',
-              backgroundColor: '#0d9488',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '6px',
-              fontWeight: 700,
-              display: 'inline-flex',
-              alignItems: 'center',
-              cursor: 'pointer',
-              boxShadow: '0 2px 4px rgba(13, 148, 136, 0.25)'
-            }}
-            onClick={() => setMostrarModalBuscarProductos(true)}
-            title="Catálogo de productos con favoritos (F10)"
-          >
-            <Search size={14} />
-            <span>Buscar (F10)</span>
-          </button>
-
-          {/* F11: Recargas y Servicios */}
-          <button 
-            type="button"
-            style={{ 
-              padding: '0.45rem 0.7rem', 
-              fontSize: '0.8rem', 
-              gap: '0.35rem',
-              backgroundColor: '#0284c7',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '6px',
-              fontWeight: 700,
-              display: 'inline-flex',
-              alignItems: 'center',
-              cursor: 'pointer',
-              boxShadow: '0 2px 4px rgba(2, 132, 199, 0.25)'
-            }}
-            onClick={() => setMostrarModalRecargas(true)}
-            title="Recargas telefónicas y pago de servicios CFE, Telmex (F11)"
-          >
-            <Zap size={14} />
-            <span>Recargas (F11)</span>
-          </button>
-
-          {/* Ventas del Día */}
-          <button 
-            type="button"
-            style={{ 
-              padding: '0.45rem 0.7rem', 
-              fontSize: '0.8rem', 
-              gap: '0.35rem',
-              backgroundColor: '#6366f1',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '6px',
-              fontWeight: 700,
-              display: 'inline-flex',
-              alignItems: 'center',
-              cursor: 'pointer',
-              boxShadow: '0 2px 4px rgba(99, 102, 241, 0.25)'
-            }}
-            onClick={() => setMostrarModalVentasDelDia(true)}
-            title="Consultar total vendido hoy, desglose y devoluciones"
-          >
-            <Calendar size={14} />
-            <span>Ventas Día</span>
-          </button>
-
-          {/* Reimprimir Último Ticket */}
-          <button 
-            type="button"
-            style={{ 
-              padding: '0.45rem 0.65rem', 
-              fontSize: '0.8rem', 
-              gap: '0.35rem',
-              backgroundColor: '#334155',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '6px',
-              fontWeight: 600,
-              display: 'inline-flex',
-              alignItems: 'center',
-              cursor: 'pointer',
-              boxShadow: '0 2px 4px rgba(51, 65, 85, 0.2)'
-            }}
-            onClick={() => setMostrarModalReimpresion(true)}
-            title="Consultar y reimprimir tickets recientes"
-          >
-            <Printer size={14} />
-            <span>Reimprimir</span>
+            <Edit3 size={15} style={{ color: '#2563eb' }} />
+            <span>Ticket: <strong style={{ color: '#1e3a8a' }}>{nombreCliente}</strong></span>
+            <span style={{ fontSize: '0.7rem', backgroundColor: '#2563eb', color: '#ffffff', padding: '0.12rem 0.4rem', borderRadius: '4px', fontWeight: 800 }}>F5</span>
           </button>
         </div>
       </header>
@@ -1433,6 +1227,271 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
           </div>
         </div>
       </div>
+
+      {/* Barra Inferior de Acciones Rápidas (Footer Dock con botones grandes F#) */}
+      <footer style={{
+        backgroundColor: '#ffffff',
+        borderTop: '2px solid #e2e8f0',
+        padding: '0.65rem 1.5rem',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexWrap: 'wrap',
+        gap: '0.65rem',
+        boxShadow: '0 -3px 12px rgba(0, 0, 0, 0.05)',
+        flexShrink: 0,
+        zIndex: 10
+      }}>
+        {/* F7: Entrada de Efectivo */}
+        <button 
+          type="button"
+          style={{ 
+            padding: '0.65rem 1.15rem', 
+            fontSize: '0.88rem', 
+            gap: '0.45rem',
+            backgroundColor: '#059669',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: '6px',
+            fontWeight: 700,
+            display: 'inline-flex',
+            alignItems: 'center',
+            cursor: 'pointer',
+            boxShadow: '0 2px 5px rgba(5, 150, 105, 0.25)',
+            transition: 'all 0.15s ease'
+          }}
+          onClick={() => {
+            setTipoMovimientoInicial('ENTRADA');
+            if (turnoActual) setMostrarModalMovimientoCaja(true);
+            else setMostrarModalAbrirTurno(true);
+          }}
+          title="Registrar entrada manual de efectivo (F7)"
+        >
+          <Plus size={17} />
+          <span>Entrada</span>
+          <span style={{ fontSize: '0.7rem', backgroundColor: 'rgba(255,255,255,0.25)', padding: '0.12rem 0.35rem', borderRadius: '4px', fontWeight: 800 }}>F7</span>
+        </button>
+
+        {/* F8: Salida de Efectivo */}
+        <button 
+          type="button"
+          style={{ 
+            padding: '0.65rem 1.15rem', 
+            fontSize: '0.88rem', 
+            gap: '0.45rem',
+            backgroundColor: '#dc2626',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: '6px',
+            fontWeight: 700,
+            display: 'inline-flex',
+            alignItems: 'center',
+            cursor: 'pointer',
+            boxShadow: '0 2px 5px rgba(220, 38, 38, 0.25)',
+            transition: 'all 0.15s ease'
+          }}
+          onClick={() => {
+            setTipoMovimientoInicial('SALIDA');
+            if (turnoActual) setMostrarModalMovimientoCaja(true);
+            else setMostrarModalAbrirTurno(true);
+          }}
+          title="Registrar salida o retiro de efectivo (F8)"
+        >
+          <Minus size={17} />
+          <span>Salidas</span>
+          <span style={{ fontSize: '0.7rem', backgroundColor: 'rgba(255,255,255,0.25)', padding: '0.12rem 0.35rem', borderRadius: '4px', fontWeight: 800 }}>F8</span>
+        </button>
+
+        {/* F6: Ventas en Espera */}
+        <button 
+          type="button"
+          style={{ 
+            padding: '0.65rem 1.15rem', 
+            fontSize: '0.88rem', 
+            gap: '0.45rem',
+            backgroundColor: conteoTicketsPendientes > 0 ? '#d97706' : '#475569',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: '6px',
+            fontWeight: 700,
+            display: 'inline-flex',
+            alignItems: 'center',
+            cursor: 'pointer',
+            boxShadow: '0 2px 5px rgba(0, 0, 0, 0.2)',
+            transition: 'all 0.15s ease'
+          }}
+          onClick={() => {
+            if (articulos.length > 0) {
+              setIdentificadorClienteEspera('');
+              setMostrarDialogoPonerEnEspera(true);
+            } else {
+              setMostrarModalTicketsPendientes(true);
+            }
+          }}
+          title="Poner venta en espera o consultar cola de tickets (F6)"
+        >
+          <Clock size={17} />
+          <span>En Espera ({conteoTicketsPendientes})</span>
+          <span style={{ fontSize: '0.7rem', backgroundColor: 'rgba(255,255,255,0.25)', padding: '0.12rem 0.35rem', borderRadius: '4px', fontWeight: 800 }}>F6</span>
+        </button>
+
+        {/* F9: Verificador de Precio */}
+        <button 
+          type="button"
+          style={{ 
+            padding: '0.65rem 1.15rem', 
+            fontSize: '0.88rem', 
+            gap: '0.45rem',
+            backgroundColor: '#7c3aed',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: '6px',
+            fontWeight: 700,
+            display: 'inline-flex',
+            alignItems: 'center',
+            cursor: 'pointer',
+            boxShadow: '0 2px 5px rgba(124, 58, 237, 0.25)',
+            transition: 'all 0.15s ease'
+          }}
+          onClick={() => setMostrarModalVerificador(true)}
+          title="Verificador previo de precios y existencias (F9)"
+        >
+          <Tag size={17} />
+          <span>Verificador</span>
+          <span style={{ fontSize: '0.7rem', backgroundColor: 'rgba(255,255,255,0.25)', padding: '0.12rem 0.35rem', borderRadius: '4px', fontWeight: 800 }}>F9</span>
+        </button>
+
+        {/* F10: Catálogo y Búsqueda */}
+        <button 
+          type="button"
+          style={{ 
+            padding: '0.65rem 1.15rem', 
+            fontSize: '0.88rem', 
+            gap: '0.45rem',
+            backgroundColor: '#0d9488',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: '6px',
+            fontWeight: 700,
+            display: 'inline-flex',
+            alignItems: 'center',
+            cursor: 'pointer',
+            boxShadow: '0 2px 5px rgba(13, 148, 136, 0.25)',
+            transition: 'all 0.15s ease'
+          }}
+          onClick={() => setMostrarModalBuscarProductos(true)}
+          title="Catálogo de productos con favoritos (F10)"
+        >
+          <Search size={17} />
+          <span>Buscar Prod</span>
+          <span style={{ fontSize: '0.7rem', backgroundColor: 'rgba(255,255,255,0.25)', padding: '0.12rem 0.35rem', borderRadius: '4px', fontWeight: 800 }}>F10</span>
+        </button>
+
+        {/* F11: Recargas y Servicios */}
+        <button 
+          type="button"
+          style={{ 
+            padding: '0.65rem 1.15rem', 
+            fontSize: '0.88rem', 
+            gap: '0.45rem',
+            backgroundColor: '#0284c7',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: '6px',
+            fontWeight: 700,
+            display: 'inline-flex',
+            alignItems: 'center',
+            cursor: 'pointer',
+            boxShadow: '0 2px 5px rgba(2, 132, 199, 0.25)',
+            transition: 'all 0.15s ease'
+          }}
+          onClick={() => setMostrarModalRecargas(true)}
+          title="Recargas telefónicas y pago de servicios CFE, Telmex (F11)"
+        >
+          <Zap size={17} />
+          <span>Recargas</span>
+          <span style={{ fontSize: '0.7rem', backgroundColor: 'rgba(255,255,255,0.25)', padding: '0.12rem 0.35rem', borderRadius: '4px', fontWeight: 800 }}>F11</span>
+        </button>
+
+        {/* Ventas del Día */}
+        <button 
+          type="button"
+          style={{ 
+            padding: '0.65rem 1.15rem', 
+            fontSize: '0.88rem', 
+            gap: '0.45rem',
+            backgroundColor: '#4f46e5',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: '6px',
+            fontWeight: 700,
+            display: 'inline-flex',
+            alignItems: 'center',
+            cursor: 'pointer',
+            boxShadow: '0 2px 5px rgba(79, 70, 229, 0.25)',
+            transition: 'all 0.15s ease'
+          }}
+          onClick={() => setMostrarModalVentasDelDia(true)}
+          title="Consultar total vendido hoy, desglose y devoluciones"
+        >
+          <Calendar size={17} />
+          <span>Ventas Día</span>
+        </button>
+
+        {/* Reimprimir Último Ticket */}
+        <button 
+          type="button"
+          style={{ 
+            padding: '0.65rem 1.15rem', 
+            fontSize: '0.88rem', 
+            gap: '0.45rem',
+            backgroundColor: '#334155',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: '6px',
+            fontWeight: 700,
+            display: 'inline-flex',
+            alignItems: 'center',
+            cursor: 'pointer',
+            boxShadow: '0 2px 5px rgba(51, 65, 85, 0.2)',
+            transition: 'all 0.15s ease'
+          }}
+          onClick={() => setMostrarModalReimpresion(true)}
+          title="Consultar y reimprimir tickets recientes"
+        >
+          <Printer size={17} />
+          <span>Reimprimir</span>
+        </button>
+
+        {/* F4: PDX Corte de Caja */}
+        <button 
+          type="button"
+          style={{ 
+            padding: '0.65rem 1.15rem', 
+            fontSize: '0.88rem', 
+            gap: '0.45rem',
+            backgroundColor: '#be123c',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: '6px',
+            fontWeight: 700,
+            display: 'inline-flex',
+            alignItems: 'center',
+            cursor: 'pointer',
+            boxShadow: '0 2px 5px rgba(190, 18, 60, 0.25)',
+            transition: 'all 0.15s ease'
+          }}
+          onClick={() => {
+            if (turnoActual) setMostrarModalCorteCaja(true);
+            else setMostrarModalAbrirTurno(true);
+          }}
+          title="Corte X de Caja / Arqueo (F4)"
+        >
+          <DollarSign size={17} />
+          <span>PDX Corte</span>
+          <span style={{ fontSize: '0.7rem', backgroundColor: 'rgba(255,255,255,0.25)', padding: '0.12rem 0.35rem', borderRadius: '4px', fontWeight: 800 }}>F4</span>
+        </button>
+      </footer>
 
       {/* Modal de Cobro Rápido */}
       <ModalCobro
