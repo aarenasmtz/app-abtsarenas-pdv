@@ -1,0 +1,34 @@
+name: Despliegue Automático a Cloudflare Workers
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Permite ejecutar el despliegue manualmente desde GitHub Actions
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Compilar y Desplegar PDV
+    steps:
+      - name: Descargar repositorio (Checkout)
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js (v20)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: './pdv-abarrotes-web/package.json'
+
+      - name: Instalar dependencias y compilar Frontend
+        run: |
+          cd pdv-abarrotes-web
+          npm install
+          npm run build
+
+      - name: Publicar en Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: deploy worker.js --compatibility-date 2026-10-06 --assets ./pdv-abarrotes-web/dist
