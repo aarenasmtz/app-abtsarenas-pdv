@@ -15,7 +15,8 @@ import {
   Package,
   Calendar,
   Lock,
-  Edit3
+  Edit3,
+  Tag
 } from 'lucide-react';
 import { useStoreCarritoPdv } from '../modules/pdv/storeCarrito';
 import { useEscanerCodigoBarras } from '../hooks/useEscanerCodigoBarras';
@@ -30,6 +31,7 @@ import { ModalBuscarProductos } from '../modules/pdv/ModalBuscarProductos';
 import { ModalRecargaPdv } from '../modules/pdv/ModalRecargaPdv';
 import { servicioTicketsPendientes } from '../modules/ventas/servicioTicketsPendientes';
 import { ModalVentasDelDia } from '../modules/pdv/ModalVentasDelDia';
+import { ModalVerificadorPrecio } from '../modules/pdv/ModalVerificadorPrecio';
 import { ModalAbrirTurno } from '../modules/caja/ModalAbrirTurno';
 import { ModalMovimientoCaja } from '../modules/caja/ModalMovimientoCaja';
 import { ModalCorteCaja } from '../modules/caja/ModalCorteCaja';
@@ -76,11 +78,15 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
   const [mostrarModalTicketsPendientes, setMostrarModalTicketsPendientes] = useState(false);
   const [mostrarModalBuscarProductos, setMostrarModalBuscarProductos] = useState(false);
   const [mostrarModalRecargas, setMostrarModalRecargas] = useState(false);
+  const [mostrarModalVerificador, setMostrarModalVerificador] = useState(false);
   const [mostrarDialogoPonerEnEspera, setMostrarDialogoPonerEnEspera] = useState(false);
   const [identificadorClienteEspera, setIdentificadorClienteEspera] = useState('');
   const [conteoTicketsPendientes, setConteoTicketsPendientes] = useState(0);
   const [productoGranelSeleccionado, setProductoGranelSeleccionado] = useState<ProductoCobroDto | null>(null);
   const [ventaActual, setVentaActual] = useState<VentaRealizada | null>(null);
+
+  // Estados para fila activa del carrito (teclas +, -, Supr)
+  const [filaSeleccionada, setFilaSeleccionada] = useState<number>(0);
 
   // Estados para Renombrar Ticket y Atajos F#
   const [mostrarModalRenombrarTicket, setMostrarModalRenombrarTicket] = useState(false);
@@ -93,6 +99,15 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
   const [mostrarModalMovimientoCaja, setMostrarModalMovimientoCaja] = useState(false);
   const [mostrarModalCorteCaja, setMostrarModalCorteCaja] = useState(false);
   const [mostrarModalVentasDelDia, setMostrarModalVentasDelDia] = useState(false);
+
+  // Ajustar índice de fila activa si cambian los artículos
+  useEffect(() => {
+    if (articulos.length === 0) {
+      setFilaSeleccionada(0);
+    } else if (filaSeleccionada >= articulos.length) {
+      setFilaSeleccionada(articulos.length - 1);
+    }
+  }, [articulos.length, filaSeleccionada]);
 
   // Escáner HID global
   useEscanerCodigoBarras({
@@ -228,45 +243,43 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
         mostrarModalCorteCaja ||
         mostrarModalBuscarProductos ||
         mostrarModalRecargas ||
+        mostrarModalVerificador ||
         mostrarModalVentasDelDia;
 
       if (hayModalAbierto) {
         return;
       }
 
-      // 2. Mapeo estricto de Teclas F1-F12 (Tabla de Punto de Venta)
-      // F1: Pendiente por def (Foco al escáner / Mostrador principal por defecto)
+      // 2. Mapeo estricto de Teclas F1-F12 según Tabla Oficial de Punto de Venta
+      // F1: PXD (Foco al escáner / Mostrador principal por defecto)
       if (e.key === 'F1') {
         e.preventDefault();
         inputRef.current?.focus();
         inputRef.current?.select();
-        setMensajeNotificacion({ tipo: 'exito', texto: 'Listo para escanear en mostrador principal (F1)' });
+        setMensajeNotificacion({ tipo: 'exito', texto: 'Mostrador principal listo para escanear (F1)' });
         setTimeout(() => setMensajeNotificacion(null), 2000);
         return;
       }
 
-      // F2: Entrada (Modal Movimiento de Caja tipo ENTRADA)
+      // F2: Cobro con tarjeta
       if (e.key === 'F2') {
         e.preventDefault();
-        setTipoMovimientoInicial('ENTRADA');
-        if (turnoActual) setMostrarModalMovimientoCaja(true);
-        else setMostrarModalAbrirTurno(true);
+        abrirCobro('tarjeta');
         return;
       }
 
-      // F3: Salidas (Modal Movimiento de Caja tipo SALIDA)
+      // F3: Cobro Mixto
       if (e.key === 'F3') {
         e.preventDefault();
-        setTipoMovimientoInicial('SALIDA');
-        if (turnoActual) setMostrarModalMovimientoCaja(true);
-        else setMostrarModalAbrirTurno(true);
+        abrirCobro('mixto');
         return;
       }
 
-      // F4: Consultar productos (Modal Catálogo y Búsqueda de Productos)
+      // F4: PDX (Corte X de Caja)
       if (e.key === 'F4') {
         e.preventDefault();
-        setMostrarModalBuscarProductos(true);
+        if (turnoActual) setMostrarModalCorteCaja(true);
+        else setMostrarModalAbrirTurno(true);
         return;
       }
 
@@ -290,59 +303,117 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
         return;
       }
 
-      // F7: Reimprimir último (Modal de tickets recientes para reimpresión)
+      // F7: Entradas (Modal Movimiento de Caja tipo ENTRADA)
       if (e.key === 'F7') {
         e.preventDefault();
-        setMostrarModalReimpresion(true);
+        setTipoMovimientoInicial('ENTRADA');
+        if (turnoActual) setMostrarModalMovimientoCaja(true);
+        else setMostrarModalAbrirTurno(true);
         return;
       }
 
-      // F8: Recargas // Pago de servicios (Modal de recargas telefónicas y pago de servicios)
+      // F8: Salidas (Modal Movimiento de Caja tipo SALIDA)
       if (e.key === 'F8') {
+        e.preventDefault();
+        setTipoMovimientoInicial('SALIDA');
+        if (turnoActual) setMostrarModalMovimientoCaja(true);
+        else setMostrarModalAbrirTurno(true);
+        return;
+      }
+
+      // F9: Verificador de precio (Validador previo de precios)
+      if (e.key === 'F9') {
+        e.preventDefault();
+        setMostrarModalVerificador(true);
+        return;
+      }
+
+      // F10: Buscar Producto (Catálogo con favoritos)
+      if (e.key === 'F10') {
+        e.preventDefault();
+        setMostrarModalBuscarProductos(true);
+        return;
+      }
+
+      // F11: Recargas telefónicas y pago de servicios
+      if (e.key === 'F11') {
         e.preventDefault();
         setMostrarModalRecargas(true);
         return;
       }
 
-      // F9: Ventas Día (Modal de Ventas del Día y auditoría)
-      if (e.key === 'F9') {
-        e.preventDefault();
-        setMostrarModalVentasDelDia(true);
-        return;
-      }
-
-      // F10: Cobro Efectivo (Disparo directo de cobro en efectivo)
-      if (e.key === 'F10') {
+      // F12: Cobrar Efectivo
+      if (e.key === 'F12') {
         e.preventDefault();
         abrirCobro('efectivo');
         return;
       }
 
-      // F11: Cobro Mixto (Disparo directo de cobro mixto / vales)
-      if (e.key === 'F11') {
-        e.preventDefault();
-        abrirCobro('mixto');
-        return;
-      }
+      // 3. Teclas para manipular la fila del producto en el carrito (+, -, Supr)
+      const target = e.target as HTMLElement | null;
+      const estaEnInput = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
 
-      // F12: Cobro Tarjeta (Disparo directo de cobro con tarjeta bancaria)
-      if (e.key === 'F12') {
-        e.preventDefault();
-        abrirCobro('tarjeta');
-        return;
-      }
+      if (articulos.length > 0) {
+        const itemActual = articulos[filaSeleccionada] || articulos[0];
 
-      // ATENCIÓN: Se eliminaron los atajos de letras 'C', 'P', 'T', 'M' y 'Enter'
-      // para permitir teclear y escanear sin que se abra intempestivamente el modal de cobro.
+        // Supr / Delete: Eliminar totalidad de producto sobre el row
+        if ((e.key === 'Delete' || e.key === 'Supr') && !estaEnInput) {
+          e.preventDefault();
+          eliminarArticulo(itemActual.idProducto);
+          reproducirBeepExito();
+          setMensajeNotificacion({ tipo: 'exito', texto: `Partida "${itemActual.descripcion}" eliminada del carrito.` });
+          setTimeout(() => setMensajeNotificacion(null), 2000);
+          return;
+        }
+
+        // Tecla +: Aumentar piezas del producto seleccionado
+        if ((e.key === '+' || e.key === '=') && !estaEnInput) {
+          e.preventDefault();
+          const delta = itemActual.permiteVentaFraccionada ? 0.250 : 1;
+          const nuevaCantidad = Math.round((itemActual.cantidad + delta) * 1000) / 1000;
+          actualizarCantidad(itemActual.idProducto, nuevaCantidad);
+          reproducirBeepExito();
+          return;
+        }
+
+        // Tecla -: Disminuir piezas del producto seleccionado
+        if ((e.key === '-' || e.key === '_') && !estaEnInput) {
+          e.preventDefault();
+          const delta = itemActual.permiteVentaFraccionada ? 0.250 : 1;
+          const nuevaCantidad = Math.max(0, Math.round((itemActual.cantidad - delta) * 1000) / 1000);
+          if (nuevaCantidad <= 0) {
+            eliminarArticulo(itemActual.idProducto);
+          } else {
+            actualizarCantidad(itemActual.idProducto, nuevaCantidad);
+          }
+          reproducirBeepExito();
+          return;
+        }
+
+        // Navegación con flechas arriba/abajo en la tabla del carrito
+        if (e.key === 'ArrowDown' && !estaEnInput) {
+          e.preventDefault();
+          setFilaSeleccionada(prev => Math.min(articulos.length - 1, prev + 1));
+          return;
+        }
+        if (e.key === 'ArrowUp' && !estaEnInput) {
+          e.preventDefault();
+          setFilaSeleccionada(prev => Math.max(0, prev - 1));
+          return;
+        }
+      }
     };
     window.addEventListener('keydown', manejarTeclasGlobales);
     return () => window.removeEventListener('keydown', manejarTeclasGlobales);
   }, [
-    articulos.length, 
+    articulos,
+    filaSeleccionada,
     limpiarCarrito, 
     turnoActual, 
     nombreCliente,
     abrirCobro,
+    actualizarCantidad,
+    eliminarArticulo,
     mostrarModalCobro, 
     mostrarModalTicket, 
     mostrarModalReimpresion, 
@@ -355,6 +426,7 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
     mostrarModalCorteCaja,
     mostrarModalBuscarProductos,
     mostrarModalRecargas,
+    mostrarModalVerificador,
     mostrarModalVentasDelDia
   ]);
 
@@ -484,7 +556,8 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
     return () => clearTimeout(timer);
   }, [codigoInput]);
 
-  const handleConfirmarPesoGranel = (producto: ProductoCobroDto, pesoKg: number) => {
+  const handleConfirmarPesoGranel = (producto: ProductoCobroDto, pesoKg: number, subtotalExacto?: number) => {
+    const subtotalFinal = subtotalExacto !== undefined ? subtotalExacto : Math.round(pesoKg * producto.precioVenta * 100) / 100;
     agregarArticulo({
       idProducto: producto.idProducto,
       codigoBarras: producto.codigoBarras,
@@ -493,11 +566,12 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
       precioUnitario: producto.precioVenta,
       permiteVentaFraccionada: true,
       existenciaDisponible: producto.existenciaActual,
+      subtotal: subtotalFinal,
     });
     reproducirBeepExito();
     setMensajeNotificacion({
       tipo: 'exito',
-      texto: `✓ ${producto.descripcion} (${pesoKg.toFixed(3)} kg) ($${(pesoKg * producto.precioVenta).toFixed(2)})`
+      texto: `✓ ${producto.descripcion} (${pesoKg.toFixed(3)} kg) ($${subtotalFinal.toFixed(2)})`
     });
     setTimeout(() => setMensajeNotificacion(null), 2500);
     setMostrarModalGranel(false);
@@ -638,37 +712,54 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
         padding: '0 1.5rem',
         boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexWrap: 'wrap' }}>
           <button 
-            className="btn btn-secundario" 
-            style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem' }}
+            type="button"
+            style={{ 
+              backgroundColor: '#1e293b', 
+              color: '#ffffff', 
+              border: 'none', 
+              borderRadius: '6px', 
+              padding: '0.45rem 0.8rem', 
+              fontSize: '0.82rem', 
+              fontWeight: 600, 
+              display: 'inline-flex', 
+              alignItems: 'center', 
+              gap: '0.4rem', 
+              cursor: 'pointer',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.12)',
+              transition: 'all 0.15s ease'
+            }}
             onClick={onVolverAAdmin}
+            title="Volver al panel administrativo"
           >
-            <ArrowLeft size={16} />
+            <ArrowLeft size={15} />
             <span>Volver a Administración</span>
           </button>
           
-          <h1 style={{ fontSize: '1.15rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-texto)', margin: 0 }}>
-            <span>PUNTO DE VENTA</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-texto)', letterSpacing: '0.02em' }}>
+              PUNTO DE VENTA
+            </span>
             {turnoActual ? (
               <button
                 type="button"
                 onClick={() => setMostrarModalCorteCaja(true)}
                 style={{
-                  fontSize: '0.8rem',
+                  fontSize: '0.78rem',
                   cursor: 'pointer',
                   border: 'none',
-                  backgroundColor: '#10b981',
+                  backgroundColor: '#059669',
                   color: '#ffffff',
-                  padding: '0.4rem 0.85rem',
-                  borderRadius: '20px',
+                  padding: '0.45rem 0.8rem',
+                  borderRadius: '6px',
                   fontWeight: 700,
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '0.4rem',
-                  boxShadow: '0 2px 6px rgba(16, 185, 129, 0.35)',
+                  boxShadow: '0 2px 5px rgba(5, 150, 105, 0.3)',
                 }}
-                title="Caja abierta • Haz clic para arqueo o corte (F9)"
+                title="Caja abierta • Haz clic para arqueo o corte PDX (F4)"
               >
                 <DollarSign size={14} />
                 <span>{(turnoActual.nombreCaja || 'Caja Principal')} • Turno #{turnoActual.idTurnoCaja} (${((turnoActual.efectivoActualEnCaja ?? (turnoActual as any).totalEfectivoEsperado ?? turnoActual.montoInicial) || 0).toFixed(2)})</span>
@@ -678,18 +769,18 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
                 type="button"
                 onClick={() => setMostrarModalAbrirTurno(true)}
                 style={{
-                  fontSize: '0.8rem',
+                  fontSize: '0.78rem',
                   cursor: 'pointer',
                   border: 'none',
-                  backgroundColor: '#ef4444',
+                  backgroundColor: '#dc2626',
                   color: '#ffffff',
-                  padding: '0.4rem 0.85rem',
-                  borderRadius: '20px',
+                  padding: '0.45rem 0.8rem',
+                  borderRadius: '6px',
                   fontWeight: 700,
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '0.4rem',
-                  boxShadow: '0 2px 6px rgba(239, 68, 68, 0.35)',
+                  boxShadow: '0 2px 5px rgba(220, 38, 38, 0.3)',
                 }}
                 title="Haz clic para abrir el turno con fondo inicial"
               >
@@ -697,69 +788,110 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
                 <span>Caja Cerrada (Abrir Turno)</span>
               </button>
             )}
-          </h1>
+          </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-          {/* F2: Entrada de Efectivo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
+          {/* F5: Renombrar Ticket / Cliente */}
+          <button
+            type="button"
+            onClick={() => {
+              setNombreTicketInput(nombreCliente || 'Público en General');
+              setMostrarModalRenombrarTicket(true);
+            }}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              fontSize: '0.8rem',
+              backgroundColor: '#2563eb',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '6px',
+              padding: '0.45rem 0.75rem',
+              cursor: 'pointer',
+              fontWeight: 600,
+              boxShadow: '0 2px 4px rgba(37, 99, 235, 0.25)'
+            }}
+            title="Renombrar ticket o asignar cliente (F5)"
+          >
+            <Edit3 size={14} />
+            <span>Ticket: <strong style={{ textDecoration: 'underline' }}>{nombreCliente}</strong></span>
+            <span style={{ fontSize: '0.68rem', backgroundColor: 'rgba(255, 255, 255, 0.25)', padding: '0.1rem 0.35rem', borderRadius: '4px', fontWeight: 800 }}>F5</span>
+          </button>
+
+          {/* F7: Entrada de Efectivo */}
           <button 
-            className="btn btn-secundario" 
+            type="button"
             style={{ 
-              padding: '0.4rem 0.7rem', 
-              fontSize: '0.82rem', 
+              padding: '0.45rem 0.7rem', 
+              fontSize: '0.8rem', 
               gap: '0.35rem',
-              borderColor: '#10b981',
-              backgroundColor: '#ecfdf5',
-              color: '#047857',
+              backgroundColor: '#10b981',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '6px',
               fontWeight: 700,
-              boxShadow: '0 1px 3px rgba(16, 185, 129, 0.15)'
+              display: 'inline-flex',
+              alignItems: 'center',
+              cursor: 'pointer',
+              boxShadow: '0 2px 4px rgba(16, 185, 129, 0.25)'
             }}
             onClick={() => {
               setTipoMovimientoInicial('ENTRADA');
               if (turnoActual) setMostrarModalMovimientoCaja(true);
               else setMostrarModalAbrirTurno(true);
             }}
-            title="Registrar entrada manual de efectivo (F2)"
+            title="Registrar entrada manual de efectivo (F7)"
           >
             <Plus size={14} />
-            <span>Entrada (F2)</span>
+            <span>Entrada (F7)</span>
           </button>
 
-          {/* F3: Salida de Efectivo */}
+          {/* F8: Salida de Efectivo */}
           <button 
-            className="btn btn-secundario" 
+            type="button"
             style={{ 
-              padding: '0.4rem 0.7rem', 
-              fontSize: '0.82rem', 
+              padding: '0.45rem 0.7rem', 
+              fontSize: '0.8rem', 
               gap: '0.35rem',
-              borderColor: '#f87171',
-              backgroundColor: '#fef2f2',
-              color: '#b91c1c',
+              backgroundColor: '#ef4444',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '6px',
               fontWeight: 700,
-              boxShadow: '0 1px 3px rgba(239, 68, 68, 0.15)'
+              display: 'inline-flex',
+              alignItems: 'center',
+              cursor: 'pointer',
+              boxShadow: '0 2px 4px rgba(239, 68, 68, 0.25)'
             }}
             onClick={() => {
               setTipoMovimientoInicial('SALIDA');
               if (turnoActual) setMostrarModalMovimientoCaja(true);
               else setMostrarModalAbrirTurno(true);
             }}
-            title="Registrar salida o retiro de efectivo (F3)"
+            title="Registrar salida o retiro de efectivo (F8)"
           >
             <Minus size={14} />
-            <span>Salidas (F3)</span>
+            <span>Salidas (F8)</span>
           </button>
 
           {/* F6: Ventas en Espera */}
           <button 
-            className="btn btn-secundario" 
+            type="button"
             style={{ 
-              padding: '0.4rem 0.7rem', 
-              fontSize: '0.82rem', 
+              padding: '0.45rem 0.7rem', 
+              fontSize: '0.8rem', 
               gap: '0.35rem',
-              borderColor: conteoTicketsPendientes > 0 ? '#f59e0b' : undefined,
-              backgroundColor: conteoTicketsPendientes > 0 ? 'rgba(245, 158, 11, 0.18)' : undefined,
-              color: conteoTicketsPendientes > 0 ? '#b45309' : undefined,
-              fontWeight: conteoTicketsPendientes > 0 ? 800 : 600
+              backgroundColor: conteoTicketsPendientes > 0 ? '#d97706' : '#475569',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '6px',
+              fontWeight: 700,
+              display: 'inline-flex',
+              alignItems: 'center',
+              cursor: 'pointer',
+              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)'
             }}
             onClick={() => {
               if (articulos.length > 0) {
@@ -775,84 +907,124 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
             <span>En Espera ({conteoTicketsPendientes}) (F6)</span>
           </button>
 
-          {/* F7: Reimprimir Último Ticket */}
+          {/* F9: Verificador de Precio */}
           <button 
-            className="btn btn-secundario" 
-            style={{ padding: '0.4rem 0.7rem', fontSize: '0.82rem', gap: '0.35rem' }}
-            onClick={() => setMostrarModalReimpresion(true)}
-            title="Consultar y reimprimir tickets recientes (F7)"
-          >
-            <Printer size={14} />
-            <span>Reimprimir (F7)</span>
-          </button>
-
-          {/* F8: Recargas Electrónicas y Pago de Servicios */}
-          <button 
-            className="btn btn-primario" 
-            style={{ 
-              padding: '0.4rem 0.75rem', 
-              fontSize: '0.82rem', 
-              gap: '0.35rem',
-              backgroundColor: '#0284c7',
-              borderColor: '#0284c7',
-              color: '#ffffff',
-              fontWeight: 700,
-              boxShadow: '0 2px 5px rgba(2, 132, 199, 0.25)'
-            }}
-            onClick={() => setMostrarModalRecargas(true)}
-            title="Recargas telefónicas y pago de servicios CFE, Telmex (F8)"
-          >
-            <Zap size={14} />
-            <span>Recargas (F8)</span>
-          </button>
-
-          {/* F9: Ventas del Día */}
-          <button 
-            className="btn btn-secundario" 
-            style={{ 
-              padding: '0.4rem 0.75rem', 
-              fontSize: '0.82rem', 
-              gap: '0.35rem',
-              borderColor: '#8b5cf6',
-              backgroundColor: '#f5f3ff',
-              color: '#6d28d9',
-              fontWeight: 700,
-              boxShadow: '0 1px 4px rgba(139, 92, 246, 0.15)'
-            }}
-            onClick={() => setMostrarModalVentasDelDia(true)}
-            title="Consultar total vendido hoy y tickets (F9)"
-          >
-            <Calendar size={14} />
-            <span>Ventas Día (F9)</span>
-          </button>
-
-          {/* F5: Renombrar Ticket / Cliente */}
-          <button
             type="button"
-            onClick={() => {
-              setNombreTicketInput(nombreCliente || 'Público en General');
-              setMostrarModalRenombrarTicket(true);
-            }}
-            style={{
+            style={{ 
+              padding: '0.45rem 0.7rem', 
+              fontSize: '0.8rem', 
+              gap: '0.35rem',
+              backgroundColor: '#8b5cf6',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '6px',
+              fontWeight: 700,
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '0.35rem',
-              fontSize: '0.82rem',
-              backgroundColor: '#f1f5f9',
-              border: '1px solid #cbd5e1',
-              borderRadius: '8px',
-              padding: '0.35rem 0.65rem',
               cursor: 'pointer',
-              color: '#334155'
+              boxShadow: '0 2px 4px rgba(139, 92, 246, 0.25)'
             }}
-            title="Renombrar ticket o asignar cliente (F5)"
+            onClick={() => setMostrarModalVerificador(true)}
+            title="Verificador previo de precios y existencias (F9)"
           >
-            <Edit3 size={13} style={{ color: '#2563eb' }} />
-            <span>Ticket:</span>
-            <strong style={{ color: '#0f172a', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {nombreCliente}
-            </strong>
-            <span style={{ fontSize: '0.7rem', backgroundColor: '#e2e8f0', padding: '0.1rem 0.35rem', borderRadius: '4px', fontWeight: 700, color: '#475569' }}>F5</span>
+            <Tag size={14} />
+            <span>Verificador (F9)</span>
+          </button>
+
+          {/* F10: Catálogo y Búsqueda */}
+          <button 
+            type="button"
+            style={{ 
+              padding: '0.45rem 0.7rem', 
+              fontSize: '0.8rem', 
+              gap: '0.35rem',
+              backgroundColor: '#0d9488',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '6px',
+              fontWeight: 700,
+              display: 'inline-flex',
+              alignItems: 'center',
+              cursor: 'pointer',
+              boxShadow: '0 2px 4px rgba(13, 148, 136, 0.25)'
+            }}
+            onClick={() => setMostrarModalBuscarProductos(true)}
+            title="Catálogo de productos con favoritos (F10)"
+          >
+            <Search size={14} />
+            <span>Buscar (F10)</span>
+          </button>
+
+          {/* F11: Recargas y Servicios */}
+          <button 
+            type="button"
+            style={{ 
+              padding: '0.45rem 0.7rem', 
+              fontSize: '0.8rem', 
+              gap: '0.35rem',
+              backgroundColor: '#0284c7',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '6px',
+              fontWeight: 700,
+              display: 'inline-flex',
+              alignItems: 'center',
+              cursor: 'pointer',
+              boxShadow: '0 2px 4px rgba(2, 132, 199, 0.25)'
+            }}
+            onClick={() => setMostrarModalRecargas(true)}
+            title="Recargas telefónicas y pago de servicios CFE, Telmex (F11)"
+          >
+            <Zap size={14} />
+            <span>Recargas (F11)</span>
+          </button>
+
+          {/* Ventas del Día */}
+          <button 
+            type="button"
+            style={{ 
+              padding: '0.45rem 0.7rem', 
+              fontSize: '0.8rem', 
+              gap: '0.35rem',
+              backgroundColor: '#6366f1',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '6px',
+              fontWeight: 700,
+              display: 'inline-flex',
+              alignItems: 'center',
+              cursor: 'pointer',
+              boxShadow: '0 2px 4px rgba(99, 102, 241, 0.25)'
+            }}
+            onClick={() => setMostrarModalVentasDelDia(true)}
+            title="Consultar total vendido hoy, desglose y devoluciones"
+          >
+            <Calendar size={14} />
+            <span>Ventas Día</span>
+          </button>
+
+          {/* Reimprimir Último Ticket */}
+          <button 
+            type="button"
+            style={{ 
+              padding: '0.45rem 0.65rem', 
+              fontSize: '0.8rem', 
+              gap: '0.35rem',
+              backgroundColor: '#334155',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '6px',
+              fontWeight: 600,
+              display: 'inline-flex',
+              alignItems: 'center',
+              cursor: 'pointer',
+              boxShadow: '0 2px 4px rgba(51, 65, 85, 0.2)'
+            }}
+            onClick={() => setMostrarModalReimpresion(true)}
+            title="Consultar y reimprimir tickets recientes"
+          >
+            <Printer size={14} />
+            <span>Reimprimir</span>
           </button>
         </div>
       </header>
@@ -989,10 +1161,10 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
                   className="btn btn-secundario" 
                   style={{ padding: '0 1.25rem', gap: '0.4rem', fontWeight: 600 }}
                   onClick={() => setMostrarModalBuscarProductos(true)}
-                  title="Abrir catálogo y búsqueda avanzada de productos (F4)"
+                  title="Abrir catálogo y búsqueda avanzada de productos (F10)"
                 >
                   <Package size={18} />
-                  <span>Catálogo (F4)</span>
+                  <span>Catálogo (F10)</span>
                 </button>
                 <button type="submit" className="btn btn-primario" style={{ padding: '0 1.5rem' }}>
                   <Search size={18} />
@@ -1006,9 +1178,9 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
               {articulos.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '4rem 1rem', color: 'var(--color-texto-secundario)' }}>
                   <Barcode size={64} style={{ opacity: 0.3, marginBottom: '1rem' }} />
-                  <h3>Listo para escanear</h3>
+                  <h3>Listo para escanear (F1)</h3>
                   <p style={{ marginTop: '0.5rem', fontSize: '0.95rem' }}>
-                    Pasa los productos por el lector de código de barras.
+                    Pasa los productos por el lector de código de barras o usa F10 para buscar en catálogo.
                   </p>
                 </div>
               ) : (
@@ -1016,68 +1188,107 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
                   <thead>
                     <tr>
                       <th style={{ width: '45%' }}>Producto</th>
-                      <th style={{ width: '15%', textAlign: 'center' }}>Cantidad</th>
+                      <th style={{ width: '15%', textAlign: 'center' }}>Cantidad (+ / -)</th>
                       <th style={{ width: '15%', textAlign: 'right' }}>Precio Unit.</th>
                       <th style={{ width: '15%', textAlign: 'right' }}>Subtotal</th>
                       <th style={{ width: '10%', textAlign: 'center' }}>Acción</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {articulos.map((item) => (
-                      <tr key={item.idProducto}>
-                        <td>
-                          <div style={{ fontWeight: 600 }}>{item.descripcion}</div>
-                          <div className="mono" style={{ fontSize: '0.8rem', color: 'var(--color-texto-secundario)' }}>
-                            {item.codigoBarras}
-                          </div>
-                        </td>
-                        <td style={{ textAlign: 'center' }}>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                    {articulos.map((item, index) => {
+                      const estaFilaActiva = filaSeleccionada === index;
+                      return (
+                        <tr 
+                          key={item.idProducto}
+                          onClick={() => setFilaSeleccionada(index)}
+                          style={{
+                            backgroundColor: estaFilaActiva ? '#eff6ff' : undefined,
+                            boxShadow: estaFilaActiva ? 'inset 4px 0 0 #2563eb' : undefined,
+                            cursor: 'pointer',
+                            transition: 'background-color 0.1s ease'
+                          }}
+                          title={`Fila ${index + 1}. Usa '+' para sumar, '-' para restar y 'Supr' para eliminar.`}
+                        >
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              {estaFilaActiva && (
+                                <span style={{ 
+                                  backgroundColor: '#2563eb', 
+                                  color: '#ffffff', 
+                                  fontSize: '0.65rem', 
+                                  fontWeight: 800, 
+                                  padding: '0.1rem 0.35rem', 
+                                  borderRadius: '4px' 
+                                }}>
+                                  ACTIVO
+                                </span>
+                              )}
+                              <div style={{ fontWeight: 600, color: estaFilaActiva ? '#1e3a8a' : 'inherit' }}>
+                                {item.descripcion}
+                              </div>
+                            </div>
+                            <div className="mono" style={{ fontSize: '0.8rem', color: 'var(--color-texto-secundario)', marginLeft: estaFilaActiva ? '3.5rem' : '0' }}>
+                              {item.codigoBarras}
+                            </div>
+                          </td>
+                          <td style={{ textAlign: 'center' }}>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                              <button
+                                className="btn btn-secundario"
+                                style={{ padding: '0.2rem 0.4rem' }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setFilaSeleccionada(index);
+                                  const delta = item.permiteVentaFraccionada ? 0.250 : 1;
+                                  const nuevaCantidad = Math.max(0, Math.round((item.cantidad - delta) * 1000) / 1000);
+                                  if (nuevaCantidad <= 0) eliminarArticulo(item.idProducto);
+                                  else actualizarCantidad(item.idProducto, nuevaCantidad);
+                                }}
+                                title="Disminuir piezas (-)"
+                              >
+                                <Minus size={14} />
+                              </button>
+                              <span className="mono" style={{ fontWeight: 700, minWidth: '40px', textAlign: 'center' }}>
+                                {item.permiteVentaFraccionada ? `${item.cantidad.toFixed(3)}kg` : item.cantidad}
+                              </span>
+                              <button
+                                className="btn btn-secundario"
+                                style={{ padding: '0.2rem 0.4rem' }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setFilaSeleccionada(index);
+                                  const delta = item.permiteVentaFraccionada ? 0.250 : 1;
+                                  const nuevaCantidad = Math.round((item.cantidad + delta) * 1000) / 1000;
+                                  actualizarCantidad(item.idProducto, nuevaCantidad);
+                                }}
+                                title="Aumentar piezas (+)"
+                              >
+                                <Plus size={14} />
+                              </button>
+                            </div>
+                          </td>
+                          <td className="mono" style={{ textAlign: 'right', fontWeight: 500 }}>
+                            ${item.precioUnitario.toFixed(2)}
+                          </td>
+                          <td className="mono" style={{ textAlign: 'right', fontWeight: 700, color: 'var(--color-primario)' }}>
+                            ${item.subtotal.toFixed(2)}
+                          </td>
+                          <td style={{ textAlign: 'center' }}>
                             <button
-                              className="btn btn-secundario"
-                              style={{ padding: '0.2rem 0.4rem' }}
-                              onClick={() => {
-                                const delta = item.permiteVentaFraccionada ? 0.250 : 1;
-                                const nuevaCantidad = Math.max(0, Math.round((item.cantidad - delta) * 1000) / 1000);
-                                actualizarCantidad(item.idProducto, nuevaCantidad);
+                              className="btn btn-peligro"
+                              style={{ padding: '0.35rem 0.5rem' }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                eliminarArticulo(item.idProducto);
                               }}
+                              title="Eliminar partida (Supr)"
                             >
-                              <Minus size={14} />
+                              <Trash2 size={14} />
                             </button>
-                            <span className="mono" style={{ fontWeight: 700, minWidth: '40px', textAlign: 'center' }}>
-                              {item.permiteVentaFraccionada ? `${item.cantidad.toFixed(3)}kg` : item.cantidad}
-                            </span>
-                            <button
-                              className="btn btn-secundario"
-                              style={{ padding: '0.2rem 0.4rem' }}
-                              onClick={() => {
-                                const delta = item.permiteVentaFraccionada ? 0.250 : 1;
-                                const nuevaCantidad = Math.round((item.cantidad + delta) * 1000) / 1000;
-                                actualizarCantidad(item.idProducto, nuevaCantidad);
-                              }}
-                            >
-                              <Plus size={14} />
-                            </button>
-                          </div>
-                        </td>
-                        <td className="mono" style={{ textAlign: 'right', fontWeight: 500 }}>
-                          ${item.precioUnitario.toFixed(2)}
-                        </td>
-                        <td className="mono" style={{ textAlign: 'right', fontWeight: 700, color: 'var(--color-primario)' }}>
-                          ${item.subtotal.toFixed(2)}
-                        </td>
-                        <td style={{ textAlign: 'center' }}>
-                          <button
-                            className="btn btn-peligro"
-                            style={{ padding: '0.35rem 0.5rem' }}
-                            onClick={() => eliminarArticulo(item.idProducto)}
-                            title="Eliminar partida"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               )}
@@ -1099,47 +1310,27 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
                 </div>
               </div>
 
-              {/* Botones de acción de venta: Flujo ultra rápido con F10, F11, F12 */}
+              {/* Botones de acción de venta: Mapeo exacto F12, F2, F3, F6 */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', marginTop: '1.25rem' }}>
-                {/* 1. Cobrar en Efectivo (F10) */}
+                {/* 1. Cobrar en Efectivo (F12) */}
                 <button 
                   className="btn btn-primario" 
                   style={{ 
                     padding: '1rem', 
                     fontSize: '1.05rem', 
                     gap: '0.75rem',
-                    boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)'
+                    boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)',
+                    borderRadius: '6px'
                   }}
                   disabled={articulos.length === 0}
                   onClick={() => abrirCobro('efectivo')}
-                  title="Cobrar en efectivo directo (F10)"
+                  title="Cobrar en efectivo directo (F12)"
                 >
                   <DollarSign size={22} />
-                  <span style={{ fontWeight: 700 }}>💵 Cobro Efectivo (F10)</span>
+                  <span style={{ fontWeight: 700 }}>💵 Cobro Efectivo (F12)</span>
                 </button>
 
-                {/* 2. Cobro Mixto / Vales (F11) */}
-                <button 
-                  className="btn" 
-                  style={{ 
-                    padding: '0.85rem', 
-                    fontSize: '0.95rem', 
-                    gap: '0.65rem',
-                    backgroundColor: '#7c3aed',
-                    color: '#ffffff',
-                    border: 'none',
-                    fontWeight: 600,
-                    boxShadow: '0 2px 8px rgba(124, 58, 237, 0.25)'
-                  }}
-                  disabled={articulos.length === 0}
-                  onClick={() => abrirCobro('mixto')}
-                  title="Combinar Efectivo con Tarjeta, Vales o Transferencia (F11)"
-                >
-                  <Layers size={18} />
-                  <span>🔀 Cobro Mixto (F11)</span>
-                </button>
-
-                {/* 3. Solo Tarjeta (F12) */}
+                {/* 2. Solo Tarjeta (F2) */}
                 <button 
                   className="btn" 
                   style={{ 
@@ -1149,21 +1340,44 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
                     backgroundColor: '#2563eb',
                     color: '#ffffff',
                     border: 'none',
+                    borderRadius: '6px',
                     fontWeight: 600,
                     boxShadow: '0 2px 8px rgba(37, 99, 235, 0.25)'
                   }}
                   disabled={articulos.length === 0}
                   onClick={() => abrirCobro('tarjeta')}
-                  title="Cobro directo con tarjeta de débito o crédito (F12)"
+                  title="Cobro directo con tarjeta de débito o crédito (F2)"
                 >
                   <CreditCard size={18} />
-                  <span>💳 Cobro Tarjeta (F12)</span>
+                  <span>💳 Cobro Tarjeta (F2)</span>
+                </button>
+
+                {/* 3. Cobro Mixto / Vales (F3) */}
+                <button 
+                  className="btn" 
+                  style={{ 
+                    padding: '0.85rem', 
+                    fontSize: '0.95rem', 
+                    gap: '0.65rem',
+                    backgroundColor: '#7c3aed',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontWeight: 600,
+                    boxShadow: '0 2px 8px rgba(124, 58, 237, 0.25)'
+                  }}
+                  disabled={articulos.length === 0}
+                  onClick={() => abrirCobro('mixto')}
+                  title="Combinar Efectivo con Tarjeta o Vales (F3)"
+                >
+                  <Layers size={18} />
+                  <span>🔀 Cobro Mixto (F3)</span>
                 </button>
 
                 {/* 4. Poner en Espera (F6) */}
                 <button 
                   className="btn btn-advertencia" 
-                  style={{ padding: '0.75rem', fontSize: '0.9rem', gap: '0.5rem', marginTop: '0.25rem' }}
+                  style={{ padding: '0.75rem', fontSize: '0.9rem', gap: '0.5rem', marginTop: '0.25rem', borderRadius: '6px' }}
                   disabled={articulos.length === 0}
                   onClick={() => {
                     setIdentificadorClienteEspera('');
@@ -1178,7 +1392,7 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
                 {/* 5. Cancelar / Limpiar */}
                 <button 
                   className="btn btn-secundario" 
-                  style={{ padding: '0.7rem', fontSize: '0.85rem', color: 'var(--color-peligro)' }}
+                  style={{ padding: '0.7rem', fontSize: '0.85rem', color: 'var(--color-peligro)', borderRadius: '6px' }}
                   disabled={articulos.length === 0}
                   onClick={limpiarCarrito}
                   title="Limpiar carrito actual"
@@ -1193,25 +1407,28 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
             <div style={{ 
               borderTop: '1px solid var(--color-borde)', 
               paddingTop: '0.75rem', 
-              fontSize: '0.74rem', 
+              fontSize: '0.72rem', 
               color: 'var(--color-texto-secundario)',
               display: 'grid',
               gridTemplateColumns: '1fr 1fr',
               gap: '0.35rem',
               lineHeight: '1.25'
             }}>
-              <div><strong>F1:</strong> Pendiente por def</div>
-              <div><strong>F2:</strong> Entrada</div>
-              <div><strong>F3:</strong> Salidas</div>
-              <div><strong>F4:</strong> Consultar productos</div>
-              <div><strong>F5:</strong> Renombre de ticket</div>
+              <div><strong>F1:</strong> PXD (Mostrador)</div>
+              <div><strong>F2:</strong> Cobro con tarjeta</div>
+              <div><strong>F3:</strong> Cobro Mixto</div>
+              <div><strong>F4:</strong> PDX (Corte de caja)</div>
+              <div><strong>F5:</strong> Renombre ticket</div>
               <div><strong>F6:</strong> En Espera</div>
-              <div><strong>F7:</strong> Reimprimir último</div>
-              <div><strong>F8:</strong> Recargas // Servicios</div>
-              <div><strong>F9:</strong> Ventas Día</div>
-              <div><strong>F10:</strong> Cobro Efectivo</div>
-              <div><strong>F11:</strong> Cobro Mixto</div>
-              <div><strong>F12:</strong> Cobro Tarjeta</div>
+              <div><strong>F7:</strong> Entradas</div>
+              <div><strong>F8:</strong> Salidas</div>
+              <div><strong>F9:</strong> Verificador precio</div>
+              <div><strong>F10:</strong> Buscar Producto</div>
+              <div><strong>F11:</strong> Recargas telefónicas</div>
+              <div><strong>F12:</strong> Cobrar Efectivo</div>
+              <div style={{ gridColumn: 'span 2', paddingTop: '0.25rem', borderTop: '1px dashed #e2e8f0', color: '#1e3a8a', fontWeight: 600 }}>
+                <strong>+ / - :</strong> Modificar piezas en fila activa | <strong>Supr:</strong> Eliminar producto
+              </div>
             </div>
           </div>
         </div>
@@ -1487,6 +1704,39 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
         turnoActual={turnoActual}
         onVerTicket={(_folio) => {
           setMostrarModalReimpresion(true);
+        }}
+      />
+
+      {/* Modal Verificador de Precio / Validador previo (F9) */}
+      <ModalVerificadorPrecio
+        abierto={mostrarModalVerificador}
+        onCerrar={() => {
+          setMostrarModalVerificador(false);
+          inputRef.current?.focus();
+        }}
+        onAgregarAlCarrito={(prod) => {
+          if (prod.permiteVentaFraccionada) {
+            setProductoGranelSeleccionado(prod);
+            setMostrarModalGranel(true);
+          } else {
+            agregarArticulo({
+              idProducto: prod.idProducto,
+              codigoBarras: prod.codigoBarras,
+              descripcion: prod.descripcion,
+              cantidad: 1,
+              precioUnitario: prod.precioVenta,
+              permiteVentaFraccionada: false,
+              existenciaDisponible: prod.existenciaActual,
+            });
+            reproducirBeepExito();
+            setMensajeNotificacion({
+              tipo: 'exito',
+              texto: `✓ Agregado desde verificador: ${prod.descripcion}`
+            });
+            setTimeout(() => setMensajeNotificacion(null), 2500);
+          }
+          setMostrarModalVerificador(false);
+          inputRef.current?.focus();
         }}
       />
 

@@ -5,7 +5,7 @@ import type { ProductoCobroDto } from '../productos/tipos';
 interface PropiedadesModalPesajeGranel {
   abierto: boolean;
   producto: ProductoCobroDto | null;
-  onConfirmarPeso: (producto: ProductoCobroDto, pesoKg: number) => void;
+  onConfirmarPeso: (producto: ProductoCobroDto, pesoKg: number, subtotalExacto?: number) => void;
   onCerrar: () => void;
 }
 
@@ -17,11 +17,13 @@ export const ModalPesajeGranel: React.FC<PropiedadesModalPesajeGranel> = ({
 }) => {
   const [pesoTexto, setPesoTexto] = useState<string>('0.500');
   const [importeTexto, setImporteTexto] = useState<string>('0.00');
+  const [modoIngreso, setModoIngreso] = useState<'peso' | 'importe'>('peso');
   const inputPesoRef = useRef<HTMLInputElement>(null);
 
   // Inicializar al abrir
   useEffect(() => {
     if (abierto && producto) {
+      setModoIngreso('peso');
       const pesoInicial = producto.cantidadSugerida && producto.cantidadSugerida > 0
         ? producto.cantidadSugerida
         : 0.500;
@@ -38,6 +40,7 @@ export const ModalPesajeGranel: React.FC<PropiedadesModalPesajeGranel> = ({
 
   // Manejar cambio directo en Kilogramos
   const handleCambioPeso = (valorStr: string) => {
+    setModoIngreso('peso');
     setPesoTexto(valorStr);
     const p = parseFloat(valorStr);
     if (!isNaN(p) && p >= 0 && producto) {
@@ -49,8 +52,9 @@ export const ModalPesajeGranel: React.FC<PropiedadesModalPesajeGranel> = ({
   };
 
   // Manejar cambio directo en Dinero / Importe ($)
-  // Ej: Quieren $50 de chicharrón a $190/kg -> peso = 50 / 190 = 0.263 kg
+  // Ej: Quieren $100 de queso a $165/kg -> peso = 100 / 165 = 0.606 kg, subtotal exacto = $100.00
   const handleCambioImporte = (valorStr: string) => {
+    setModoIngreso('importe');
     setImporteTexto(valorStr);
     const imp = parseFloat(valorStr);
     if (!isNaN(imp) && imp >= 0 && producto && producto.precioVenta > 0) {
@@ -63,6 +67,7 @@ export const ModalPesajeGranel: React.FC<PropiedadesModalPesajeGranel> = ({
 
   const seleccionarPorcion = (kg: number) => {
     if (!producto) return;
+    setModoIngreso('peso');
     setPesoTexto(kg.toFixed(3));
     const imp = Math.round(kg * producto.precioVenta * 100) / 100;
     setImporteTexto(imp.toFixed(2));
@@ -70,6 +75,7 @@ export const ModalPesajeGranel: React.FC<PropiedadesModalPesajeGranel> = ({
 
   const seleccionarImporte = (dinero: number) => {
     if (!producto || producto.precioVenta <= 0) return;
+    setModoIngreso('importe');
     setImporteTexto(dinero.toFixed(2));
     const kg = Math.round((dinero / producto.precioVenta) * 1000) / 1000;
     setPesoTexto(kg.toFixed(3));
@@ -80,8 +86,9 @@ export const ModalPesajeGranel: React.FC<PropiedadesModalPesajeGranel> = ({
 
   const handleConfirmar = useCallback(() => {
     if (pesoNumerico <= 0 || !producto) return;
-    onConfirmarPeso(producto, pesoNumerico);
-  }, [pesoNumerico, producto, onConfirmarPeso]);
+    const subtotalFijo = modoIngreso === 'importe' && subtotalNumerico > 0 ? subtotalNumerico : undefined;
+    onConfirmarPeso(producto, pesoNumerico, subtotalFijo);
+  }, [pesoNumerico, subtotalNumerico, modoIngreso, producto, onConfirmarPeso]);
 
   // Atajos de teclado (Enter para confirmar, Esc para cancelar)
   useEffect(() => {

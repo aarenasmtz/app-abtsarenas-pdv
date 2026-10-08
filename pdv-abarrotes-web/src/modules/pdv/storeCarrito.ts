@@ -8,7 +8,7 @@ interface EstadoCarritoPdv {
   identificadorEnEspera?: string;
   
   // Acciones
-  agregarArticulo: (articulo: Omit<ItemCarrito, 'subtotal'>) => void;
+  agregarArticulo: (articulo: Omit<ItemCarrito, 'subtotal'> & { subtotal?: number }) => void;
   eliminarArticulo: (idProducto: number) => void;
   actualizarCantidad: (idProducto: number, nuevaCantidad: number) => void;
   limpiarCarrito: () => void;
@@ -37,21 +37,28 @@ export const useStoreCarritoPdv = create<EstadoCarritoPdv>((set, get) => ({
         const articulosActualizados = [...estado.articulos];
         const actual = articulosActualizados[indiceExistente];
         const cantidadFinal = actual.cantidad + (nuevoArticulo.cantidad || 1);
+        const subtotalCalculado = nuevoArticulo.subtotal !== undefined
+          ? actual.subtotal + nuevoArticulo.subtotal
+          : Math.round(cantidadFinal * actual.precioUnitario * 100) / 100;
         
         articulosActualizados[indiceExistente] = {
           ...actual,
           cantidad: cantidadFinal,
-          subtotal: Math.round(cantidadFinal * actual.precioUnitario * 100) / 100,
+          subtotal: Math.round(subtotalCalculado * 100) / 100,
         };
 
         return { articulos: articulosActualizados };
       } else {
         // Agregar nueva partida al inicio de la lista
         const cantidad = nuevoArticulo.cantidad || 1;
+        const subtotal = nuevoArticulo.subtotal !== undefined
+          ? Math.round(nuevoArticulo.subtotal * 100) / 100
+          : Math.round(cantidad * nuevoArticulo.precioUnitario * 100) / 100;
+
         const partida: ItemCarrito = {
           ...nuevoArticulo,
           cantidad,
-          subtotal: Math.round(cantidad * nuevoArticulo.precioUnitario * 100) / 100,
+          subtotal,
         };
 
         return { articulos: [partida, ...estado.articulos] };
