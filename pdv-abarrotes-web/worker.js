@@ -916,12 +916,17 @@ export default {
       return obtenerRespuestaRescate(targetPath, request, bodyData, url);
     }
 
-    // Si es un archivo estático con extensión (.js, .css, .svg, .png, etc.), servir el asset correspondiente
-    if (url.pathname.includes('.')) {
+    // Servir archivos estáticos o index.html para rutas SPA
+    try {
+      const cleanUrl = url.pathname.includes('.')
+        ? request.url
+        : new URL('/index.html', request.url).toString();
+      return await env.ASSETS.fetch(new Request(cleanUrl, {
+        method: 'GET',
+        headers: request.headers,
+      }));
+    } catch {
       return env.ASSETS.fetch(request);
     }
-
-    // Para cualquier ruta de navegación SPA (/mas/productos, /caja, /ventas, /reportes, /), servir index.html
-    return env.ASSETS.fetch(new URL('/index.html', request.url));
   },
 };

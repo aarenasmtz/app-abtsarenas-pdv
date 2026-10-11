@@ -31,4 +31,4 @@ jobs:
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          command: deploy worker.js --compatibility-date 2026-10-06 --assets ./pdv-abarrotes-web/dist
+          command: deploy
