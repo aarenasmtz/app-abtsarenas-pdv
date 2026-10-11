@@ -916,17 +916,12 @@ export default {
       return obtenerRespuestaRescate(targetPath, request, bodyData, url);
     }
 
-    // Para cualquier otra ruta, servir la aplicación frontend SPA con soporte para React Router
-    try {
-      const assetResponse = await env.ASSETS.fetch(request);
-      if (assetResponse.status === 404) {
-        const indexUrl = new URL('/index.html', request.url);
-        return await env.ASSETS.fetch(new Request(indexUrl.toString(), request));
-      }
-      return assetResponse;
-    } catch {
-      const indexUrl = new URL('/index.html', request.url);
-      return await env.ASSETS.fetch(new Request(indexUrl.toString(), request));
+    // Si es un archivo estático con extensión (.js, .css, .svg, .png, etc.), servir el asset correspondiente
+    if (url.pathname.includes('.')) {
+      return env.ASSETS.fetch(request);
     }
+
+    // Para cualquier ruta de navegación SPA (/mas/productos, /caja, /ventas, /reportes, /), servir index.html
+    return env.ASSETS.fetch(new URL('/index.html', request.url));
   },
 };
