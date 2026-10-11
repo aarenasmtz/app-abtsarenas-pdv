@@ -15,7 +15,7 @@ export default {
       if (targetPath.toLowerCase().includes('/tickets-pendientes')) {
         targetPath = targetPath.replace(/tickets-pendientes/ig, 'TicketsPendientes');
       }
-      const targetUrl = new URL(targetPath + url.search, 'https://abarrotesarenas.com');
+      const targetUrl = new URL(targetPath + url.search, 'http://abarrotesarenas.com');
 
       // Responder preflight OPTIONS para CORS
       if (request.method === 'OPTIONS') {
@@ -44,15 +44,20 @@ export default {
         }
       }
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 9500);
+
       const proxyRequest = new Request(targetUrl.toString(), {
         method: request.method,
         headers: proxyHeaders,
         body: bodyData,
         redirect: 'follow',
+        signal: controller.signal,
       });
 
       try {
         const respuesta = await fetch(proxyRequest);
+        clearTimeout(timeoutId);
 
         // Fallback controlado si el backend en VPS tiene discrepancias de esquema o rutas pendientes
         const lowerPath = targetPath.toLowerCase();
@@ -306,14 +311,18 @@ export default {
           headers: responseHeaders,
         });
       } catch (err) {
+        clearTimeout(timeoutId);
+        const esTimeout = err instanceof Error && err.name === 'AbortError';
         return new Response(
           JSON.stringify({
             exito: false,
-            mensaje: 'Error de conexión con el backend en abarrotesarenas.com',
+            mensaje: esTimeout
+              ? 'Tiempo de espera agotado al conectar con el backend en el VPS (timeout).'
+              : 'Error de conexión con el backend en abarrotesarenas.com',
             detalle: err instanceof Error ? err.message : String(err),
           }),
           {
-            status: 502,
+            status: esTimeout ? 504 : 502,
             headers: {
               'Content-Type': 'application/json',
               'Access-Control-Allow-Origin': '*',
