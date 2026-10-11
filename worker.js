@@ -916,10 +916,7 @@ export default {
       return obtenerRespuestaRescate(targetPath, request, bodyData, url);
     }
 
-    // Servir archivos estáticos o la página principal SPA
-    if (url.pathname.includes('.')) {
-      return env.ASSETS.fetch(request);
-    }
-    return env.ASSETS.fetch(new Request(new URL('/', request.url).toString()));
+    // Para cualquier otra ruta, servir la aplicación frontend SPA
+    return env.ASSETS.fetch(request);
   },
 };
