@@ -397,13 +397,42 @@ public class ServicioProductos : IServicioProductos
             throw new ExcepcionReglaNegocio("El código de barras no puede estar vacío.");
         }
 
+        // Preparar lista de códigos candidatos para tolerar pistolas que omiten ceros iniciales (UPC-A de 11/12 dígitos)
+        var codigosCandidatos = new List<string> { codigoLimpio };
+        if (codigoLimpio.Length == 11)
+        {
+            codigosCandidatos.Add("0" + codigoLimpio);
+            codigosCandidatos.Add("00" + codigoLimpio);
+        }
+        else if (codigoLimpio.Length == 12)
+        {
+            codigosCandidatos.Add("0" + codigoLimpio);
+            if (codigoLimpio.StartsWith("0"))
+            {
+                codigosCandidatos.Add(codigoLimpio.TrimStart('0'));
+            }
+        }
+        else if (codigoLimpio.StartsWith("0"))
+        {
+            codigosCandidatos.Add(codigoLimpio.TrimStart('0'));
+        }
+
         // Búsqueda ultrarrápida indexada en CodigosBarras
         var cb = await _contexto.CodigosBarras
             .AsNoTracking()
             .Include(c => c.Producto)
-            .FirstOrDefaultAsync(c => c.CodigoValor == codigoLimpio && c.Activo && c.Producto != null && c.Producto.Activo, cancellationToken);
+            .FirstOrDefaultAsync(c => codigosCandidatos.Contains(c.CodigoValor) && c.Activo && c.Producto != null && c.Producto.Activo, cancellationToken);
 
         Producto? producto = cb?.Producto;
+
+        // Si no se encontró en la tabla secundaria de códigos de barras, verificar en CodigoProducto principal
+        if (producto == null)
+        {
+            producto = await _contexto.Productos
+                .AsNoTracking()
+                .Include(p => p.CodigosBarras)
+                .FirstOrDefaultAsync(p => p.Activo && codigosCandidatos.Contains(p.CodigoProducto), cancellationToken);
+        }
 
         bool esPesableConCodigo = false;
         decimal cantidadSugerida = 1.0m;

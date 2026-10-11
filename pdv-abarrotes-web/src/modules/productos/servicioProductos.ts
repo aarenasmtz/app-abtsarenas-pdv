@@ -85,10 +85,27 @@ export const servicioProductos = {
 
   /**
    * Consulta ultrarrápida para escáner de código de barras en PDV (<50ms, sin imágenes).
+   * Maneja tanto código directo como reintento con '0' inicial si la pistola omite ceros en códigos UPC (11/12 dígitos).
    */
   async buscarPorCodigoBarras(codigo: string): Promise<ProductoCobroDto> {
-    const respuesta = await clienteApi.get<RespuestaApi<ProductoCobroDto>>(`/productos/codigo-barras/${encodeURIComponent(codigo)}`);
-    return respuesta.data.datos!;
+    try {
+      const respuesta = await clienteApi.get<RespuestaApi<ProductoCobroDto>>(`/productos/codigo-barras/${encodeURIComponent(codigo)}`);
+      return respuesta.data.datos!;
+    } catch (err: unknown) {
+      const errorAxios = err as { response?: { status?: number } };
+      // Si fue 404 y el código tiene 11 o 12 dígitos, reintentar anteponiendo '0'
+      if (errorAxios?.response?.status === 404 && (codigo.length === 11 || codigo.length === 12)) {
+        try {
+          const respuestaConCero = await clienteApi.get<RespuestaApi<ProductoCobroDto>>(`/productos/codigo-barras/${encodeURIComponent('0' + codigo)}`);
+          if (respuestaConCero.data.datos) {
+            return respuestaConCero.data.datos;
+          }
+        } catch {
+          // Si tampoco se encontró con cero inicial, dejamos propagar el error original
+        }
+      }
+      throw err;
+    }
   },
 
   /**

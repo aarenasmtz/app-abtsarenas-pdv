@@ -58,15 +58,24 @@ const CargadorModulo = () => (
 );
 
 export function App() {
-  const { estaAutenticado, cargarSesionInicial } = useStoreAutenticacion();
+  const { estaAutenticado, cargarSesionInicial, cerrarSesion } = useStoreAutenticacion();
   const [modo, setModo] = useState<'pdv' | 'admin'>('admin');
   const [moduloActivo, setModuloActivo] = useState('dashboard');
   const [servidorEnLinea, setServidorEnLinea] = useState<boolean>(false);
 
-  // Inicializar sesión guardada
+  // Inicializar sesión guardada y escuchar expiración por error 401
   useEffect(() => {
     cargarSesionInicial();
-  }, [cargarSesionInicial]);
+
+    const manejarSesionExpirada = () => {
+      cerrarSesion();
+    };
+
+    window.addEventListener('pdv:sesion-expirada', manejarSesionExpirada);
+    return () => {
+      window.removeEventListener('pdv:sesion-expirada', manejarSesionExpirada);
+    };
+  }, [cargarSesionInicial, cerrarSesion]);
 
   // Verificar conexión con la API y SQL Server (solo cuando hay sesión activa en el PDV)
   useEffect(() => {

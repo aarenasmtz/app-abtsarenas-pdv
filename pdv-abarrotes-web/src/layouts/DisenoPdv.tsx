@@ -666,7 +666,18 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
           texto: `✓ ${producto.descripcion} ($${producto.precioVenta.toFixed(2)})`
         });
       }
-    } catch {
+    } catch (err: unknown) {
+      const errorAxios = err as { response?: { status?: number } };
+      if (errorAxios?.response?.status === 401) {
+        reproducirBeepError();
+        setMensajeNotificacion({
+          tipo: 'error',
+          texto: '🔒 Tu sesión ha expirado. Redirigiendo al inicio de sesión...'
+        });
+        window.dispatchEvent(new CustomEvent('pdv:sesion-expirada'));
+        return;
+      }
+
       // 2. Si no coincide exactamente, revisar si hay coincidencia predictiva única
       try {
         const coincidencias = await servicioProductos.buscarPdv(codigoLimpio, 2);

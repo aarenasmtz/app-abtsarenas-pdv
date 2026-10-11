@@ -46,6 +46,9 @@ clienteApi.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('pdv_token');
       localStorage.removeItem('pdv_usuario');
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('pdv:sesion-expirada'));
+      }
     }
     return Promise.reject(error);
   }
