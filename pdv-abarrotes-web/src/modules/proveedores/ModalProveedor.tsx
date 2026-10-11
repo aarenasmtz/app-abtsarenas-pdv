@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, Check, Truck, AlertTriangle } from 'lucide-react';
+import { X, Check, Truck } from 'lucide-react';
 import type { ProveedorDto, CrearProveedorDto, ActualizarProveedorDto } from './tiposProveedores';
+import { AccionesFormulario, CuadriculaFormulario, MensajeFormulario } from '../../components/comun/FormularioUI';
 
 interface PropiedadesModalProveedor {
   abierto: boolean;
@@ -98,27 +99,33 @@ export const ModalProveedor: React.FC<PropiedadesModalProveedor> = ({
   };
 
   return (
-    <div className="modal-superposicion">
-      <div className="modal-contenedor" style={{ maxWidth: '620px', width: '95%' }}>
+    <div className="modal-superposicion" role="presentation">
+      <div
+        className="modal-contenedor"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="titulo-modal-proveedor"
+        aria-describedby={error ? 'error-modal-proveedor' : undefined}
+        style={{ maxWidth: '620px', width: '95%' }}
+      >
         <div className="modal-cabecera">
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <div style={{ padding: '0.4rem', borderRadius: 'var(--radio-md)', backgroundColor: 'var(--color-primario-suave)', color: 'var(--color-primario)' }}>
               <Truck size={20} />
             </div>
-            <h3 style={{ margin: 0, fontSize: '1.2rem' }}>
+            <h3 id="titulo-modal-proveedor" style={{ margin: 0, fontSize: '1.2rem' }}>
               {proveedorEnEdicion ? `Editar Proveedor #${proveedorEnEdicion.idProveedor}` : 'Nuevo Proveedor'}
             </h3>
           </div>
-          <button className="btn-icono" onClick={onCerrar} title="Cerrar modal">
+          <button type="button" className="btn-icono" onClick={onCerrar} title="Cerrar modal" aria-label="Cerrar formulario de proveedor">
             <X size={20} />
           </button>
         </div>
 
         {error && (
-          <div className="alerta alerta-error" style={{ margin: '1rem 1.5rem 0 1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <AlertTriangle size={18} />
-            <span>{error}</span>
-          </div>
+          <MensajeFormulario id="error-modal-proveedor" tipo="error" className="margen-mensaje-modal">
+            {error}
+          </MensajeFormulario>
         )}
 
         <form onSubmit={handleSubmit}>
@@ -139,7 +146,7 @@ export const ModalProveedor: React.FC<PropiedadesModalProveedor> = ({
               />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
+            <CuadriculaFormulario>
               <div className="grupo-formulario">
                 <label className="etiqueta-formulario">Nombre del Contacto / Vendedor</label>
                 <input
@@ -163,9 +170,9 @@ export const ModalProveedor: React.FC<PropiedadesModalProveedor> = ({
                   maxLength={15}
                 />
               </div>
-            </div>
+            </CuadriculaFormulario>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
+            <CuadriculaFormulario>
               <div className="grupo-formulario">
                 <label className="etiqueta-formulario">Teléfono de Contacto</label>
                 <input
@@ -189,7 +196,7 @@ export const ModalProveedor: React.FC<PropiedadesModalProveedor> = ({
                   maxLength={100}
                 />
               </div>
-            </div>
+            </CuadriculaFormulario>
 
             <div className="grupo-formulario">
               <label className="etiqueta-formulario">Dirección / Sucursal de Despacho</label>
@@ -231,7 +238,7 @@ export const ModalProveedor: React.FC<PropiedadesModalProveedor> = ({
             )}
           </div>
 
-          <div className="modal-pie">
+          <AccionesFormulario className="modal-pie">
             <button type="button" className="btn btn-secundario" onClick={onCerrar} disabled={guardando}>
               Cancelar
             </button>
@@ -239,7 +246,7 @@ export const ModalProveedor: React.FC<PropiedadesModalProveedor> = ({
               <Check size={18} />
               <span>{guardando ? 'Guardando...' : proveedorEnEdicion ? 'Actualizar Proveedor' : 'Crear Proveedor'}</span>
             </button>
-          </div>
+          </AccionesFormulario>
         </form>
       </div>
     </div>

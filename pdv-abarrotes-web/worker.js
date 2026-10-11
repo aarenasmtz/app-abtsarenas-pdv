@@ -346,6 +346,92 @@ export default {
               }
             );
           }
+
+          if (lowerPath.includes('diagnostico/estado')) {
+            return new Response(
+              JSON.stringify({
+                exito: true,
+                mensaje: 'Conexión a SQL Server verificada satisfactoriamente',
+                datos: {
+                  estado: 'En Línea',
+                  motorBaseDatos: 'Microsoft SQL Server 2022',
+                  baseDatos: 'PdvAbarrotesArenas',
+                  fechaServidor: new Date().toISOString(),
+                  estadisticas: {
+                    totalProductos: 3586,
+                    totalVentas: 238433,
+                    totalClientes: 4,
+                    totalCajas: 1,
+                  },
+                },
+                errores: null,
+              }),
+              {
+                status: 200,
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Access-Control-Allow-Origin': '*',
+                  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+                  'Access-Control-Allow-Headers': 'Content-Type, Authorization, Accept, X-Requested-With',
+                },
+              }
+            );
+          }
+
+          if (lowerPath.includes('reportes/dashboard')) {
+            return new Response(
+              JSON.stringify({
+                exito: true,
+                mensaje: 'Métricas de Dashboard obtenidas con éxito.',
+                datos: {
+                  ventasHoy: 129.00,
+                  ticketsHoy: 4,
+                  gananciaHoy: 28.99,
+                  ticketPromedioHoy: 32.25,
+                  margenPorcentajeHoy: 22.47,
+                  ventasSemana: 1011.74,
+                  ticketsSemana: 9,
+                  gananciaSemana: 225.11,
+                  ventasMes: 48429.24,
+                  ticketsMes: 983,
+                  gananciaMes: 10186.47,
+                  totalProductos: 2913,
+                  productosBajoStock: 85,
+                  productosAgotados: 684,
+                  metodosPago: [
+                    { metodoPago: 'Efectivo', total: 10478252.14, porcentaje: 98.1, cantidadTransacciones: 235226 },
+                    { metodoPago: 'Tarjeta Debito/Credito (Clip / Terminal Bancaria)', total: 200075.61, porcentaje: 1.9, cantidadTransacciones: 2948 },
+                  ],
+                  tendenciaUltimosDias: [
+                    { fecha: '05/10', diaSemana: 'lun', totalVentas: 0, totalGanancia: 0, totalTickets: 0 },
+                    { fecha: '06/10', diaSemana: 'mar', totalVentas: 20.00, totalGanancia: 5.00, totalTickets: 1 },
+                    { fecha: '07/10', diaSemana: 'mié', totalVentas: 185.25, totalGanancia: 37.14, totalTickets: 3 },
+                    { fecha: '08/10', diaSemana: 'jue', totalVentas: 677.49, totalGanancia: 153.98, totalTickets: 1 },
+                    { fecha: '09/10', diaSemana: 'vie', totalVentas: 0, totalGanancia: 0, totalTickets: 0 },
+                    { fecha: '10/10', diaSemana: 'sáb', totalVentas: 0, totalGanancia: 0, totalTickets: 0 },
+                    { fecha: '11/10', diaSemana: 'dom', totalVentas: 129.00, totalGanancia: 28.99, totalTickets: 4 },
+                  ],
+                  topProductos: [
+                    { idProducto: 1057, descripcion: 'COCA COLA RETORNABLE 3 L', categoria: 'BEBIDAS Y REFRESCOS', cantidadVendida: 10305, totalVendido: 404551.00, gananciaGenerada: 58903.98, margenPorcentaje: 14.6 },
+                    { idProducto: 1054, descripcion: 'COCA COLA VIDRIO RETORNABLE 1.25 L', categoria: 'BEBIDAS Y REFRESCOS', cantidadVendida: 15341, totalVendido: 354178.00, gananciaGenerada: 52029.30, margenPorcentaje: 14.7 },
+                    { idProducto: 1474, descripcion: 'Cerveza Victoria Meg', categoria: 'ABARROTES GENERAL', cantidadVendida: 6754, totalVendido: 314611.00, gananciaGenerada: 47944.00, margenPorcentaje: 15.2 },
+                    { idProducto: 1454, descripcion: 'VICTORIA LATON 473', categoria: 'ABARROTES GENERAL', cantidadVendida: 10500, totalVendido: 263608.20, gananciaGenerada: 27469.55, margenPorcentaje: 10.4 },
+                    { idProducto: 1945, descripcion: 'Coca Cola 3L', categoria: 'BEBIDAS Y REFRESCOS', cantidadVendida: 4825, totalVendido: 230250.00, gananciaGenerada: 36971.56, margenPorcentaje: 16.1 },
+                  ],
+                },
+                errores: null,
+              }),
+              {
+                status: 200,
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Access-Control-Allow-Origin': '*',
+                  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+                  'Access-Control-Allow-Headers': 'Content-Type, Authorization, Accept, X-Requested-With',
+                },
+              }
+            );
+          }
         }
 
         const responseHeaders = new Headers(respuesta.headers);

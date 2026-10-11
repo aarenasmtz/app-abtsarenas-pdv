@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { DollarSign, AlertCircle, Check, Loader2, X } from 'lucide-react';
+import { DollarSign, Check, Loader2, X } from 'lucide-react';
 import { servicioCaja } from './servicioCaja';
 import type { CajaDto, TurnoCajaDto } from './tiposCaja';
 import { reproducirBeepExito, reproducirBeepError } from '../../utils/sonidosPdv';
+import { AccionesFormulario, MensajeFormulario } from '../../components/comun/FormularioUI';
 
 interface PropiedadesModalAbrirTurno {
   abierto: boolean;
@@ -140,9 +141,13 @@ export const ModalAbrirTurno: React.FC<PropiedadesModalAbrirTurno> = ({
   const tieneTurnoYaAbierto = cajaActual?.tieneTurnoAbierto || (error && error.toLowerCase().includes('ya cuenta con un turno abierto'));
 
   return (
-    <div className="modal-overlay">
+    <div className="modal-overlay" role="presentation">
       <div 
         className="modal-contenido"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="titulo-apertura-turno"
+        aria-describedby={error ? 'error-apertura-turno' : 'ayuda-fondo-inicial'}
         style={{
           maxWidth: '520px',
           backgroundColor: '#ffffff',
@@ -173,7 +178,7 @@ export const ModalAbrirTurno: React.FC<PropiedadesModalAbrirTurno> = ({
               <DollarSign size={24} color="#ffffff" />
             </div>
             <div>
-              <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#ffffff' }}>
+              <h2 id="titulo-apertura-turno" style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#ffffff' }}>
                 Apertura de Turno de Caja
               </h2>
               <p style={{ margin: 0, fontSize: '0.8rem', color: '#d1fae5' }}>
@@ -184,6 +189,8 @@ export const ModalAbrirTurno: React.FC<PropiedadesModalAbrirTurno> = ({
           {onCancelar && (
             <button
               onClick={onCancelar}
+              type="button"
+              aria-label="Cerrar apertura de turno"
               style={{
                 background: 'transparent',
                 border: 'none',
@@ -202,20 +209,9 @@ export const ModalAbrirTurno: React.FC<PropiedadesModalAbrirTurno> = ({
         {/* Formulario */}
         <form onSubmit={handleConfirmarApertura} style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           {error && (
-            <div style={{
-              padding: '0.75rem 1rem',
-              backgroundColor: '#fef2f2',
-              border: '1px solid #fecaca',
-              borderRadius: '10px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              color: '#b91c1c',
-              fontSize: '0.9rem'
-            }}>
-              <AlertCircle size={18} />
-              <span>{error}</span>
-            </div>
+            <MensajeFormulario id="error-apertura-turno" tipo="error">
+              {error}
+            </MensajeFormulario>
           )}
 
           {/* Selector de Caja */}
@@ -277,7 +273,7 @@ export const ModalAbrirTurno: React.FC<PropiedadesModalAbrirTurno> = ({
                 }}
               />
             </div>
-            <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.35rem' }}>
+            <p id="ayuda-fondo-inicial" style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.35rem' }}>
               Ingresa el dinero físico en cambio (morralla y billetes) con el que arranca tu turno.
             </p>
           </div>
@@ -308,7 +304,7 @@ export const ModalAbrirTurno: React.FC<PropiedadesModalAbrirTurno> = ({
           </div>
 
           {/* Botones de acción */}
-          <div style={{ display: 'flex', gap: '0.75rem', paddingTop: '0.5rem' }}>
+          <AccionesFormulario>
             {onCancelar && (
               <button
                 type="button"
@@ -360,7 +356,7 @@ export const ModalAbrirTurno: React.FC<PropiedadesModalAbrirTurno> = ({
                 )}
               </button>
             )}
-          </div>
+          </AccionesFormulario>
         </form>
       </div>
     </div>
