@@ -916,17 +916,10 @@ export default {
       return obtenerRespuestaRescate(targetPath, request, bodyData, url);
     }
 
-    // Servir archivos estáticos o index.html para rutas SPA
-    try {
-      const cleanUrl = url.pathname.includes('.')
-        ? request.url
-        : new URL('/index.html', request.url).toString();
-      return await env.ASSETS.fetch(new Request(cleanUrl, {
-        method: 'GET',
-        headers: request.headers,
-      }));
-    } catch {
+    // Servir archivos estáticos o la página principal SPA
+    if (url.pathname.includes('.')) {
       return env.ASSETS.fetch(request);
     }
+    return env.ASSETS.fetch(new Request(new URL('/', request.url).toString()));
   },
 };
