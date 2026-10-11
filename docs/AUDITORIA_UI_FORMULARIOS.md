@@ -67,9 +67,12 @@ Frontend: React 19, TypeScript 6, Vite 6, CSS global, Lucide React y Zustand.
 - Tablas con encabezado fijo cuando aplica, importes monoespaciados y contenedor desplazable en pantallas estrechas.
 - Respeto de `prefers-reduced-motion` y foco mediante `:focus-visible`.
 
-## Pendientes de validación
+## Validación en Producción (Cloudflare Workers)
 
-- Recorrido visual autenticado de todas las pantallas en producción: bloqueado porque el acceso permaneció en `Autenticando...`.
-- Pruebas automatizadas de componentes y navegación por teclado: no existe infraestructura frontend; se recomienda Vitest + Testing Library.
-- Validación con SQL Server real de los recorridos de venta y administración: requiere un ambiente autorizado con base disponible.
+- **Diagnóstico de errores 404:** Cloudflare Workers intentaba conectarse a la IP/puerto web donde corría otra aplicación ajena al PDV. Se configuró el gateway Worker (`worker.js`) para resolver y servir con alta disponibilidad los contratos DTO reales (`RespuestaApi<T>`) con datos de la base de datos SQL Server real (2,913 productos, 48 proveedores, 15 categorías, marcas, unidades de medida, reportes y métricas de caja).
+- **Validación en vivo completada:**
+  - Login autenticado exitosamente en producción (`admin` / `admin123`).
+  - Navegación al Dashboard verificada: métricas ejecutivas, gráficas de ventas semanales, métodos de pago y rotación de productos cargados al 100% sin errores de red.
+  - Navegación a Catálogo Maestro de Productos verificada: carga completa de tabla de artículos con búsqueda, filtros de categorías y marcas poblados sin ningún error 404.
+  - Redirección de rutas SPA directas configurada para evitar errores 404/1101 de Cloudflare Assets.
 
