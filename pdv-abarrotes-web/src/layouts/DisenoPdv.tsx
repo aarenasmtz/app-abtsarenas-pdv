@@ -138,6 +138,7 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
         mostrarModalCorteCaja ||
         mostrarModalBuscarProductos ||
         mostrarModalRecargas ||
+        mostrarModalVerificador ||
         mostrarModalVentasDelDia;
 
       if (!esInteractivo && !hayModalAbierto) {
@@ -158,6 +159,7 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
     mostrarModalCorteCaja,
     mostrarModalBuscarProductos,
     mostrarModalRecargas,
+    mostrarModalVerificador,
     mostrarModalVentasDelDia
   ]);
 
@@ -224,6 +226,7 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
         setMostrarModalCorteCaja(false);
         setMostrarModalBuscarProductos(false);
         setMostrarModalRecargas(false);
+        setMostrarModalVerificador(false);
         setMostrarModalVentasDelDia(false);
         setTimeout(() => inputRef.current?.focus(), 60);
         return;
@@ -896,11 +899,18 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
                     className="input-escaner input-escaner-permitido"
                     style={{ paddingLeft: '44px', width: '100%' }}
                     placeholder="Escanea el código de barras o escribe para buscar producto..."
+                    aria-label="Código de barras o búsqueda de producto"
+                    aria-busy={buscando}
+                    autoComplete="off"
                     value={codigoInput}
                     onChange={(e) => setCodigoInput(e.target.value)}
                   />
                   {buscando && (
-                    <div style={{ position: 'absolute', right: '12px', top: '16px', fontSize: '0.75rem', color: 'var(--color-primario-hover)' }}>
+                    <div
+                      role="status"
+                      aria-live="polite"
+                      style={{ position: 'absolute', right: '12px', top: '16px', fontSize: '0.75rem', color: 'var(--color-primario-hover)' }}
+                    >
                       Buscando...
                     </div>
                   )}
@@ -1664,7 +1674,7 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
         </div>
       )}
 
-      {/* Modal de Búsqueda Avanzada / Catálogo de Productos (F3) */}
+      {/* Modal de Búsqueda Avanzada / Catálogo de Productos (F10) */}
       <ModalBuscarProductos
         abierto={mostrarModalBuscarProductos}
         onCerrar={() => {

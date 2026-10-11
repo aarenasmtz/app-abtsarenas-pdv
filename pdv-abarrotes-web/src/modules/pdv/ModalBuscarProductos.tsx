@@ -135,9 +135,13 @@ export const ModalBuscarProductos: React.FC<PropiedadesModalBuscarProductos> = (
   if (!abierto) return null;
 
   return (
-    <div className="modal-overlay">
+    <div className="modal-overlay" role="presentation">
       <div
         className="modal-contenido"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="titulo-catalogo-productos"
+        aria-describedby="ayuda-catalogo-productos"
         style={{
           maxWidth: '850px',
           width: '95%',
@@ -172,16 +176,18 @@ export const ModalBuscarProductos: React.FC<PropiedadesModalBuscarProductos> = (
               <Package size={22} />
             </div>
             <div>
-              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>
+              <h3 id="titulo-catalogo-productos" style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>
                 Catálogo de Productos
               </h3>
-              <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                Busca y haz clic en cualquier producto para agregarlo a la venta (Atajo: F3)
+              <span id="ayuda-catalogo-productos" style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                Busca y selecciona cualquier producto para agregarlo a la venta (Atajo: F10)
               </span>
             </div>
           </div>
           <button
             onClick={onCerrar}
+            type="button"
+            aria-label="Cerrar catálogo de productos"
             style={{
               background: 'transparent',
               border: 'none',
@@ -209,6 +215,8 @@ export const ModalBuscarProductos: React.FC<PropiedadesModalBuscarProductos> = (
               value={terminoBusqueda}
               onChange={(e) => setTerminoBusqueda(e.target.value)}
               placeholder="Escribe el nombre del producto, código de barras o categoría..."
+              aria-label="Buscar en el catálogo de productos"
+              autoComplete="off"
               style={{
                 width: '100%',
                 padding: '0.75rem 1rem 0.75rem 2.75rem',
