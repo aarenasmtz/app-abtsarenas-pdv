@@ -916,7 +916,11 @@ export default {
       return obtenerRespuestaRescate(targetPath, request, bodyData, url);
     }
 
-    // Para cualquier otra ruta, servir la aplicación frontend SPA
-    return env.ASSETS.fetch(request);
+    // Para la SPA, si la ruta no tiene extensión de archivo, servir la raíz '/' (index.html)
+    const assetUrl = new URL(request.url);
+    if (!assetUrl.pathname.includes('.')) {
+      assetUrl.pathname = '/';
+    }
+    return env.ASSETS.fetch(new Request(assetUrl.toString(), request));
   },
 };
