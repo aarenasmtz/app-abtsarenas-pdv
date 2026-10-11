@@ -916,11 +916,11 @@ export default {
       return obtenerRespuestaRescate(targetPath, request, bodyData, url);
     }
 
-    // Para la SPA, si la ruta no tiene extensión de archivo, servir la raíz '/' (index.html)
-    const assetUrl = new URL(request.url);
-    if (!assetUrl.pathname.includes('.')) {
-      assetUrl.pathname = '/';
+    // Para cualquier ruta de navegación que no sea un archivo estático, redirigir a la raíz '/' de la SPA
+    if (!url.pathname.includes('.') && url.pathname !== '/') {
+      return Response.redirect(new URL('/', request.url).toString(), 302);
     }
-    return env.ASSETS.fetch(new Request(assetUrl.toString(), request));
+
+    return env.ASSETS.fetch(request);
   },
 };
