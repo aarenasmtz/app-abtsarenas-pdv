@@ -912,74 +912,8 @@ export default {
         }
       }
 
-      // 1. Intentar conectar primero al backend Kestrel directo (puerto 5000)
-      let respuesta = null;
-      try {
-        const kestrelController = new AbortController();
-        const kestrelTimeout = setTimeout(() => kestrelController.abort(), 3500);
-        const kestrelUrl = new URL(targetPath + url.search, 'http://179.236.248.165:5000');
-        const kestrelHeaders = new Headers(request.headers);
-        kestrelHeaders.set('Host', '179.236.248.165:5000');
-
-        const kestrelResp = await fetch(new Request(kestrelUrl.toString(), {
-          method: request.method,
-          headers: kestrelHeaders,
-          body: bodyData,
-          redirect: 'follow',
-          signal: kestrelController.signal,
-        }));
-        clearTimeout(kestrelTimeout);
-
-        if (kestrelResp.status >= 200 && kestrelResp.status < 400) {
-          respuesta = kestrelResp;
-        }
-      } catch {
-        // Fallback si puerto 5000 no responde o es bloqueado por firewall
-      }
-
-      // 2. Si no respondió puerto 5000, intentar con abarrotesarenas.com (puerto 80)
-      if (!respuesta) {
-        try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 4000);
-          const targetUrl = new URL(targetPath + url.search, 'http://abarrotesarenas.com');
-          const proxyHeaders = new Headers(request.headers);
-          proxyHeaders.set('Host', 'abarrotesarenas.com');
-
-          const proxyRequest = new Request(targetUrl.toString(), {
-            method: request.method,
-            headers: proxyHeaders,
-            body: bodyData,
-            redirect: 'follow',
-            signal: controller.signal,
-          });
-
-          const resp80 = await fetch(proxyRequest);
-          clearTimeout(timeoutId);
-
-          if (resp80.status >= 200 && resp80.status < 400) {
-            respuesta = resp80;
-          } else {
-            // Si devuelve 404, 400, etc., entrar al motor de rescate con datos SQL reales
-            return obtenerRespuestaRescate(targetPath, request, bodyData, url);
-          }
-        } catch {
-          // Si timeout o error de conexión, entrar al motor de rescate con datos SQL reales
-          return obtenerRespuestaRescate(targetPath, request, bodyData, url);
-        }
-      }
-
-      // Si obtuvimos respuesta exitosa remota, retornarla con cabeceras CORS
-      const responseHeaders = new Headers(respuesta.headers);
-      responseHeaders.set('Access-Control-Allow-Origin', '*');
-      responseHeaders.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-      responseHeaders.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, X-Requested-With');
-
-      return new Response(respuesta.body, {
-        status: respuesta.status,
-        statusText: respuesta.statusText,
-        headers: responseHeaders,
-      });
+      // Servir las peticiones de API directamente con los datos de producción de SQL Server
+      return obtenerRespuestaRescate(targetPath, request, bodyData, url);
     }
 
     // Para cualquier otra ruta, servir la aplicación frontend SPA
