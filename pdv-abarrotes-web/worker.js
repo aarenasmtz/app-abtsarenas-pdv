@@ -916,7 +916,17 @@ export default {
       return obtenerRespuestaRescate(targetPath, request, bodyData, url);
     }
 
-    // Para cualquier otra ruta, servir la aplicación frontend SPA
-    return env.ASSETS.fetch(request);
+    // Para cualquier otra ruta, servir la aplicación frontend SPA con soporte para React Router
+    try {
+      const assetResponse = await env.ASSETS.fetch(request);
+      if (assetResponse.status === 404) {
+        const indexUrl = new URL('/index.html', request.url);
+        return await env.ASSETS.fetch(new Request(indexUrl.toString(), request));
+      }
+      return assetResponse;
+    } catch {
+      const indexUrl = new URL('/index.html', request.url);
+      return await env.ASSETS.fetch(new Request(indexUrl.toString(), request));
+    }
   },
 };
