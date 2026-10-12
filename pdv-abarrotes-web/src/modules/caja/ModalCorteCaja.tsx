@@ -63,10 +63,11 @@ export const ModalCorteCaja: React.FC<PropiedadesModalCorteCaja> = ({
 
   const construirCorteDesdeTurno = useCallback((t: TurnoCajaDto): ResumenCorteDto => {
     const montoInicial = t.montoInicial || 700;
-    const ventasEfectivo = t.ventasEfectivo || 0;
-    const entradas = t.entradasEfectivo || 0;
-    const salidas = t.salidasEfectivo || 0;
-    const esperado = t.efectivoActualEnCaja ?? (montoInicial + ventasEfectivo + entradas - salidas);
+    const ventasEfectivo = t.ventasEfectivo || (t as any).totalVentasEfectivo || 0;
+    const entradas = t.entradasEfectivo || (t as any).totalEntradasManuales || 0;
+    const salidas = t.salidasEfectivo || (t as any).totalSalidasManuales || 0;
+    const calculado = montoInicial + ventasEfectivo + entradas - salidas;
+    const esperado = t.efectivoActualEnCaja && t.efectivoActualEnCaja >= calculado ? t.efectivoActualEnCaja : calculado;
 
     return {
       idTurnoCaja: t.idTurnoCaja,

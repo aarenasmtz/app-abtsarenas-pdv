@@ -266,8 +266,10 @@ export const ModalRecargaPdv: React.FC<ModalRecargaPdvProps> = ({
     onCerrar();
   };
 
-  const formatearDinero = (monto: number) =>
-    new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(monto);
+  const formatearDinero = (monto?: number | null) => {
+    const val = typeof monto === 'number' && !isNaN(monto) ? monto : Number(monto) || 0;
+    return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(val);
+  };
 
   const servicioActual = servicios.find((s) => s.codigo === servicioSeleccionado);
 
@@ -489,21 +491,21 @@ export const ModalRecargaPdv: React.FC<ModalRecargaPdvProps> = ({
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span style={{ color: '#64748b' }}>Compañía:</span>
                       <strong style={{ color: companiaSeleccionada.colorTexto }}>
-                        {resultadoRecarga.compania}
+                        {resultadoRecarga.compania || companiaSeleccionada.nombre}
                       </strong>
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span style={{ color: '#64748b' }}>Número Telefónico:</span>
                       <strong className="mono" style={{ fontSize: '1.05rem', color: '#0f172a' }}>
-                        {resultadoRecarga.numeroTelefono}
+                        {resultadoRecarga.numeroTelefono || numeroTelefono}
                       </strong>
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span style={{ color: '#64748b' }}>Monto Recargado:</span>
                       <strong style={{ fontSize: '1.15rem', color: '#059669' }}>
-                        {formatearDinero(resultadoRecarga.monto)}
+                        {formatearDinero(resultadoRecarga.monto ?? montoRecarga)}
                       </strong>
                     </div>
 
@@ -516,7 +518,7 @@ export const ModalRecargaPdv: React.FC<ModalRecargaPdvProps> = ({
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#94a3b8' }}>
                       <span>Fecha y Hora:</span>
-                      <span>{new Date(resultadoRecarga.fechaHora).toLocaleString('es-MX')}</span>
+                      <span>{new Date(resultadoRecarga.fechaHora || Date.now()).toLocaleString('es-MX')}</span>
                     </div>
                   </div>
 
@@ -887,28 +889,28 @@ export const ModalRecargaPdv: React.FC<ModalRecargaPdvProps> = ({
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span style={{ color: '#64748b' }}>Servicio:</span>
-                      <strong>{resultadoServicio.servicio}</strong>
+                      <strong>{resultadoServicio.servicio || servicioActual?.nombre || servicioSeleccionado}</strong>
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span style={{ color: '#64748b' }}>Referencia:</span>
-                      <strong className="mono">{resultadoServicio.referencia}</strong>
+                      <strong className="mono">{resultadoServicio.referencia || referenciaRecibo}</strong>
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span style={{ color: '#64748b' }}>Importe del Recibo:</span>
-                      <span>{formatearDinero(resultadoServicio.montoPagado)}</span>
+                      <span>{formatearDinero(resultadoServicio.montoPagado ?? parseFloat(montoServicio))}</span>
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span style={{ color: '#64748b' }}>Comisión por Servicio:</span>
-                      <span>{formatearDinero(resultadoServicio.comisionCobrada)}</span>
+                      <span>{formatearDinero(resultadoServicio.comisionCobrada ?? comisionServicio)}</span>
                     </div>
 
                     <div style={{ borderTop: '1px dashed #cbd5e1', paddingTop: '0.5rem', display: 'flex', justifyContent: 'space-between' }}>
                       <span style={{ fontWeight: 700 }}>Total Cobrado al Cliente:</span>
                       <strong style={{ fontSize: '1.15rem', color: '#0284c7' }}>
-                        {formatearDinero(resultadoServicio.totalCobrado)}
+                        {formatearDinero(resultadoServicio.totalCobrado ?? ((parseFloat(montoServicio) || 0) + comisionServicio))}
                       </strong>
                     </div>
 

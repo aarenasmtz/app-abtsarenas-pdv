@@ -24,6 +24,34 @@ function responderJson(datos, status = 200) {
   });
 }
 
+const TURNO_ESTADO = {
+  idTurnoCaja: 2002,
+  idCaja: 1,
+  nombreCaja: 'Caja Principal',
+  idUsuario: 1,
+  nombreCajero: 'Administrador de la Tienda',
+  nombreUsuario: 'Administrador de la Tienda',
+  fechaInicio: '2026-10-11T08:00:00.000Z',
+  fechaApertura: '2026-10-11T08:00:00.000Z',
+  montoInicial: 700.0,
+  ventasEfectivo: 129.0, // Venta en efectivo del día acumulada
+  totalVentasEfectivo: 129.0,
+  ventasTarjeta: 0.0,
+  entradasEfectivo: 0.0,
+  totalEntradasManuales: 0.0,
+  salidasEfectivo: 0.0,
+  totalSalidasManuales: 0.0,
+  efectivoActualEnCaja: 829.0, // Fondo inicial ($700) + ventas en efectivo ($129)
+  totalEfectivoEsperado: 829.0,
+  totalVentas: 129.0,
+  totalVentasTurno: 129.0,
+  totalTransacciones: 4,
+  estatus: 'Abierto',
+  estado: 'Abierto',
+};
+
+const MOVIMIENTOS_CAJA_MEMORIA = [];
+
 function obtenerRespuestaRescate(targetPath, request, bodyData, url) {
   const lowerPath = targetPath.toLowerCase();
 
@@ -152,24 +180,29 @@ function obtenerRespuestaRescate(targetPath, request, bodyData, url) {
   }
 
   if (lowerPath.includes('/productos/buscar-pdv')) {
-    const q = (url.searchParams.get('busqueda') || '').toLowerCase().trim();
+    const q = (url.searchParams.get('termino') || url.searchParams.get('busqueda') || url.searchParams.get('q') || '').toLowerCase().trim();
+    const lim = parseInt(url.searchParams.get('limite') || '15', 10);
     const filtrados = PRODUCTOS_BD.filter(
       p => !q ||
-           p.descripcion.toLowerCase().includes(q) ||
-           (p.codigoBarrasPrincipal && p.codigoBarrasPrincipal.includes(q)) ||
-           (p.codigoProducto && p.codigoProducto.includes(q))
+           (p.descripcion && p.descripcion.toLowerCase().includes(q)) ||
+           (p.codigoBarrasPrincipal && p.codigoBarrasPrincipal.toLowerCase().includes(q)) ||
+           (p.codigoProducto && p.codigoProducto.toLowerCase().includes(q))
     );
     return responderJson({
       exito: true,
       mensaje: 'Búsqueda de productos PDV completada',
-      datos: filtrados.slice(0, 25).map(p => ({
+      datos: filtrados.slice(0, lim).map(p => ({
         idProducto: p.idProducto,
         codigoBarras: p.codigoBarrasPrincipal,
+        codigoProducto: p.codigoProducto,
         descripcion: p.descripcion,
         precioVenta: p.precioVenta,
+        precioMayoreo: p.precioMayoreo,
         existenciaActual: p.existenciaActual,
         categoria: p.categoriaNombre,
         unidadMedida: p.unidadMedidaNombre || 'Pieza',
+        permiteVentaFraccionada: p.permiteVentaFraccionada,
+        manejaInventario: p.manejaInventario,
       })),
       errores: null,
     });
@@ -197,18 +230,23 @@ function obtenerRespuestaRescate(targetPath, request, bodyData, url) {
       });
     }
 
-    // Listado paginado de productos
+    // Listado paginado de productos (soporta modal F10 y Catálogo Maestro)
     const pag = parseInt(url.searchParams.get('pagina') || '1', 10);
     const tam = parseInt(url.searchParams.get('registrosPorPagina') || '25', 10);
-    const busq = (url.searchParams.get('busqueda') || '').toLowerCase().trim();
+    const busq = (url.searchParams.get('busqueda') || url.searchParams.get('termino') || url.searchParams.get('q') || '').toLowerCase().trim();
     const catId = url.searchParams.get('idCategoria');
     const marcId = url.searchParams.get('idMarca');
+    const soloActivos = url.searchParams.get('soloActivos') === 'true';
 
     let lista = PRODUCTOS_BD;
+    if (soloActivos) {
+      lista = lista.filter(p => p.activo !== false);
+    }
     if (busq) {
       lista = lista.filter(
-        p => p.descripcion.toLowerCase().includes(busq) ||
-             (p.codigoBarrasPrincipal && p.codigoBarrasPrincipal.includes(busq))
+        p => (p.descripcion && p.descripcion.toLowerCase().includes(busq)) ||
+             (p.codigoBarrasPrincipal && p.codigoBarrasPrincipal.toLowerCase().includes(busq)) ||
+             (p.codigoProducto && p.codigoProducto.toLowerCase().includes(busq))
       );
     }
     if (catId) {
@@ -218,10 +256,10 @@ function obtenerRespuestaRescate(targetPath, request, bodyData, url) {
       lista = lista.filter(p => String(p.idMarca) === String(marcId));
     }
 
+    const totalReg = lista.length;
     const inicio = (pag - 1) * tam;
     const elementos = lista.slice(inicio, inicio + tam);
-    const totalReg = 2913;
-    const totalPags = Math.ceil(totalReg / tam);
+    const totalPags = Math.ceil(totalReg / tam) || 1;
 
     return responderJson({
       exito: true,
@@ -333,41 +371,26 @@ function obtenerRespuestaRescate(targetPath, request, bodyData, url) {
     return responderJson({
       exito: true,
       mensaje: 'Turno activo recuperado de la caja.',
-      datos: {
-        idTurnoCaja: 2002,
-        idCaja: 1,
-        nombreCaja: 'Caja Principal',
-        idUsuario: 1,
-        nombreCajero: 'Administrador de la Tienda',
-        fechaApertura: new Date().toISOString(),
-        montoInicial: 700.0,
-        totalVentasEfectivo: 0,
-        totalVentasTarjeta: 0,
-        totalEntradasManuales: 0,
-        totalSalidasManuales: 0,
-        totalEfectivoEsperado: 700.0,
-        efectivoActualEnCaja: 700.0,
-        totalVentasTurno: 0,
-        estado: 'Abierto',
-      },
+      datos: { ...TURNO_ESTADO },
       errores: null,
     });
   }
 
   if (lowerPath.includes('/cajas/abrir-turno')) {
+    if (bodyData) {
+      try {
+        const j = JSON.parse(new TextDecoder().decode(bodyData));
+        if (typeof j.montoInicial === 'number') {
+          TURNO_ESTADO.montoInicial = j.montoInicial;
+          TURNO_ESTADO.efectivoActualEnCaja = TURNO_ESTADO.montoInicial + TURNO_ESTADO.ventasEfectivo + TURNO_ESTADO.entradasEfectivo - TURNO_ESTADO.salidasEfectivo;
+          TURNO_ESTADO.totalEfectivoEsperado = TURNO_ESTADO.efectivoActualEnCaja;
+        }
+      } catch {}
+    }
     return responderJson({
       exito: true,
       mensaje: 'Turno abierto con éxito.',
-      datos: {
-        idTurnoCaja: 2002,
-        idCaja: 1,
-        nombreCaja: 'Caja Principal',
-        idUsuario: 1,
-        nombreCajero: 'Administrador de la Tienda',
-        fechaApertura: new Date().toISOString(),
-        montoInicial: 700.0,
-        estado: 'Abierto',
-      },
+      datos: { ...TURNO_ESTADO },
       errores: null,
     });
   }
@@ -377,89 +400,122 @@ function obtenerRespuestaRescate(targetPath, request, bodyData, url) {
       exito: true,
       mensaje: 'Corte X preliminar calculado con éxito.',
       datos: {
-        idTurnoCaja: 2002,
-        idCaja: 1,
-        nombreCaja: 'Caja Principal',
-        idUsuario: 1,
-        nombreUsuario: 'Administrador de la Tienda',
-        fechaInicio: new Date().toISOString(),
+        idTurnoCaja: TURNO_ESTADO.idTurnoCaja,
+        idCaja: TURNO_ESTADO.idCaja,
+        nombreCaja: TURNO_ESTADO.nombreCaja,
+        idUsuario: TURNO_ESTADO.idUsuario,
+        nombreUsuario: TURNO_ESTADO.nombreUsuario,
+        fechaInicio: TURNO_ESTADO.fechaInicio,
         fechaCorte: new Date().toISOString(),
         tipoCorte: 'X',
-        montoInicial: 700.0,
-        ventasEfectivo: 0.0,
-        ventasTarjeta: 0.0,
+        montoInicial: TURNO_ESTADO.montoInicial,
+        ventasEfectivo: TURNO_ESTADO.ventasEfectivo,
+        ventasTarjeta: TURNO_ESTADO.ventasTarjeta,
         ventasTransferencia: 0.0,
         ventasVales: 0.0,
         ventasCredito: 0.0,
-        totalVentas: 0.0,
-        entradasEfectivo: 0.0,
-        salidasEfectivo: 0.0,
-        totalEsperadoEnCaja: 700.0,
-        totalContado: 700.0,
+        totalVentas: TURNO_ESTADO.totalVentas,
+        entradasEfectivo: TURNO_ESTADO.entradasEfectivo,
+        salidasEfectivo: TURNO_ESTADO.salidasEfectivo,
+        totalEsperadoEnCaja: TURNO_ESTADO.efectivoActualEnCaja,
+        totalContado: TURNO_ESTADO.efectivoActualEnCaja,
         diferencia: 0.0,
         observaciones: '',
-        totalTransacciones: 0,
-        estatusTurno: 'Abierto',
+        totalTransacciones: TURNO_ESTADO.totalTransacciones,
+        estatusTurno: TURNO_ESTADO.estatus,
       },
       errores: null,
     });
   }
 
-  if (lowerPath.includes('/cerrar-turno-corte-z')) {
+  if (lowerPath.includes('/cerrar-turno-corte-z') || lowerPath.includes('/cajas/cerrar-turno')) {
+    let cont = TURNO_ESTADO.efectivoActualEnCaja;
+    let obs = '';
+    if (bodyData) {
+      try {
+        const j = JSON.parse(new TextDecoder().decode(bodyData));
+        if (typeof j.totalContado === 'number') cont = j.totalContado;
+        if (j.observaciones) obs = j.observaciones;
+      } catch {}
+    }
     return responderJson({
       exito: true,
       mensaje: 'Turno cerrado exitosamente (Corte Z generado).',
       datos: {
-        idTurnoCaja: 2002,
-        idCaja: 1,
-        nombreCaja: 'Caja Principal',
-        idUsuario: 1,
-        nombreUsuario: 'Administrador de la Tienda',
-        fechaInicio: new Date().toISOString(),
+        idTurnoCaja: TURNO_ESTADO.idTurnoCaja,
+        idCaja: TURNO_ESTADO.idCaja,
+        nombreCaja: TURNO_ESTADO.nombreCaja,
+        idUsuario: TURNO_ESTADO.idUsuario,
+        nombreUsuario: TURNO_ESTADO.nombreUsuario,
+        fechaInicio: TURNO_ESTADO.fechaInicio,
         fechaCorte: new Date().toISOString(),
         tipoCorte: 'Z',
-        montoInicial: 700.0,
-        ventasEfectivo: 0.0,
-        ventasTarjeta: 0.0,
+        montoInicial: TURNO_ESTADO.montoInicial,
+        ventasEfectivo: TURNO_ESTADO.ventasEfectivo,
+        ventasTarjeta: TURNO_ESTADO.ventasTarjeta,
         ventasTransferencia: 0.0,
         ventasVales: 0.0,
         ventasCredito: 0.0,
-        totalVentas: 0.0,
-        entradasEfectivo: 0.0,
-        salidasEfectivo: 0.0,
-        totalEsperadoEnCaja: 700.0,
-        totalContado: 700.0,
-        diferencia: 0.0,
-        observaciones: '',
-        totalTransacciones: 0,
+        totalVentas: TURNO_ESTADO.totalVentas,
+        entradasEfectivo: TURNO_ESTADO.entradasEfectivo,
+        salidasEfectivo: TURNO_ESTADO.salidasEfectivo,
+        totalEsperadoEnCaja: TURNO_ESTADO.efectivoActualEnCaja,
+        totalContado: cont,
+        diferencia: Number((cont - TURNO_ESTADO.efectivoActualEnCaja).toFixed(2)),
+        observaciones: obs,
+        totalTransacciones: TURNO_ESTADO.totalTransacciones,
         estatusTurno: 'Cerrado',
       },
       errores: null,
     });
   }
 
-  if (lowerPath.includes('/movimientos')) {
+  if (lowerPath.includes('/movimiento')) {
     if (request.method === 'POST') {
+      let m = 0;
+      let tipo = 'ENTRADA';
+      let desc = 'Movimiento en caja';
+      if (bodyData) {
+        try {
+          const j = JSON.parse(new TextDecoder().decode(bodyData));
+          m = Number(j.monto) || 0;
+          tipo = (j.tipoMovimiento || 'ENTRADA').toUpperCase();
+          desc = j.descripcion || desc;
+        } catch {}
+      }
+      if (tipo === 'ENTRADA') {
+        TURNO_ESTADO.entradasEfectivo += m;
+        TURNO_ESTADO.totalEntradasManuales += m;
+      } else {
+        TURNO_ESTADO.salidasEfectivo += m;
+        TURNO_ESTADO.totalSalidasManuales += m;
+      }
+      TURNO_ESTADO.efectivoActualEnCaja = TURNO_ESTADO.montoInicial + TURNO_ESTADO.ventasEfectivo + TURNO_ESTADO.entradasEfectivo - TURNO_ESTADO.salidasEfectivo;
+      TURNO_ESTADO.totalEfectivoEsperado = TURNO_ESTADO.efectivoActualEnCaja;
+
+      const mov = {
+        idMovimientoCaja: Date.now(),
+        idTurnoCaja: TURNO_ESTADO.idTurnoCaja,
+        idCaja: TURNO_ESTADO.idCaja,
+        tipoMovimiento: tipo,
+        monto: m,
+        descripcion: desc,
+        fechaMovimiento: new Date().toISOString(),
+        nombreUsuario: TURNO_ESTADO.nombreUsuario,
+      };
+      MOVIMIENTOS_CAJA_MEMORIA.unshift(mov);
+
       return responderJson({
         exito: true,
         mensaje: 'Movimiento de caja registrado exitosamente.',
-        datos: {
-          idMovimientoCaja: Date.now(),
-          idTurnoCaja: 2002,
-          idCaja: 1,
-          tipoMovimiento: 'ENTRADA',
-          monto: 0.0,
-          descripcion: 'Movimiento en caja',
-          fechaMovimiento: new Date().toISOString(),
-          nombreUsuario: 'Administrador de la Tienda',
-        },
+        datos: mov,
         errores: null,
       });
     }
     return responderJson({
       exito: true,
       mensaje: 'Movimientos del turno obtenidos.',
-      datos: [],
+      datos: MOVIMIENTOS_CAJA_MEMORIA,
       errores: null,
     });
   }
@@ -590,14 +646,43 @@ function obtenerRespuestaRescate(targetPath, request, bodyData, url) {
   }
 
   if (lowerPath.includes('/ventas') && request.method === 'POST') {
+    let montoEfectivo = 0;
+    let montoTotal = 0;
+    if (bodyData) {
+      try {
+        const j = JSON.parse(new TextDecoder().decode(bodyData));
+        montoTotal = Number(j.total) || 0;
+        if (Array.isArray(j.pagos) && j.pagos.length > 0) {
+          j.pagos.forEach(p => {
+            const met = (p.metodoPago || '').toUpperCase();
+            if (met.includes('EFECTIVO') || p.idMetodoPago === 1) {
+              montoEfectivo += Number(p.monto) || 0;
+            }
+          });
+        } else if ((j.metodoPago || '').toUpperCase().includes('EFECTIVO') || j.idMetodoPago === 1) {
+          montoEfectivo = montoTotal;
+        } else {
+          montoEfectivo = montoTotal; // Venta en mostrador en efectivo por defecto
+        }
+      } catch {}
+    }
+    if (montoEfectivo > 0) {
+      TURNO_ESTADO.ventasEfectivo += montoEfectivo;
+      TURNO_ESTADO.totalVentasEfectivo = TURNO_ESTADO.ventasEfectivo;
+      TURNO_ESTADO.totalVentas += montoTotal;
+      TURNO_ESTADO.totalVentasTurno = TURNO_ESTADO.totalVentas;
+      TURNO_ESTADO.totalTransacciones++;
+      TURNO_ESTADO.efectivoActualEnCaja = TURNO_ESTADO.montoInicial + TURNO_ESTADO.ventasEfectivo + TURNO_ESTADO.entradasEfectivo - TURNO_ESTADO.salidasEfectivo;
+      TURNO_ESTADO.totalEfectivoEsperado = TURNO_ESTADO.efectivoActualEnCaja;
+    }
     return responderJson({
       exito: true,
       mensaje: 'Venta registrada con éxito.',
       datos: {
-        idVenta: 238435,
-        folioVenta: '222108',
+        idVenta: Date.now(),
+        folioVenta: String(Math.floor(Math.random() * 900000 + 100000)),
         fechaVenta: new Date().toISOString(),
-        total: 0.0,
+        total: montoTotal,
         cambio: 0.0,
         articulosVendidos: 1,
       },
@@ -833,10 +918,10 @@ function obtenerRespuestaRescate(targetPath, request, bodyData, url) {
         exito: true,
         mensaje: 'Compañías telefónicas obtenidas.',
         datos: [
-          { idCompania: 1, nombre: 'Telcel', activa: true, montosPermitidos: [10, 20, 30, 50, 100, 200, 500] },
-          { idCompania: 2, nombre: 'Movistar', activa: true, montosPermitidos: [10, 20, 30, 50, 100, 200] },
-          { idCompania: 3, nombre: 'AT&T', activa: true, montosPermitidos: [30, 50, 100, 150, 200] },
-          { idCompania: 4, nombre: 'Bait', activa: true, montosPermitidos: [50, 100, 200] },
+          { codigo: 'TELCEL', nombre: 'Telcel', activa: true, montosDisponibles: [10, 20, 30, 50, 100, 200, 500] },
+          { codigo: 'MOVISTAR', nombre: 'Movistar', activa: true, montosDisponibles: [10, 20, 30, 50, 100, 200] },
+          { codigo: 'ATT', nombre: 'AT&T', activa: true, montosDisponibles: [30, 50, 100, 150, 200] },
+          { codigo: 'BAIT', nombre: 'Bait', activa: true, montosDisponibles: [50, 100, 200] },
         ],
         errores: null,
       });
@@ -846,18 +931,97 @@ function obtenerRespuestaRescate(targetPath, request, bodyData, url) {
         exito: true,
         mensaje: 'Catálogo de servicios obtenido.',
         datos: [
-          { idServicio: 1, nombre: 'CFE (Luz)', categoria: 'Energía', comisionCajero: 12.0 },
-          { idServicio: 2, nombre: 'Telmex', categoria: 'Telefonía', comisionCajero: 10.0 },
-          { idServicio: 3, nombre: 'SAPAL (Agua)', categoria: 'Agua Potable', comisionCajero: 10.0 },
-          { idServicio: 4, nombre: 'Naturgy (Gas)', categoria: 'Gas Natural', comisionCajero: 12.0 },
+          { codigo: 'CFE', nombre: 'CFE (Luz)', categoria: 'Energía', comisionRecomendada: 12.0, permiteVencidos: true, formatoReferencia: '30 dígitos' },
+          { codigo: 'TELMEX', nombre: 'Telmex', categoria: 'Telefonía', comisionRecomendada: 10.0, permiteVencidos: false, formatoReferencia: '10 dígitos' },
+          { codigo: 'SAPAL', nombre: 'SAPAL (Agua)', categoria: 'Agua Potable', comisionRecomendada: 10.0, permiteVencidos: true, formatoReferencia: '12 dígitos' },
+          { codigo: 'NATURGY', nombre: 'Naturgy (Gas)', categoria: 'Gas Natural', comisionRecomendada: 12.0, permiteVencidos: false, formatoReferencia: '10 dígitos' },
         ],
+        errores: null,
+      });
+    }
+    if (lowerPath.includes('adeudo')) {
+      return responderJson({
+        exito: true,
+        mensaje: 'Adeudo consultado exitosamente.',
+        datos: {
+          exito: true,
+          montoAdeudo: 345.50,
+          mensajeProveedor: 'Adeudo vigente consultado en sistema carrier.',
+        },
+        errores: null,
+      });
+    }
+    if (lowerPath.includes('recarga') || lowerPath.includes('recargas')) {
+      let monto = 50;
+      let tel = '4771234567';
+      let comp = 'Telcel';
+      if (bodyData) {
+        try {
+          const j = JSON.parse(new TextDecoder().decode(bodyData));
+          if (j.monto) monto = Number(j.monto);
+          if (j.numeroTelefono) tel = String(j.numeroTelefono);
+          if (j.codigoCompania) comp = String(j.codigoCompania);
+        } catch {}
+      }
+      return responderJson({
+        exito: true,
+        mensaje: 'La transacción fue autorizada por el carrier.',
+        datos: {
+          exito: true,
+          mensaje: 'La transacción fue autorizada por el carrier.',
+          folioProveedor: 'RNP-' + Math.floor(Math.random() * 9000000 + 1000000),
+          codigoAutorizacion: 'AUT-' + Math.floor(Math.random() * 900000 + 100000),
+          monto: Number(monto),
+          numeroTelefono: String(tel),
+          compania: String(comp).toUpperCase(),
+          fechaHora: new Date().toISOString(),
+          saldoRestanteBolsa: 4950.0,
+        },
+        errores: null,
+      });
+    }
+    if (lowerPath.includes('servicio') || lowerPath.includes('servicios')) {
+      let mRec = 100;
+      let com = 12;
+      let srv = 'CFE';
+      let ref = '0123456789';
+      if (bodyData) {
+        try {
+          const j = JSON.parse(new TextDecoder().decode(bodyData));
+          if (j.montoRecibo) mRec = Number(j.montoRecibo);
+          if (j.comision) com = Number(j.comision);
+          if (j.codigoServicio) srv = String(j.codigoServicio);
+          if (j.referenciaRecibo) ref = String(j.referenciaRecibo);
+        } catch {}
+      }
+      return responderJson({
+        exito: true,
+        mensaje: 'El recibo fue liquidado en el sistema.',
+        datos: {
+          exito: true,
+          mensaje: 'El recibo fue liquidado en el sistema.',
+          folioAutorizacion: 'AUT-SRV-' + Math.floor(Math.random() * 900000 + 100000),
+          montoPagado: mRec,
+          comisionCobrada: com,
+          totalCobrado: mRec + com,
+          servicio: srv,
+          referencia: ref,
+          fechaHora: new Date().toISOString(),
+        },
         errores: null,
       });
     }
     return responderJson({
       exito: true,
       mensaje: 'Operación de recarga/servicio exitosa.',
-      datos: { idTransaccion: Date.now(), folioAutorizacion: 'AUT-' + Math.floor(Math.random() * 900000 + 100000) },
+      datos: {
+        exito: true,
+        folioAutorizacion: 'AUT-' + Math.floor(Math.random() * 900000 + 100000),
+        monto: 50,
+        numeroTelefono: '4771234567',
+        compania: 'TELCEL',
+        fechaHora: new Date().toISOString(),
+      },
       errores: null,
     });
   }
