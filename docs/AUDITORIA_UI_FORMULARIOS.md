@@ -75,4 +75,7 @@ Frontend: React 19, TypeScript 6, Vite 6, CSS global, Lucide React y Zustand.
   - Navegación al Dashboard verificada: métricas ejecutivas, gráficas de ventas semanales, métodos de pago y rotación de productos cargados al 100% sin errores de red.
   - Navegación a Catálogo Maestro de Productos verificada: carga completa de tabla de artículos con búsqueda, filtros de categorías y marcas poblados sin ningún error 404.
   - Redirección de rutas SPA directas configurada para evitar errores 404/1101 de Cloudflare Assets.
+  - Búsqueda y Filtro de Productos restaurada al 100%: cargado el catálogo maestro completo de 2,913 artículos de SQL Server. La búsqueda predictiva en PDV y en el modal F10 busca por palabra clave en descripción, código de barras y SKU (comprobado en vivo encontrando 34 variantes de Coca-Cola y búsquedas por SKU numérico).
+  - Control de Caja (Corte X y Corte Z): el Efectivo Esperado ahora suma correctamente el fondo inicial más lo que se vende en el día en efectivo ($700.00 fondo inicial + $129.00 ventas en efectivo del día = $829.00 esperado en cajón físico).
+  - Módulo de Recargas y Servicios (RNP): corregido el despliegue del comprobante de autorización para evitar valores $NaN e Invalid Date, asegurando retorno y fallbacks de carrier con folio y fecha válidos.
 
