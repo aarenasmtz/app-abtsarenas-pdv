@@ -959,16 +959,123 @@ function obtenerRespuestaRescate(targetPath, request, bodyData, url) {
         try {
           const j = JSON.parse(new TextDecoder().decode(bodyData));
           if (j.monto) monto = Number(j.monto);
-          if (j.numeroTelefono) tel = String(j.numeroTelefono);
+          if (j.numeroTelefono) tel = String(j.numeroTelefono).replace(/\D/g, '');
           if (j.codigoCompania) comp = String(j.codigoCompania);
         } catch {}
       }
+
+      // Matriz oficial de certificación RNP (Página 9 del manual)
+      if (tel === '5555555555') {
+        return responderJson({
+          exito: false,
+          mensaje: 'REFERENCIA NO VÁLIDA / REVISAR OPERADOR (Código 01)',
+          datos: {
+            exito: false,
+            codigoRespuesta: '01',
+            mensaje: 'REFERENCIA NO VÁLIDA / REVISAR OPERADOR',
+            monto: Number(monto),
+            numeroTelefono: String(tel),
+            compania: String(comp).toUpperCase(),
+            fechaHora: new Date().toISOString(),
+          },
+          errores: ['01: REFERENCIA NO VÁLIDA / REVISAR OPERADOR'],
+        }, 400);
+      }
+
+      if (tel === '4444444444') {
+        return responderJson({
+          exito: false,
+          mensaje: 'TELÉFONO SUSCRIPTOR NO VÁLIDO (Código 02)',
+          datos: {
+            exito: false,
+            codigoRespuesta: '02',
+            mensaje: 'TELÉFONO SUSCRIPTOR NO VÁLIDO',
+            monto: Number(monto),
+            numeroTelefono: String(tel),
+            compania: String(comp).toUpperCase(),
+            fechaHora: new Date().toISOString(),
+          },
+          errores: ['02: TELÉFONO SUSCRIPTOR NO VÁLIDO'],
+        }, 400);
+      }
+
+      if (tel === '6666666666') {
+        return responderJson({
+          exito: false,
+          mensaje: 'SALDO INSUFICIENTE (Código 05)',
+          datos: {
+            exito: false,
+            codigoRespuesta: '05',
+            mensaje: 'SALDO INSUFICIENTE',
+            monto: Number(monto),
+            numeroTelefono: String(tel),
+            compania: String(comp).toUpperCase(),
+            fechaHora: new Date().toISOString(),
+          },
+          errores: ['05: SALDO INSUFICIENTE'],
+        }, 400);
+      }
+
+      if (tel === '5554444444') {
+        return responderJson({
+          exito: false,
+          mensaje: 'MANTENIMIENTO OPERADORA EN CURSO (Código 06)',
+          datos: {
+            exito: false,
+            codigoRespuesta: '06',
+            mensaje: 'MANTENIMIENTO OPERADORA EN CURSO',
+            monto: Number(monto),
+            numeroTelefono: String(tel),
+            compania: String(comp).toUpperCase(),
+            fechaHora: new Date().toISOString(),
+          },
+          errores: ['06: MANTENIMIENTO OPERADORA EN CURSO'],
+        }, 400);
+      }
+
+      if (tel === '5557777777') {
+        return responderJson({
+          exito: false,
+          mensaje: 'NO SE PUEDE ABONAR (Código 04)',
+          datos: {
+            exito: false,
+            codigoRespuesta: '04',
+            mensaje: 'NO SE PUEDE ABONAR',
+            monto: Number(monto),
+            numeroTelefono: String(tel),
+            compania: String(comp).toUpperCase(),
+            fechaHora: new Date().toISOString(),
+          },
+          errores: ['04: NO SE PUEDE ABONAR'],
+        }, 400);
+      }
+
+      if (tel === '5559999999') {
+        return responderJson({
+          exito: false,
+          mensaje: 'RECARGA EN ESPERA (Código 24) - Sin respuesta del carrier. Se requiere consultar estado con Folio_POS.',
+          datos: {
+            exito: false,
+            codigoRespuesta: '24',
+            mensaje: 'RECARGA EN ESPERA',
+            folioProveedor: 'RNP-' + Math.floor(Math.random() * 9000000 + 1000000),
+            monto: Number(monto),
+            numeroTelefono: String(tel),
+            compania: String(comp).toUpperCase(),
+            fechaHora: new Date().toISOString(),
+          },
+          errores: ['24: RECARGA EN ESPERA'],
+        }, 408);
+      }
+
+      // Transacción Exitosa (00)
       return responderJson({
         exito: true,
-        mensaje: 'La transacción fue autorizada por el carrier.',
+        mensaje: 'TRANSACCIÓN EXITOSA (Código 00). Autorizada por el carrier.',
         datos: {
           exito: true,
-          mensaje: 'La transacción fue autorizada por el carrier.',
+          codigoRespuesta: '00',
+          mensaje: 'TRANSACCIÓN EXITOSA',
           folioProveedor: 'RNP-' + Math.floor(Math.random() * 9000000 + 1000000),
           codigoAutorizacion: 'AUT-' + Math.floor(Math.random() * 900000 + 100000),
           monto: Number(monto),
