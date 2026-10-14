@@ -18,6 +18,7 @@ import type { ProveedorDto, CrearProveedorDto, ActualizarProveedorDto } from './
 import { ModalProveedor } from './ModalProveedor';
 import { TablaPaginada } from '../../components/comun/TablaPaginada';
 import type { ResultadoPaginado } from '../../types/comun';
+import { useTableSort } from '../../hooks/useTableSort';
 
 export const PantallaProveedores: React.FC = () => {
   const [proveedoresPaginados, setProveedoresPaginados] = useState<ResultadoPaginado<ProveedorDto>>({
@@ -29,6 +30,14 @@ export const PantallaProveedores: React.FC = () => {
     tienePaginaAnterior: false,
     tienePaginaSiguiente: false,
   });
+
+  const { sortedData: proveedoresOrdenados, sortKey, sortDirection, handleSort } = useTableSort<ProveedorDto>(
+    proveedoresPaginados.elementos,
+    {
+      initialKey: 'nombre',
+      initialDirection: 'asc',
+    }
+  );
 
   const [paginaActual, setPaginaActual] = useState(1);
   const [registrosPorPagina, setRegistrosPorPagina] = useState<25 | 50 | 100>(25);
@@ -115,11 +124,13 @@ export const PantallaProveedores: React.FC = () => {
     {
       clave: 'idProveedor',
       titulo: 'ID',
+      ordenable: true,
       renderizar: (p: ProveedorDto) => <span className="mono">#{p.idProveedor}</span>,
     },
     {
       clave: 'nombre',
       titulo: 'Empresa / Razón Social',
+      ordenable: true,
       renderizar: (p: ProveedorDto) => (
         <div>
           <div style={{ fontWeight: 600, color: 'var(--color-texto)' }}>{p.nombre}</div>
@@ -132,8 +143,9 @@ export const PantallaProveedores: React.FC = () => {
       ),
     },
     {
-      clave: 'contacto',
+      clave: 'nombreContacto',
       titulo: 'Contacto y Teléfono',
+      ordenable: true,
       renderizar: (p: ProveedorDto) => (
         <div>
           <div style={{ fontSize: '0.88rem' }}>{p.nombreContacto || <span style={{ color: 'var(--color-texto-apagado)' }}>Sin asignar</span>}</div>
@@ -155,6 +167,7 @@ export const PantallaProveedores: React.FC = () => {
     {
       clave: 'direccion',
       titulo: 'Dirección / Ubicación',
+      ordenable: true,
       renderizar: (p: ProveedorDto) => (
         <div style={{ fontSize: '0.85rem', maxWidth: '280px', color: 'var(--color-texto-secundario)' }}>
           {p.direccion || <span style={{ color: 'var(--color-texto-apagado)' }}>No registrada</span>}
@@ -164,6 +177,7 @@ export const PantallaProveedores: React.FC = () => {
     {
       clave: 'totalComprasRegistradas',
       titulo: 'Compras',
+      ordenable: true,
       renderizar: (p: ProveedorDto) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
           <ShoppingBag size={14} color="var(--color-primario)" />
@@ -174,6 +188,7 @@ export const PantallaProveedores: React.FC = () => {
     {
       clave: 'activo',
       titulo: 'Estado',
+      ordenable: true,
       renderizar: (p: ProveedorDto) => (
         <span className={`badge ${p.activo ? 'badge-exito' : 'badge-peligro'}`}>
           {p.activo ? 'Activo' : 'Inactivo'}
@@ -291,8 +306,14 @@ export const PantallaProveedores: React.FC = () => {
       <div className="tarjeta" style={{ padding: 0, overflow: 'hidden' }}>
         <TablaPaginada
           columnas={columnas}
-          resultado={proveedoresPaginados}
+          resultado={{
+            ...proveedoresPaginados,
+            elementos: proveedoresOrdenados,
+          }}
           cargando={cargando}
+          sortKey={sortKey}
+          sortDirection={sortDirection}
+          onSort={handleSort}
           onCambiarPagina={(nuevaPagina) => setPaginaActual(nuevaPagina)}
           onCambiarRegistrosPorPagina={(nuevosRegistros) => {
             setRegistrosPorPagina(nuevosRegistros);

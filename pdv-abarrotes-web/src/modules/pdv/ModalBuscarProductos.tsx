@@ -19,8 +19,6 @@ export const ModalBuscarProductos: React.FC<PropiedadesModalBuscarProductos> = (
   const [terminoBusqueda, setTerminoBusqueda] = useState<string>('');
   const [productos, setProductos] = useState<ProductoCobroDto[]>([]);
   const [cargando, setCargando] = useState<boolean>(false);
-  const [paginaActual, setPaginaActual] = useState<number>(1);
-  const [registrosPorPagina] = useState<number>(10);
   const inputBusquedaRef = useRef<HTMLInputElement>(null);
 
   // Favoritos guardados en localStorage
@@ -73,7 +71,6 @@ export const ModalBuscarProductos: React.FC<PropiedadesModalBuscarProductos> = (
             categoria: p.categoriaNombre || 'General'
           }));
           setProductos(mapeados);
-          setPaginaActual(1);
         }
       } catch {
         // Silencioso
@@ -114,23 +111,45 @@ export const ModalBuscarProductos: React.FC<PropiedadesModalBuscarProductos> = (
     initialDirection: 'asc'
   });
 
-  // Ordenar para que los favoritos aparezcan en PRIMERA posición siempre
+  // Lista de productos de alta rotación en abarrotes que siempre van en primera posición
+  const PALABRAS_ALTA_ROTACION = [
+    'QUESO',
+    'JAMON',
+    'JAMÓN',
+    'CHORIZO',
+    'CHICHARRON',
+    'CHICHARRÓN',
+    'TOCINO',
+    'SALCHICHA',
+    'CREMA',
+    'HUEVO',
+    'TORTILLA',
+    'BOLILLO',
+    'PAN',
+    'AGUACATE',
+    'JITOMATE',
+  ];
+
+  // Ordenar para que los favoritos y productos de alta rotación (Queso, Jamón, Chorizo, Chicharrón) aparezcan en PRIMERA posición
   const productosConPrioridad = useMemo(() => {
     return [...sortedData].sort((a, b) => {
+      // 1. Favoritos manuales
       const aEsFav = favoritos.includes(a.codigoBarras) || favoritos.includes(a.codigoProducto);
       const bEsFav = favoritos.includes(b.codigoBarras) || favoritos.includes(b.codigoProducto);
       if (aEsFav && !bEsFav) return -1;
       if (!aEsFav && bEsFav) return 1;
+
+      // 2. Productos de alta rotación (Queso, Jamón, Chorizo, Chicharrón...)
+      const aTexto = (a.descripcion + ' ' + a.codigoBarras + ' ' + a.categoria).toUpperCase();
+      const bTexto = (b.descripcion + ' ' + b.codigoBarras + ' ' + b.categoria).toUpperCase();
+      const aAltaRot = PALABRAS_ALTA_ROTACION.some((palabra) => aTexto.includes(palabra));
+      const bAltaRot = PALABRAS_ALTA_ROTACION.some((palabra) => bTexto.includes(palabra));
+      if (aAltaRot && !bAltaRot) return -1;
+      if (!aAltaRot && bAltaRot) return 1;
+
       return 0;
     });
   }, [sortedData, favoritos]);
-
-  // Paginación de los datos ordenados
-  const totalPaginas = Math.ceil(productosConPrioridad.length / registrosPorPagina) || 1;
-  const elementosPaginados = useMemo(() => {
-    const inicio = (paginaActual - 1) * registrosPorPagina;
-    return productosConPrioridad.slice(inicio, inicio + registrosPorPagina);
-  }, [productosConPrioridad, paginaActual, registrosPorPagina]);
 
   if (!abierto) return null;
 
@@ -214,7 +233,7 @@ export const ModalBuscarProductos: React.FC<PropiedadesModalBuscarProductos> = (
               type="text"
               value={terminoBusqueda}
               onChange={(e) => setTerminoBusqueda(e.target.value)}
-              placeholder="Escribe el nombre del producto, código de barras o categoría..."
+              placeholder="Escribe el nombre del producto, código de barras o SKU..."
               aria-label="Buscar en el catálogo de productos"
               autoComplete="off"
               style={{
@@ -238,11 +257,11 @@ export const ModalBuscarProductos: React.FC<PropiedadesModalBuscarProductos> = (
               <Loader2 size={32} className="spinner" style={{ color: '#059669', margin: '0 auto 0.5rem' }} />
               <p>Buscando productos en catálogo...</p>
             </div>
-          ) : elementosPaginados.length === 0 ? (
+          ) : productosConPrioridad.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '3rem 1rem', color: '#64748b' }}>
               <AlertCircle size={40} style={{ opacity: 0.3, margin: '0 auto 0.5rem' }} />
               <h4>No se encontraron productos</h4>
-              <p style={{ fontSize: '0.85rem' }}>Prueba con otro término de búsqueda.</p>
+              <p style={{ fontSize: '0.85rem' }}>Prueba con otro término de búsqueda o SKU.</p>
             </div>
           ) : (
             <table className="tabla-datos" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
@@ -291,7 +310,7 @@ export const ModalBuscarProductos: React.FC<PropiedadesModalBuscarProductos> = (
                 </tr>
               </thead>
               <tbody>
-                {elementosPaginados.map((p) => {
+                {productosConPrioridad.map((p) => {
                   const esFav = favoritos.includes(p.codigoBarras) || favoritos.includes(p.codigoProducto);
                   return (
                     <tr
@@ -383,7 +402,7 @@ export const ModalBuscarProductos: React.FC<PropiedadesModalBuscarProductos> = (
           )}
         </div>
 
-        {/* Paginación y Pie */}
+        {/* Resumen y Pie sin paginado */}
         <div style={{
           padding: '0.9rem 1.5rem',
           backgroundColor: '#f8fafc',
@@ -392,33 +411,13 @@ export const ModalBuscarProductos: React.FC<PropiedadesModalBuscarProductos> = (
           justifyContent: 'space-between',
           alignItems: 'center'
         }}>
-          <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
-            Mostrando <strong>{elementosPaginados.length}</strong> de <strong>{sortedData.length}</strong> productos
+          <span style={{ fontSize: '0.85rem', color: '#475569' }}>
+            Mostrando <strong>{productosConPrioridad.length}</strong> productos coincidentes (desplazamiento continuo)
           </span>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
-              Página {paginaActual} de {totalPaginas}
-            </span>
-            <button
-              type="button"
-              className="btn btn-secundario"
-              disabled={paginaActual <= 1}
-              onClick={() => setPaginaActual(p => Math.max(1, p - 1))}
-              style={{ padding: '0.3rem 0.6rem' }}
-            >
-              Anterior
-            </button>
-            <button
-              type="button"
-              className="btn btn-secundario"
-              disabled={paginaActual >= totalPaginas}
-              onClick={() => setPaginaActual(p => Math.min(totalPaginas, p + 1))}
-              style={{ padding: '0.3rem 0.6rem' }}
-            >
-              Siguiente
-            </button>
-          </div>
+          <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+            💡 Los productos frecuentes (Queso, Jamón, Chorizo, etc.) y tus favoritos se ordenan al inicio automáticamente.
+          </span>
         </div>
       </div>
     </div>

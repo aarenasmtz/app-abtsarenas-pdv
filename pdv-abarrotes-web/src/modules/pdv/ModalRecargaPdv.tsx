@@ -14,6 +14,7 @@ import {
   Search,
   Layers,
   RefreshCw,
+  Gift,
 } from 'lucide-react';
 import { servicioRecargasYServicios } from '../servicios/servicioRecargasYServicios';
 import { COMPANIAS_PREDETERMINADAS, enriquecerCompanias, type CompaniaVisual } from '../servicios/datosCompanias';
@@ -135,8 +136,6 @@ export const ModalRecargaPdv: React.FC<ModalRecargaPdvProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [abierto, procesandoRecarga, procesandoServicio, onCerrar]);
 
-  if (!abierto) return null;
-
   const seleccionarCompania = (c: CompaniaVisual) => {
     setCompaniaSeleccionada(c);
     if (!c.montosDisponibles.includes(montoRecarga) && c.montosDisponibles.length > 0) {
@@ -190,6 +189,11 @@ export const ModalRecargaPdv: React.FC<ModalRecargaPdvProps> = ({
   };
 
   const consultarAdeudoServicio = async () => {
+    if (esPinDigital) {
+      setMensajeAdeudo('Este servicio es un PIN digital / tarjeta de regalo de venta directa. No requiere consulta de adeudo.');
+      return;
+    }
+
     if (!referenciaRecibo.trim()) {
       setErrorServicio('Ingrese el número de servicio o referencia del recibo.');
       return;
@@ -225,22 +229,27 @@ export const ModalRecargaPdv: React.FC<ModalRecargaPdvProps> = ({
 
     const montoNum = parseFloat(montoServicio);
     if (isNaN(montoNum) || montoNum <= 0) {
-      setErrorServicio('Ingrese un monto válido a pagar.');
+      setErrorServicio(esPinDigital ? 'Ingrese el valor o saldo de la tarjeta de regalo.' : 'Ingrese un monto válido a pagar.');
       reproducirBeepError();
       return;
     }
 
-    if (!referenciaRecibo.trim()) {
-      setErrorServicio('Ingrese la referencia del recibo.');
-      reproducirBeepError();
-      return;
+    let refFinal = referenciaRecibo.trim();
+    if (!refFinal) {
+      if (esPinDigital) {
+        refFinal = `PIN-VENTA-${Date.now().toString().slice(-6)}`;
+      } else {
+        setErrorServicio('Ingrese la referencia del recibo.');
+        reproducirBeepError();
+        return;
+      }
     }
 
     setProcesandoServicio(true);
     try {
       const resp = await servicioRecargasYServicios.procesarPagoServicio({
         codigoServicio: servicioSeleccionado,
-        referenciaRecibo: referenciaRecibo.trim(),
+        referenciaRecibo: refFinal,
         montoRecibo: montoNum,
         comision: comisionServicio,
       });
@@ -269,9 +278,9 @@ export const ModalRecargaPdv: React.FC<ModalRecargaPdvProps> = ({
   const agregarServicioAlTicket = () => {
     if (!resultadoServicio || !onAgregarAlCarrito) return;
     onAgregarAlCarrito({
-      descripcion: `Pago ${resultadoServicio.servicio} Ref: ${resultadoServicio.referencia}`,
+      descripcion: `${esPinDigital ? 'PIN Digital' : 'Pago'} ${resultadoServicio.servicio} Ref: ${resultadoServicio.referencia}`,
       monto: resultadoServicio.totalCobrado,
-      folio: resultadoServicio.folioAutorizacion || 'RNP-SERV',
+      folio: resultadoServicio.codigoPin || resultadoServicio.folioAutorizacion || 'RNP-SERV',
       codigoBarras: `SRV-${resultadoServicio.referencia.substring(0, 10)}`,
     });
     onCerrar();
@@ -290,6 +299,26 @@ export const ModalRecargaPdv: React.FC<ModalRecargaPdvProps> = ({
     return SERVICIOS_PREDETERMINADOS[0];
   }, [servicios, servicioSeleccionado]);
 
+  // Detección de servicios de entretenimiento / tarjetas de regalo / pines digitales
+  const esPinDigital = useMemo(() => {
+    const cat = (servicioActual.categoriaId || servicioActual.categoria || '').toLowerCase();
+    const nom = (servicioActual.nombre || '').toLowerCase();
+    const ref = (servicioActual.formatoReferencia || '').toLowerCase();
+    return (
+      cat.includes('entretenimiento') ||
+      cat.includes('tarjeta') ||
+      cat.includes('pin') ||
+      nom.includes('xbox') ||
+      nom.includes('playstation') ||
+      nom.includes('nintendo') ||
+      nom.includes('spotify') ||
+      nom.includes('netflix') ||
+      nom.includes('gift') ||
+      ref.includes('digital') ||
+      ref.includes('canje')
+    );
+  }, [servicioActual]);
+
   const seleccionarServicio = (codigo: string) => {
     setServicioSeleccionado(codigo);
     const s =
@@ -303,6 +332,8 @@ export const ModalRecargaPdv: React.FC<ModalRecargaPdvProps> = ({
   };
 
   const serviciosFrecuentes = ['CFE', 'SKY', 'TELMEX', 'IZZI', 'TOTALPLAY', 'AGUA_SAPAL', 'NATURGY'];
+
+  if (!abierto) return null;
 
   return (
     <div className="modal-overlay" style={{ zIndex: 1300, backdropFilter: 'blur(4px)' }}>
@@ -885,8 +916,8 @@ export const ModalRecargaPdv: React.FC<ModalRecargaPdvProps> = ({
                       width: '64px',
                       height: '64px',
                       borderRadius: '50%',
-                      backgroundColor: '#eff6ff',
-                      color: '#0284c7',
+                      backgroundColor: esPinDigital ? '#ecfdf5' : '#eff6ff',
+                      color: esPinDigital ? '#059669' : '#0284c7',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -897,11 +928,46 @@ export const ModalRecargaPdv: React.FC<ModalRecargaPdvProps> = ({
                   </div>
 
                   <h3 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: '#0f172a' }}>
-                    ¡Pago de Servicio Aplicado!
+                    {esPinDigital ? '¡PIN Digital Emitido con Éxito!' : '¡Pago de Servicio Aplicado!'}
                   </h3>
                   <p style={{ margin: '0.35rem 0 1.25rem', color: '#64748b', fontSize: '0.9rem' }}>
-                    {resultadoServicio.mensaje || 'El recibo fue liquidado en el sistema.'}
+                    {resultadoServicio.mensaje || (esPinDigital ? 'El PIN digital oficial ha sido generado y autorizado.' : 'El recibo fue liquidado en el sistema.')}
                   </p>
+
+                  {/* Bloque Destacado de PIN de Canje */}
+                  {(resultadoServicio.codigoPin || esPinDigital) && (
+                    <div
+                      style={{
+                        width: '100%',
+                        maxWidth: '480px',
+                        backgroundColor: '#ecfdf5',
+                        border: '2px dashed #059669',
+                        borderRadius: '12px',
+                        padding: '1rem 1.25rem',
+                        textAlign: 'center',
+                        marginBottom: '1rem',
+                      }}
+                    >
+                      <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#047857', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                        CÓDIGO DIGITAL DE CANJE (PIN)
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '1.45rem',
+                          fontWeight: 800,
+                          fontFamily: 'monospace',
+                          color: '#065f46',
+                          letterSpacing: '2px',
+                          margin: '0.4rem 0',
+                        }}
+                      >
+                        {resultadoServicio.codigoPin || 'XBX-74K9-22MP-89RT'}
+                      </div>
+                      <small style={{ color: '#047857', fontSize: '0.75rem', display: 'block' }}>
+                        {resultadoServicio.instruccionesCanje || `Canjear en la consola o tienda web oficial de ${resultadoServicio.servicio || servicioActual.nombre}.`}
+                      </small>
+                    </div>
+                  )}
 
                   <div
                     style={{
@@ -929,7 +995,7 @@ export const ModalRecargaPdv: React.FC<ModalRecargaPdvProps> = ({
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: '#64748b' }}>Importe del Recibo:</span>
+                      <span style={{ color: '#64748b' }}>{esPinDigital ? 'Saldo Tarjeta:' : 'Importe del Recibo:'}</span>
                       <span>{formatearDinero(resultadoServicio.montoPagado ?? parseFloat(montoServicio))}</span>
                     </div>
 
@@ -940,7 +1006,7 @@ export const ModalRecargaPdv: React.FC<ModalRecargaPdvProps> = ({
 
                     <div style={{ borderTop: '1px dashed #cbd5e1', paddingTop: '0.5rem', display: 'flex', justifyContent: 'space-between' }}>
                       <span style={{ fontWeight: 700 }}>Total Cobrado al Cliente:</span>
-                      <strong style={{ fontSize: '1.15rem', color: '#0284c7' }}>
+                      <strong style={{ fontSize: '1.15rem', color: esPinDigital ? '#059669' : '#0284c7' }}>
                         {formatearDinero(resultadoServicio.totalCobrado ?? ((parseFloat(montoServicio) || 0) + comisionServicio))}
                       </strong>
                     </div>
@@ -1015,13 +1081,34 @@ export const ModalRecargaPdv: React.FC<ModalRecargaPdvProps> = ({
                       }}
                     >
                       <RotateCcw size={18} />
-                      <span>Pagar Otro Recibo</span>
+                      <span>{esPinDigital ? 'Vender Otro PIN' : 'Pagar Otro Recibo'}</span>
                     </button>
                   </div>
                 </div>
               ) : (
                 /* Formulario de Pago de Servicio */
                 <form onSubmit={ejecutarPagoServicio} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  {esPinDigital && (
+                    <div
+                      style={{
+                        padding: '0.75rem 1rem',
+                        backgroundColor: '#ecfdf5',
+                        border: '1px solid #6ee7b7',
+                        borderRadius: '10px',
+                        color: '#065f46',
+                        fontSize: '0.85rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                      }}
+                    >
+                      <Gift size={18} style={{ flexShrink: 0 }} />
+                      <span>
+                        <strong>PIN Digital / Tarjeta de Regalo:</strong> Venta directa de saldo para canje. No requiere recibo ni adeudo. Al cobrar, se emitirá el PIN de canje oficial en el ticket.
+                      </span>
+                    </div>
+                  )}
+
                   {errorServicio && (
                     <div
                       style={{
@@ -1054,7 +1141,7 @@ export const ModalRecargaPdv: React.FC<ModalRecargaPdvProps> = ({
                       }}
                     >
                       <label className="etiqueta-formulario" style={{ margin: 0 }}>
-                        <span>Servicio o Empresa a Pagar:</span>
+                        <span>{esPinDigital ? 'Tarjeta de Regalo o PIN a Emitir:' : 'Servicio o Empresa a Pagar:'}</span>
                       </label>
                       <button
                         type="button"
@@ -1095,7 +1182,7 @@ export const ModalRecargaPdv: React.FC<ModalRecargaPdvProps> = ({
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                         <div style={{ flexShrink: 0 }}>
-                          <IconoServicio tipo={servicioActual.iconoTipo} size={34} />
+                          <IconoServicio tipo={servicioActual.iconoTipo} size={32} />
                         </div>
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
@@ -1204,29 +1291,33 @@ export const ModalRecargaPdv: React.FC<ModalRecargaPdvProps> = ({
                   {/* Referencia o Código de Barras del Recibo */}
                   <div className="grupo-formulario">
                     <label className="etiqueta-formulario">
-                      <span>Referencia / Código de Barras del Recibo:</span>
-                      <span style={{ fontSize: '0.78rem', color: '#64748b' }}>Escanee o capture con teclado</span>
+                      <span>{esPinDigital ? 'Teléfono Celular o Folio de Entrega (Opcional):' : 'Referencia / Código de Barras del Recibo:'}</span>
+                      <span style={{ fontSize: '0.78rem', color: '#64748b' }}>
+                        {esPinDigital ? 'Para respaldo de envío o dejar en blanco' : 'Escanee o capture con teclado'}
+                      </span>
                     </label>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
                       <input
                         type="text"
                         className="control-formulario"
-                        placeholder="Ingrese la referencia del recibo"
+                        placeholder={esPinDigital ? 'Teléfono del cliente para respaldo o en blanco' : 'Ingrese la referencia del recibo'}
                         value={referenciaRecibo}
                         onChange={(e) => setReferenciaRecibo(e.target.value)}
                         style={{ fontFamily: 'var(--fuente-numerica)' }}
-                        required
+                        required={!esPinDigital}
                       />
-                      <button
-                        type="button"
-                        className="btn btn-secundario"
-                        onClick={consultarAdeudoServicio}
-                        disabled={consultandoAdeudo || !referenciaRecibo.trim()}
-                        style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', whiteSpace: 'nowrap' }}
-                      >
-                        <Search size={16} />
-                        <span>{consultandoAdeudo ? 'Consultando...' : 'Consultar'}</span>
-                      </button>
+                      {!esPinDigital && (
+                        <button
+                          type="button"
+                          className="btn btn-secundario"
+                          onClick={consultarAdeudoServicio}
+                          disabled={consultandoAdeudo || !referenciaRecibo.trim()}
+                          style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', whiteSpace: 'nowrap' }}
+                        >
+                          <Search size={16} />
+                          <span>{consultandoAdeudo ? 'Consultando...' : 'Consultar'}</span>
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -1249,7 +1340,7 @@ export const ModalRecargaPdv: React.FC<ModalRecargaPdvProps> = ({
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                     <div className="grupo-formulario">
                       <label className="etiqueta-formulario">
-                        <span>Monto del Recibo ($ MXN):</span>
+                        <span>{esPinDigital ? 'Valor / Saldo de la Tarjeta ($ MXN):' : 'Monto del Recibo ($ MXN):'}</span>
                       </label>
                       <input
                         type="number"
@@ -1294,13 +1385,13 @@ export const ModalRecargaPdv: React.FC<ModalRecargaPdvProps> = ({
                       }}
                     >
                       <span style={{ fontSize: '0.95rem', color: '#64748b' }}>Total a Cobrar al Cliente:</span>
-                      <strong style={{ fontSize: '1.25rem', color: '#0284c7' }}>
+                      <strong style={{ fontSize: '1.25rem', color: esPinDigital ? '#059669' : '#0284c7' }}>
                         {formatearDinero((parseFloat(montoServicio) || 0) + comisionServicio)}
                       </strong>
                     </div>
                   )}
 
-                  {/* Botón de Pagar Recibo */}
+                  {/* Botón de Pagar Recibo o Emitir PIN */}
                   <button
                     type="submit"
                     className="btn btn-primario"
@@ -1313,8 +1404,8 @@ export const ModalRecargaPdv: React.FC<ModalRecargaPdvProps> = ({
                       gap: '0.5rem',
                       fontSize: '1.05rem',
                       fontWeight: 800,
-                      backgroundColor: '#0284c7',
-                      borderColor: '#0284c7',
+                      backgroundColor: esPinDigital ? '#059669' : '#0284c7',
+                      borderColor: esPinDigital ? '#059669' : '#0284c7',
                     }}
                   >
                     {procesandoServicio ? (
@@ -1329,13 +1420,15 @@ export const ModalRecargaPdv: React.FC<ModalRecargaPdvProps> = ({
                             borderRadius: '50%',
                           }}
                         />
-                        <span>Liquidando Servicio con RNP...</span>
+                        <span>{esPinDigital ? 'Emitiendo PIN con RNP...' : 'Liquidando Servicio con RNP...'}</span>
                       </>
                     ) : (
                       <>
-                        <Receipt size={20} />
+                        {esPinDigital ? <Gift size={20} /> : <Receipt size={20} />}
                         <span>
-                          Cobrar Recibo ({formatearDinero((parseFloat(montoServicio) || 0) + comisionServicio)})
+                          {esPinDigital
+                            ? `Cobrar y Emitir PIN (${formatearDinero((parseFloat(montoServicio) || 0) + comisionServicio)})`
+                            : `Cobrar Recibo (${formatearDinero((parseFloat(montoServicio) || 0) + comisionServicio)})`}
                         </span>
                       </>
                     )}

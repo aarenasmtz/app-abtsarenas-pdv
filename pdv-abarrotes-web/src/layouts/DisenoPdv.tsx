@@ -52,9 +52,6 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
 }) => {
   const [codigoInput, setCodigoInput] = useState('');
   const [mensajeNotificacion, setMensajeNotificacion] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
-  const [resultadosPredictivos, setResultadosPredictivos] = useState<ResultadoBusquedaPdvDto[]>([]);
-  const [mostrarDropdown, setMostrarDropdown] = useState(false);
-  const [buscando, setBuscando] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -534,31 +531,6 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
     inputRef.current?.focus();
   };
 
-  // Búsqueda predictiva con debounce mientras el cajero escribe
-  useEffect(() => {
-    const termino = codigoInput.trim();
-    if (termino.length < 2) {
-      setResultadosPredictivos([]);
-      setMostrarDropdown(false);
-      return;
-    }
-
-    const timer = setTimeout(async () => {
-      try {
-        setBuscando(true);
-        const resultados = await servicioProductos.buscarPdv(termino, 10);
-        setResultadosPredictivos(resultados);
-        setMostrarDropdown(resultados.length > 0);
-      } catch {
-        setResultadosPredictivos([]);
-      } finally {
-        setBuscando(false);
-      }
-    }, 200);
-
-    return () => clearTimeout(timer);
-  }, [codigoInput]);
-
   const handleConfirmarPesoGranel = (producto: ProductoCobroDto, pesoKg: number, subtotalExacto?: number) => {
     const subtotalFinal = subtotalExacto !== undefined ? subtotalExacto : Math.round(pesoKg * producto.precioVenta * 100) / 100;
     agregarArticulo({
@@ -618,7 +590,6 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
     }
 
     setCodigoInput('');
-    setMostrarDropdown(false);
     inputRef.current?.focus();
   };
 
@@ -698,7 +669,6 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
     } finally {
       setTimeout(() => setMensajeNotificacion(null), 3000);
       setCodigoInput('');
-      setMostrarDropdown(false);
       inputRef.current?.focus();
     }
   };
@@ -898,78 +868,13 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
                     type="text"
                     className="input-escaner input-escaner-permitido"
                     style={{ paddingLeft: '44px', width: '100%' }}
-                    placeholder="Escanea el código de barras o escribe para buscar producto..."
+                    placeholder="Escanea el código de barras o escribe el código y presiona Enter..."
                     aria-label="Código de barras o búsqueda de producto"
-                    aria-busy={buscando}
+                    aria-busy={false}
                     autoComplete="off"
                     value={codigoInput}
                     onChange={(e) => setCodigoInput(e.target.value)}
                   />
-                  {buscando && (
-                    <div
-                      role="status"
-                      aria-live="polite"
-                      style={{ position: 'absolute', right: '12px', top: '16px', fontSize: '0.75rem', color: 'var(--color-primario-hover)' }}
-                    >
-                      Buscando...
-                    </div>
-                  )}
-
-                  {/* Dropdown Predictivo Ultrarrápido (CERO IMÁGENES) */}
-                  {mostrarDropdown && resultadosPredictivos.length > 0 && (
-                    <div 
-                      style={{
-                        position: 'absolute',
-                        top: 'calc(100% + 6px)',
-                        left: 0,
-                        right: 0,
-                        zIndex: 100,
-                        backgroundColor: 'var(--color-superficie)',
-                        border: '1px solid var(--color-borde)',
-                        borderRadius: 'var(--radio-md)',
-                        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.12)',
-                        maxHeight: '320px',
-                        overflowY: 'auto'
-                      }}
-                    >
-                      {resultadosPredictivos.map((p) => (
-                        <div
-                          key={p.idProducto}
-                          style={{
-                            padding: '0.75rem 1rem',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            cursor: 'pointer',
-                            borderBottom: '1px solid var(--color-borde)',
-                          }}
-                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--color-fondo)')}
-                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                          onClick={() => agregarDesdePredictivo(p)}
-                        >
-                          <div>
-                            <div style={{ fontWeight: 600, color: 'var(--color-texto)', fontSize: '0.95rem' }}>
-                              {p.descripcion}
-                            </div>
-                            <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.2rem', alignItems: 'center' }}>
-                              <span className="mono" style={{ fontSize: '0.8rem', color: 'var(--color-primario-hover)' }}>
-                                {p.codigoBarras}
-                              </span>
-                              <span className="badge badge-secundario" style={{ fontSize: '0.65rem' }}>
-                                {p.categoria}
-                              </span>
-                              <span style={{ fontSize: '0.75rem', color: 'var(--color-texto-secundario)' }}>
-                                Stock: <strong className="mono">{p.existenciaActual} {p.permiteVentaFraccionada ? 'kg' : 'pza'}</strong>
-                              </span>
-                            </div>
-                          </div>
-                          <div className="mono font-bold" style={{ color: '#34d399', fontSize: '1.15rem' }}>
-                            ${p.precioVenta.toFixed(2)}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
                 <button 
                   type="button" 

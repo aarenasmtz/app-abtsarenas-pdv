@@ -746,6 +746,58 @@ function obtenerRespuestaRescate(targetPath, request, bodyData, url) {
     });
   }
 
+  // 7.1 Reportes y Estadísticas de Ventas
+  if (lowerPath.includes('/reportes/ventas/resumen')) {
+    return responderJson({
+      exito: true,
+      mensaje: 'Resumen de ventas obtenido exitosamente.',
+      datos: {
+        totalVentas: 15840.50,
+        totalGanancia: 4752.15,
+        margenPromedioPorcentaje: 30.0,
+        totalTickets: 54,
+        ticketPromedio: 293.34,
+        ticketsCancelados: 0,
+        montoCancelado: 0.0,
+      },
+      errores: null,
+    });
+  }
+
+  if (lowerPath.includes('/reportes/ventas')) {
+    const pag = parseInt(url.searchParams.get('pagina') || '1', 10);
+    const tam = parseInt(url.searchParams.get('registrosPorPagina') || '25', 10);
+    return responderJson({
+      exito: true,
+      mensaje: 'Reporte de ventas obtenido correctamente.',
+      datos: {
+        elementos: VENTAS_BD,
+        totalRegistros: VENTAS_BD.length,
+        paginaActual: pag,
+        registrosPorPagina: tam,
+        totalPaginas: Math.ceil(VENTAS_BD.length / tam),
+        tienePaginaAnterior: pag > 1,
+        tienePaginaSiguiente: pag < Math.ceil(VENTAS_BD.length / tam),
+      },
+      errores: null,
+    });
+  }
+
+  if (lowerPath.includes('/reportes/utilidades')) {
+    return responderJson({
+      exito: true,
+      mensaje: 'Reporte de utilidades obtenido correctamente.',
+      datos: [
+        { idProducto: 1, codigoBarras: '7501055304004', descripcion: 'Coca Cola 225ml Retornable', categoria: 'Bebidas', cantidadVendida: 24, costoTotal: 696.0, ventaTotal: 936.0, utilidadBruta: 240.0, margenPorcentaje: 25.6 },
+        { idProducto: 2, codigoBarras: '7501055332175', descripcion: 'Coca Cola 355ml Vidrio', categoria: 'Bebidas', cantidadVendida: 35, costoTotal: 341.25, ventaTotal: 455.0, utilidadBruta: 113.75, margenPorcentaje: 25.0 },
+        { idProducto: 3, codigoBarras: '7501055304745', descripcion: 'Coca Cola 3L Retornable', categoria: 'Bebidas', cantidadVendida: 15, costoTotal: 585.0, ventaTotal: 780.0, utilidadBruta: 195.0, margenPorcentaje: 25.0 },
+        { idProducto: 4, codigoBarras: '7501000111204', descripcion: 'Leche Lala Entera 1L Tetra', categoria: 'Lácteos', cantidadVendida: 40, costoTotal: 880.0, ventaTotal: 1080.0, utilidadBruta: 200.0, margenPorcentaje: 18.5 },
+        { idProducto: 5, codigoBarras: '7501030421021', descripcion: 'Huevo Blanco Bachoco 1kg', categoria: 'Abarrotes', cantidadVendida: 28, costoTotal: 1064.0, ventaTotal: 1288.0, utilidadBruta: 224.0, margenPorcentaje: 17.4 },
+      ],
+      errores: null,
+    });
+  }
+
   // 8. Diagnóstico y Dashboard
   if (lowerPath.includes('diagnostico/estado')) {
     return responderJson({
@@ -996,6 +1048,13 @@ function obtenerRespuestaRescate(targetPath, request, bodyData, url) {
           { codigo: 'ATT', nombre: 'AT&T', activa: true, montosDisponibles: [30, 50, 100, 150, 200] },
           { codigo: 'BAIT', nombre: 'Bait', activa: true, montosDisponibles: [50, 100, 200] },
         ],
+        errores: null,
+      });
+    if (lowerPath.includes('sincronizar')) {
+      return responderJson({
+        exito: true,
+        mensaje: 'Catálogo oficial RNP sincronizado con éxito (412 productos guardados en BD).',
+        datos: 412,
         errores: null,
       });
     }
@@ -1284,14 +1343,56 @@ function obtenerRespuestaRescate(targetPath, request, bodyData, url) {
           if (j.referenciaRecibo) ref = String(j.referenciaRecibo);
         } catch {}
       }
+
       const esSky = srv.toUpperCase().includes('SKY') || ref.includes('501205133215');
-      const folAutSrv = (esSky ? 'AUT-SKY-' : 'AUT-SRV-') + Math.floor(Math.random() * 900000 + 100000);
+      const esPinDigital = srv.toUpperCase().includes('XBOX') ||
+                           srv.toUpperCase().includes('PLAYSTATION') ||
+                           srv.toUpperCase().includes('NINTENDO') ||
+                           srv.toUpperCase().includes('SPOTIFY') ||
+                           srv.toUpperCase().includes('NETFLIX') ||
+                           srv.toUpperCase().includes('ENTRETENIMIENTO') ||
+                           srv.toUpperCase().includes('PIN') ||
+                           srv.toUpperCase().includes('TARJETA');
+
+      let folAutSrv = 'AUT-SRV-' + Math.floor(Math.random() * 900000 + 100000);
+      if (esSky) folAutSrv = 'AUT-SKY-' + Math.floor(Math.random() * 900000 + 100000);
+      if (esPinDigital) folAutSrv = 'AUT-PIN-' + Math.floor(Math.random() * 900000 + 100000);
+
       const folProvSrv = 'RNP-' + Math.floor(Math.random() * 9000000 + 1000000);
-      const nombreSrv = esSky ? 'Sky México / VeTV Satelital' : srv;
-      const msgSrv = esSky
-        ? `El pago de Sky México / VeTV por $${mRec.toFixed(2)} fue liquidado en el sistema.`
-        : `El recibo de ${srv} fue liquidado en el sistema.`;
-      registrarEnMemoria('SERVICIO', nombreSrv, ref, mRec, com, true, '00', msgSrv, folProvSrv, folAutSrv);
+      let nombreSrv = srv;
+      if (esSky) nombreSrv = 'Sky México / VeTV Satelital';
+      if (srv.toUpperCase().includes('XBOX')) nombreSrv = 'Xbox Game Pass / Microsoft Store';
+      if (srv.toUpperCase().includes('PLAYSTATION')) nombreSrv = 'PlayStation Network (PSN)';
+      if (srv.toUpperCase().includes('SPOTIFY')) nombreSrv = 'Spotify Premium';
+      if (srv.toUpperCase().includes('NETFLIX')) nombreSrv = 'Netflix';
+
+      const generarPin = (prefijo) => {
+        const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+        const bloque = () => Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+        return `${prefijo}-${bloque()}-${bloque()}-${bloque()}`;
+      };
+
+      const codigoPin = esPinDigital
+        ? (srv.toUpperCase().includes('XBOX') ? generarPin('XBX') :
+           srv.toUpperCase().includes('PLAYSTATION') ? generarPin('PSN') :
+           srv.toUpperCase().includes('SPOTIFY') ? generarPin('SPT') :
+           srv.toUpperCase().includes('NETFLIX') ? generarPin('NFLX') : generarPin('PIN'))
+        : undefined;
+
+      const instruccionesCanje = esPinDigital
+        ? (srv.toUpperCase().includes('XBOX') ? 'Canjear en https://microsoft.com/redeem o directamente en el menú de la consola Xbox.' :
+           srv.toUpperCase().includes('PLAYSTATION') ? 'Canjear en PlayStation Store > Canjear código o en playstation.com.' :
+           srv.toUpperCase().includes('SPOTIFY') ? 'Canjear en https://spotify.com/redeem con tu cuenta de Spotify.' :
+           'Canjear en el portal oficial del proveedor con tu cuenta.')
+        : undefined;
+
+      const msgSrv = esPinDigital
+        ? `PIN digital de ${nombreSrv} por $${mRec.toFixed(2)} emitido con éxito. PIN generado: ${codigoPin}.`
+        : (esSky
+          ? `El pago de Sky México / VeTV por $${mRec.toFixed(2)} fue liquidado en el sistema.`
+          : `El recibo de ${srv} fue liquidado en el sistema.`);
+
+      registrarEnMemoria('SERVICIO', nombreSrv, ref || (esPinDigital ? 'VENTA-PIN-DIRECTA' : '0000000000'), mRec, com, true, '00', msgSrv, folProvSrv, folAutSrv);
 
       return responderJson({
         exito: true,
@@ -1304,8 +1405,10 @@ function obtenerRespuestaRescate(targetPath, request, bodyData, url) {
           comisionCobrada: com,
           totalCobrado: mRec + com,
           servicio: nombreSrv,
-          referencia: ref,
+          referencia: ref || (esPinDigital ? 'VENTA-PIN-DIRECTA' : '0000000000'),
           fechaHora: new Date().toISOString(),
+          codigoPin,
+          instruccionesCanje,
         },
         errores: null,
       });

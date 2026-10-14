@@ -59,6 +59,8 @@ export interface ResultadoPagoServicioDto {
   servicio: string;
   referencia: string;
   fechaHora: string;
+  codigoPin?: string;
+  instruccionesCanje?: string;
 }
 
 export interface EstadoIntegracionServiciosDto {

@@ -169,19 +169,22 @@ export const PantallaReportes: React.FC = () => {
     setPaginaActual(1);
   };
 
-  const formatearMoneda = (val: number) => {
-    return `$${val.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const formatearMoneda = (val?: number | null) => {
+    const num = typeof val === 'number' && !isNaN(val) ? val : Number(val) || 0;
+    return `$${num.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
-  const formatearFechaHora = (fechaStr: string) => {
+  const formatearFechaHora = (fechaStr?: string | null) => {
+    if (!fechaStr) return '-';
     try {
       const f = new Date(fechaStr);
+      if (isNaN(f.getTime())) return fechaStr;
       return f.toLocaleString('es-MX', {
         dateStyle: 'short',
         timeStyle: 'short',
       });
     } catch {
-      return fechaStr;
+      return fechaStr || '-';
     }
   };
 
@@ -255,7 +258,7 @@ export const PantallaReportes: React.FC = () => {
       clave: 'numeroArticulos',
       titulo: 'Artículos',
       renderizar: (v: ReporteVentaItemDto) => (
-        <span className="mono">{v.numeroArticulos.toLocaleString('es-MX', { maximumFractionDigits: 2 })}</span>
+        <span className="mono">{(v.numeroArticulos ?? 0).toLocaleString('es-MX', { maximumFractionDigits: 2 })}</span>
       ),
     },
     {
@@ -449,7 +452,7 @@ export const PantallaReportes: React.FC = () => {
       {pestanaActiva === 'ventas' && (
         <>
           {/* Tarjetas de Resumen Global del Periodo */}
-          {resumenVentas && (
+          {resumenVentas && !Array.isArray(resumenVentas) && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
               <div className="tarjeta" style={{ padding: '1rem' }}>
                 <span style={{ fontSize: '0.78rem', color: 'var(--color-texto-secundario)' }}>Total Facturado</span>
@@ -468,14 +471,14 @@ export const PantallaReportes: React.FC = () => {
               <div className="tarjeta" style={{ padding: '1rem' }}>
                 <span style={{ fontSize: '0.78rem', color: 'var(--color-texto-secundario)' }}>Margen Promedio</span>
                 <h3 className="mono" style={{ fontSize: '1.5rem', margin: '0.3rem 0 0 0', color: 'var(--color-advertencia)' }}>
-                  {resumenVentas.margenPromedioPorcentaje}%
+                  {resumenVentas.margenPromedioPorcentaje ?? 0}%
                 </h3>
               </div>
 
               <div className="tarjeta" style={{ padding: '1rem' }}>
                 <span style={{ fontSize: '0.78rem', color: 'var(--color-texto-secundario)' }}>Tickets Emitidos</span>
                 <h3 className="mono" style={{ fontSize: '1.5rem', margin: '0.3rem 0 0 0' }}>
-                  {resumenVentas.totalTickets.toLocaleString()}
+                  {(resumenVentas.totalTickets ?? 0).toLocaleString()}
                 </h3>
               </div>
 
@@ -712,7 +715,7 @@ export const PantallaReportes: React.FC = () => {
                       <td style={{ padding: '0.65rem 0.85rem', fontWeight: 500 }}>{item.descripcion}</td>
                       <td style={{ padding: '0.65rem 0.85rem', color: 'var(--color-texto-secundario)' }}>{item.categoria}</td>
                       <td style={{ padding: '0.65rem 0.85rem', textAlign: 'right' }} className="mono">
-                        {item.cantidadVendida.toLocaleString('es-MX', { maximumFractionDigits: 2 })}
+                        {(item.cantidadVendida ?? 0).toLocaleString('es-MX', { maximumFractionDigits: 2 })}
                       </td>
                       <td style={{ padding: '0.65rem 0.85rem', textAlign: 'right' }} className="mono">
                         {formatearMoneda(item.costoTotal)}
