@@ -86,5 +86,8 @@ Frontend: React 19, TypeScript 6, Vite 6, CSS global, Lucide React y Zustand.
   - Escáner en Punto de Venta: removido el combo/dropdown flotante predictivo al escribir texto en el input principal; reservado exclusivamente para lectura de código de barras o ingreso manual + Enter.
   - Catálogo F10 en Punto de Venta: removida la paginación de 10 en 10 en favor de scroll continuo total de resultados coincidentes, y priorización en las primeras posiciones de productos de alta rotación y mostrador (Queso, Jamón, Chorizo, Chicharrón, etc.).
   - Atajo F11 en PDV: resuelta la violación de hooks de React (Error #310) asegurando la renderización fluida del modal de servicios y recargas.
+  - Búsqueda y Códigos en Mayúsculas: el input del escáner en Punto de Venta transforma automáticamente cualquier texto a mayúsculas en tiempo real (`queso` -> `QUESO`), garantizando coincidencia inmediata con productos de catálogo y a granel. Tanto el backend .NET como el Worker operan con búsqueda insensible a mayúsculas/minúsculas.
+  - Alta de Productos en Mayúsculas: en el catálogo administrativo (`/productos`) y en la capa de servicios backend, el Código de Barras Principal y la Clave Interna se sanitizan y persisten estrictamente en mayúsculas (`ToUpperInvariant()`).
+  - Atajos de Carrito con Foco Fijo en Escáner (+, -, Supr): se habilitó la manipulación directa de la partida activa desde el teclado numérico o general mientras el cursor permanece enfocado en el input del escáner (sin necesidad de dar clic con el ratón al renglón). La tecla `+` incrementa la cantidad (1 pieza o 0.250kg), la tecla `-` disminuye la cantidad y la tecla `Supr` (`Delete`) elimina la partida con confirmación y retroalimentación sonora.
 
 
