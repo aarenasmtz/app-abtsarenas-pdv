@@ -31,6 +31,7 @@ public class ResultadoRecargaDto
 {
     public bool Exito { get; set; }
     public string Mensaje { get; set; } = string.Empty;
+    public string? CodigoRespuesta { get; set; }
     public string? FolioProveedor { get; set; }
     public string? CodigoAutorizacion { get; set; }
     public decimal Monto { get; set; }

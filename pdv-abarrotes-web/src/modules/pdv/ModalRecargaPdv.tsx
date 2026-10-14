@@ -168,6 +168,12 @@ export const ModalRecargaPdv: React.FC<ModalRecargaPdvProps> = ({
         monto: montoRecarga,
       });
 
+      if (!resp.exito) {
+        setErrorRecarga(resp.mensaje || `Rechazo del operador (Código ${resp.codigoRespuesta || 'ERR'})`);
+        reproducirBeepError();
+        return;
+      }
+
       setResultadoRecarga(resp);
       reproducirBeepExito();
     } catch (err: unknown) {

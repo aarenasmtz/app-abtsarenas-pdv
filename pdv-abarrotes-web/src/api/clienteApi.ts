@@ -50,6 +50,14 @@ clienteApi.interceptors.response.use(
         window.dispatchEvent(new CustomEvent('pdv:sesion-expirada'));
       }
     }
+
+    // Extraer mensaje descriptivo enviado por el backend/API para que la UI lo muestre directamente
+    const datosError = error.response?.data;
+    const mensajeServidor = datosError?.mensaje || (datosError?.errores && datosError.errores[0]);
+    if (mensajeServidor && typeof mensajeServidor === 'string') {
+      error.message = mensajeServidor;
+    }
+
     return Promise.reject(error);
   }
 );

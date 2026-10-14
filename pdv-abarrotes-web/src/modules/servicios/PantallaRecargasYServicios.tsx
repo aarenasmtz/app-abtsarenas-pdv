@@ -165,6 +165,9 @@ export const PantallaRecargasYServicios: React.FC = () => {
         monto: montoRecarga,
       });
       setResultadoRecarga(respuesta);
+      if (!respuesta.exito) {
+        setErrorRecarga(respuesta.mensaje || `Rechazo del operador (Código ${respuesta.codigoRespuesta || 'ERR'})`);
+      }
       cargarDatos();
     } catch (err: unknown) {
       setErrorRecarga(err instanceof Error ? err.message : 'Error al procesar recarga.');

@@ -52,6 +52,41 @@ const TURNO_ESTADO = {
 
 const MOVIMIENTOS_CAJA_MEMORIA = [];
 
+const TRANSACCIONES_SERVICIOS_MEMORIA = [
+  {
+    idTransaccionServicio: 101,
+    folioPos: '10008-20261013-0001',
+    tipoTransaccion: 'RECARGA',
+    carrierId: 'TELCEL',
+    carrierNombre: 'Telcel',
+    referencia: '2222222222',
+    monto: 50.0,
+    comision: 0.0,
+    totalCobrado: 50.0,
+    estado: 'EXITOSA',
+    codigoRespuesta: '00',
+    descripcionRespuesta: 'TRANSACCIÓN EXITOSA',
+    folioProveedor: 'RNP-286819',
+    folioCarrier: 'AUT-789012',
+    fechaCreacion: new Date(Date.now() - 3600000).toISOString(),
+    reintentosConsulta: 0,
+  },
+];
+
+const BITACORA_SERVICIOS_MEMORIA = [
+  {
+    idBitacoraServicio: 201,
+    folioPos: '10008-20261013-0001',
+    accion: 'SOLICITUD_PROCESADA',
+    mensaje: 'Transacción autorizada por carrier Telcel',
+    detallesJson: '{"numeroTelefono":"2222222222","monto":50,"codigoCompania":"TELCEL"}',
+    usuario: 'Administrador de la Tienda',
+    fechaHora: new Date(Date.now() - 3600000).toISOString(),
+  },
+];
+
+const LOG_ERRORES_SERVICIOS_MEMORIA = [];
+
 function obtenerRespuestaRescate(targetPath, request, bodyData, url) {
   const lowerPath = targetPath.toLowerCase();
 
@@ -905,11 +940,49 @@ function obtenerRespuestaRescate(targetPath, request, bodyData, url) {
         exito: true,
         mensaje: 'Integración activa.',
         datos: {
-          conectado: true,
-          proveedor: 'Red Nacional de Pagos (RNP)',
-          saldoDisponible: 5000.0,
-          ultimoPing: new Date().toISOString(),
+          estaConfigurado: true,
+          nombreProveedor: 'Red Nacional de Pagos (RNP)',
+          mensajeEstatus: 'Servicio en línea y conectado',
+          saldoBolsaDisponible: 5000.0,
+          ultimaVerificacion: new Date().toISOString(),
         },
+        errores: null,
+      });
+    }
+    if (lowerPath.includes('saldo-bolsa')) {
+      return responderJson({
+        exito: true,
+        mensaje: 'Saldo de bolsa consultado exitosamente.',
+        datos: {
+          saldoTotal: 5000.0,
+          saldoDisponible: 5000.0,
+          moneda: 'MXN',
+          ultimaActualizacion: new Date().toISOString(),
+        },
+        errores: null,
+      });
+    }
+    if (lowerPath.includes('transacciones')) {
+      return responderJson({
+        exito: true,
+        mensaje: 'Transacciones obtenidas.',
+        datos: TRANSACCIONES_SERVICIOS_MEMORIA,
+        errores: null,
+      });
+    }
+    if (lowerPath.includes('bitacora')) {
+      return responderJson({
+        exito: true,
+        mensaje: 'Bitácora obtenida.',
+        datos: BITACORA_SERVICIOS_MEMORIA,
+        errores: null,
+      });
+    }
+    if (lowerPath.includes('errores')) {
+      return responderJson({
+        exito: true,
+        mensaje: 'Log de errores técnicos obtenido.',
+        datos: LOG_ERRORES_SERVICIOS_MEMORIA,
         errores: null,
       });
     }
@@ -951,6 +1024,52 @@ function obtenerRespuestaRescate(targetPath, request, bodyData, url) {
         errores: null,
       });
     }
+
+    // Función auxiliar para registrar la operación en memoria para el historial y bitácora
+    const registrarEnMemoria = (tipo, compServ, ref, m, com, exito, cod, msg, folRnp, folAut) => {
+      const folioPos = '10008-' + Date.now();
+      const fecha = new Date().toISOString();
+      TRANSACCIONES_SERVICIOS_MEMORIA.unshift({
+        idTransaccionServicio: Date.now(),
+        folioPos,
+        tipoTransaccion: tipo,
+        carrierId: String(compServ).toUpperCase(),
+        carrierNombre: String(compServ).toUpperCase(),
+        referencia: String(ref),
+        monto: Number(m),
+        comision: Number(com || 0),
+        totalCobrado: Number(m) + Number(com || 0),
+        estado: exito ? 'EXITOSA' : (cod === '24' ? 'EN_ESPERA' : 'FALLIDA'),
+        codigoRespuesta: cod,
+        descripcionRespuesta: msg,
+        folioProveedor: folRnp || 'N/A',
+        folioCarrier: folAut || 'N/A',
+        fechaCreacion: fecha,
+        reintentosConsulta: 0,
+      });
+
+      BITACORA_SERVICIOS_MEMORIA.unshift({
+        idBitacoraServicio: Date.now() + 1,
+        folioPos,
+        accion: exito ? 'TRANSACCION_AUTORIZADA' : 'RECHAZO_OPERADORA',
+        mensaje: msg,
+        detallesJson: JSON.stringify({ ref, compServ, m, cod }),
+        usuario: TURNO_ESTADO.nombreUsuario || 'Administrador de la Tienda',
+        fechaHora: fecha,
+      });
+
+      if (!exito) {
+        LOG_ERRORES_SERVICIOS_MEMORIA.unshift({
+          idLogError: Date.now() + 2,
+          folioPos,
+          metodoSoap: tipo === 'RECARGA' ? 'RecargaTiempoAire' : 'PagoServicio',
+          codigoRespuesta: cod,
+          mensajeError: msg,
+          fechaHora: fecha,
+        });
+      }
+    };
+
     if (lowerPath.includes('recarga') || lowerPath.includes('recargas')) {
       let monto = 50;
       let tel = '4771234567';
@@ -965,119 +1084,138 @@ function obtenerRespuestaRescate(targetPath, request, bodyData, url) {
       }
 
       // Matriz oficial de certificación RNP (Página 9 del manual)
+      // Se retorna HTTP 200 OK con exito: false para que Axios entregue el objeto de respuesta del carrier
       if (tel === '5555555555') {
+        const msg = 'REFERENCIA NO VÁLIDA / REVISAR OPERADOR (Código 01)';
+        registrarEnMemoria('RECARGA', comp, tel, monto, 0, false, '01', msg, null, null);
         return responderJson({
           exito: false,
-          mensaje: 'REFERENCIA NO VÁLIDA / REVISAR OPERADOR (Código 01)',
+          mensaje: msg,
           datos: {
             exito: false,
             codigoRespuesta: '01',
-            mensaje: 'REFERENCIA NO VÁLIDA / REVISAR OPERADOR',
+            mensaje: msg,
             monto: Number(monto),
             numeroTelefono: String(tel),
             compania: String(comp).toUpperCase(),
             fechaHora: new Date().toISOString(),
           },
-          errores: ['01: REFERENCIA NO VÁLIDA / REVISAR OPERADOR'],
-        }, 400);
+          errores: ['01: ' + msg],
+        });
       }
 
       if (tel === '4444444444') {
+        const msg = 'TELÉFONO SUSCRIPTOR NO VÁLIDO (Código 02)';
+        registrarEnMemoria('RECARGA', comp, tel, monto, 0, false, '02', msg, null, null);
         return responderJson({
           exito: false,
-          mensaje: 'TELÉFONO SUSCRIPTOR NO VÁLIDO (Código 02)',
+          mensaje: msg,
           datos: {
             exito: false,
             codigoRespuesta: '02',
-            mensaje: 'TELÉFONO SUSCRIPTOR NO VÁLIDO',
+            mensaje: msg,
             monto: Number(monto),
             numeroTelefono: String(tel),
             compania: String(comp).toUpperCase(),
             fechaHora: new Date().toISOString(),
           },
-          errores: ['02: TELÉFONO SUSCRIPTOR NO VÁLIDO'],
-        }, 400);
+          errores: ['02: ' + msg],
+        });
       }
 
       if (tel === '6666666666') {
+        const msg = 'SALDO INSUFICIENTE (Código 05)';
+        registrarEnMemoria('RECARGA', comp, tel, monto, 0, false, '05', msg, null, null);
         return responderJson({
           exito: false,
-          mensaje: 'SALDO INSUFICIENTE (Código 05)',
+          mensaje: msg,
           datos: {
             exito: false,
             codigoRespuesta: '05',
-            mensaje: 'SALDO INSUFICIENTE',
+            mensaje: msg,
             monto: Number(monto),
             numeroTelefono: String(tel),
             compania: String(comp).toUpperCase(),
             fechaHora: new Date().toISOString(),
           },
-          errores: ['05: SALDO INSUFICIENTE'],
-        }, 400);
+          errores: ['05: ' + msg],
+        });
       }
 
       if (tel === '5554444444') {
+        const msg = 'MANTENIMIENTO OPERADORA EN CURSO (Código 06)';
+        registrarEnMemoria('RECARGA', comp, tel, monto, 0, false, '06', msg, null, null);
         return responderJson({
           exito: false,
-          mensaje: 'MANTENIMIENTO OPERADORA EN CURSO (Código 06)',
+          mensaje: msg,
           datos: {
             exito: false,
             codigoRespuesta: '06',
-            mensaje: 'MANTENIMIENTO OPERADORA EN CURSO',
+            mensaje: msg,
             monto: Number(monto),
             numeroTelefono: String(tel),
             compania: String(comp).toUpperCase(),
             fechaHora: new Date().toISOString(),
           },
-          errores: ['06: MANTENIMIENTO OPERADORA EN CURSO'],
-        }, 400);
+          errores: ['06: ' + msg],
+        });
       }
 
       if (tel === '5557777777') {
+        const msg = 'NO SE PUEDE ABONAR (Código 04)';
+        registrarEnMemoria('RECARGA', comp, tel, monto, 0, false, '04', msg, null, null);
         return responderJson({
           exito: false,
-          mensaje: 'NO SE PUEDE ABONAR (Código 04)',
+          mensaje: msg,
           datos: {
             exito: false,
             codigoRespuesta: '04',
-            mensaje: 'NO SE PUEDE ABONAR',
+            mensaje: msg,
             monto: Number(monto),
             numeroTelefono: String(tel),
             compania: String(comp).toUpperCase(),
             fechaHora: new Date().toISOString(),
           },
-          errores: ['04: NO SE PUEDE ABONAR'],
-        }, 400);
+          errores: ['04: ' + msg],
+        });
       }
 
       if (tel === '5559999999') {
+        const msg = 'RECARGA EN ESPERA (Código 24) - Sin respuesta del carrier. Se requiere consultar estado con Folio_POS.';
+        const folRnp = 'RNP-' + Math.floor(Math.random() * 9000000 + 1000000);
+        registrarEnMemoria('RECARGA', comp, tel, monto, 0, false, '24', msg, folRnp, null);
         return responderJson({
           exito: false,
-          mensaje: 'RECARGA EN ESPERA (Código 24) - Sin respuesta del carrier. Se requiere consultar estado con Folio_POS.',
+          mensaje: msg,
           datos: {
             exito: false,
             codigoRespuesta: '24',
-            mensaje: 'RECARGA EN ESPERA',
-            folioProveedor: 'RNP-' + Math.floor(Math.random() * 9000000 + 1000000),
+            mensaje: msg,
+            folioProveedor: folRnp,
             monto: Number(monto),
             numeroTelefono: String(tel),
             compania: String(comp).toUpperCase(),
             fechaHora: new Date().toISOString(),
           },
-          errores: ['24: RECARGA EN ESPERA'],
-        }, 408);
+          errores: ['24: ' + msg],
+        });
       }
 
       // Transacción Exitosa (00)
+      const folRnp = 'RNP-' + Math.floor(Math.random() * 9000000 + 1000000);
+      const folAut = 'AUT-' + Math.floor(Math.random() * 900000 + 100000);
+      const msgExito = 'TRANSACCIÓN EXITOSA (Código 00). Autorizada por el carrier.';
+      registrarEnMemoria('RECARGA', comp, tel, monto, 0, true, '00', msgExito, folRnp, folAut);
+
       return responderJson({
         exito: true,
-        mensaje: 'TRANSACCIÓN EXITOSA (Código 00). Autorizada por el carrier.',
+        mensaje: msgExito,
         datos: {
           exito: true,
           codigoRespuesta: '00',
-          mensaje: 'TRANSACCIÓN EXITOSA',
-          folioProveedor: 'RNP-' + Math.floor(Math.random() * 9000000 + 1000000),
-          codigoAutorizacion: 'AUT-' + Math.floor(Math.random() * 900000 + 100000),
+          mensaje: msgExito,
+          folioProveedor: folRnp,
+          codigoAutorizacion: folAut,
           monto: Number(monto),
           numeroTelefono: String(tel),
           compania: String(comp).toUpperCase(),
@@ -1087,6 +1225,7 @@ function obtenerRespuestaRescate(targetPath, request, bodyData, url) {
         errores: null,
       });
     }
+
     if (lowerPath.includes('servicio') || lowerPath.includes('servicios')) {
       let mRec = 100;
       let com = 12;
@@ -1101,13 +1240,17 @@ function obtenerRespuestaRescate(targetPath, request, bodyData, url) {
           if (j.referenciaRecibo) ref = String(j.referenciaRecibo);
         } catch {}
       }
+      const folAutSrv = 'AUT-SRV-' + Math.floor(Math.random() * 900000 + 100000);
+      const msgSrv = 'El recibo fue liquidado en el sistema.';
+      registrarEnMemoria('SERVICIO', srv, ref, mRec, com, true, '00', msgSrv, 'RNP-' + Math.floor(Math.random() * 9000000 + 1000000), folAutSrv);
+
       return responderJson({
         exito: true,
-        mensaje: 'El recibo fue liquidado en el sistema.',
+        mensaje: msgSrv,
         datos: {
           exito: true,
-          mensaje: 'El recibo fue liquidado en el sistema.',
-          folioAutorizacion: 'AUT-SRV-' + Math.floor(Math.random() * 900000 + 100000),
+          mensaje: msgSrv,
+          folioAutorizacion: folAutSrv,
           montoPagado: mRec,
           comisionCobrada: com,
           totalCobrado: mRec + com,

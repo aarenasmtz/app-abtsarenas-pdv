@@ -21,6 +21,7 @@ export interface SolicitudRecargaDto {
 export interface ResultadoRecargaDto {
   exito: boolean;
   mensaje: string;
+  codigoRespuesta?: string;
   folioProveedor?: string;
   codigoAutorizacion?: string;
   monto: number;
