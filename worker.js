@@ -181,11 +181,13 @@ function obtenerRespuestaRescate(targetPath, request, bodyData, url) {
   // 2. Productos
   if (lowerPath.includes('/productos/codigo-barras/')) {
     const cod = decodeURIComponent(url.pathname.split(/codigo-barras\//i)[1] || '').trim();
+    const codUpper = cod.toUpperCase();
     const prod = PRODUCTOS_BD.find(
-      p => p.codigoBarrasPrincipal === cod ||
-           p.codigoProducto === cod ||
-           p.codigoBarrasPrincipal === ('0' + cod) ||
-           ('0' + p.codigoBarrasPrincipal) === cod
+      p => (p.codigoBarrasPrincipal && p.codigoBarrasPrincipal.toUpperCase() === codUpper) ||
+           (p.codigoProducto && p.codigoProducto.toUpperCase() === codUpper) ||
+           (p.codigoBarrasPrincipal && p.codigoBarrasPrincipal.toUpperCase() === ('0' + codUpper)) ||
+           (p.codigoBarrasPrincipal && ('0' + p.codigoBarrasPrincipal.toUpperCase()) === codUpper) ||
+           (p.sku && p.sku.toUpperCase() === codUpper)
     );
     if (prod) {
       return responderJson({
@@ -245,6 +247,35 @@ function obtenerRespuestaRescate(targetPath, request, bodyData, url) {
 
   if (lowerPath.includes('/productos')) {
     if (['POST', 'PUT', 'PATCH'].includes(request.method)) {
+      if (bodyData) {
+        try {
+          const text = new TextDecoder().decode(bodyData);
+          const body = JSON.parse(text);
+          if (body) {
+            const cod = (body.codigoBarras || body.codigoBarrasPrincipal || body.codigoProducto || '').toUpperCase();
+            const nuevo = {
+              idProducto: body.idProducto || (Date.now() % 1000000),
+              codigoBarrasPrincipal: cod,
+              codigoProducto: (body.codigoProducto || cod).toUpperCase(),
+              descripcion: (body.descripcion || '').toUpperCase(),
+              precioVenta: body.precioVenta || 0,
+              precioCosto: body.precioCosto || 0,
+              precioMayoreo: body.precioMayoreo || body.precioVenta || 0,
+              existenciaActual: body.existenciaInicial || body.existenciaActual || 10,
+              permiteVentaFraccionada: !!body.permiteVentaFraccionada,
+              manejaInventario: body.manejaInventario !== false,
+              activo: true
+            };
+            PRODUCTOS_BD.unshift(nuevo);
+            return responderJson({
+              exito: true,
+              mensaje: 'Producto procesado y guardado en mayúsculas exitosamente.',
+              datos: nuevo,
+              errores: null
+            });
+          }
+        } catch {}
+      }
       return responderJson({
         exito: true,
         mensaje: 'Producto procesado exitosamente.',

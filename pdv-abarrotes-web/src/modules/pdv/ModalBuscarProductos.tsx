@@ -232,7 +232,7 @@ export const ModalBuscarProductos: React.FC<PropiedadesModalBuscarProductos> = (
               ref={inputBusquedaRef}
               type="text"
               value={terminoBusqueda}
-              onChange={(e) => setTerminoBusqueda(e.target.value)}
+              onChange={(e) => setTerminoBusqueda(e.target.value.toUpperCase())}
               placeholder="Escribe el nombre del producto, código de barras o SKU..."
               aria-label="Buscar en el catálogo de productos"
               autoComplete="off"
@@ -244,7 +244,8 @@ export const ModalBuscarProductos: React.FC<PropiedadesModalBuscarProductos> = (
                 borderRadius: '10px',
                 backgroundColor: '#f8fafc',
                 color: '#0f172a',
-                outline: 'none'
+                outline: 'none',
+                textTransform: 'uppercase'
               }}
             />
           </div>

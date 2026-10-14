@@ -174,8 +174,8 @@ public class ServicioProductos : IServicioProductos
             throw new ExcepcionReglaNegocio("La descripción del producto es requerida.");
         }
 
-        var codigoBarras = nuevoProducto.CodigoBarras?.Trim() ?? string.Empty;
-        var codigoProducto = string.IsNullOrWhiteSpace(nuevoProducto.CodigoProducto) ? codigoBarras : nuevoProducto.CodigoProducto.Trim();
+        var codigoBarras = nuevoProducto.CodigoBarras?.Trim().ToUpperInvariant() ?? string.Empty;
+        var codigoProducto = string.IsNullOrWhiteSpace(nuevoProducto.CodigoProducto) ? codigoBarras : nuevoProducto.CodigoProducto.Trim().ToUpperInvariant();
 
         // Validar unicidad del código de barras principal si se especificó
         if (!string.IsNullOrWhiteSpace(codigoBarras))
@@ -307,7 +307,7 @@ public class ServicioProductos : IServicioProductos
         }
 
         // Actualizar o crear código de barras principal si se proporcionó uno nuevo
-        var codigoBarrasNuevo = datosActualizados.CodigoBarrasPrincipal?.Trim();
+        var codigoBarrasNuevo = datosActualizados.CodigoBarrasPrincipal?.Trim().ToUpperInvariant();
         if (!string.IsNullOrWhiteSpace(codigoBarrasNuevo))
         {
             var codigoActual = producto.CodigosBarras.FirstOrDefault(cb => cb.EsPrincipal && cb.Activo);
@@ -397,24 +397,29 @@ public class ServicioProductos : IServicioProductos
             throw new ExcepcionReglaNegocio("El código de barras no puede estar vacío.");
         }
 
+        var codUpper = codigoLimpio.ToUpperInvariant();
         // Preparar lista de códigos candidatos para tolerar pistolas que omiten ceros iniciales (UPC-A de 11/12 dígitos)
-        var codigosCandidatos = new List<string> { codigoLimpio };
+        var codigosCandidatos = new List<string> { codigoLimpio, codUpper };
         if (codigoLimpio.Length == 11)
         {
             codigosCandidatos.Add("0" + codigoLimpio);
             codigosCandidatos.Add("00" + codigoLimpio);
+            codigosCandidatos.Add("0" + codUpper);
         }
         else if (codigoLimpio.Length == 12)
         {
             codigosCandidatos.Add("0" + codigoLimpio);
+            codigosCandidatos.Add("0" + codUpper);
             if (codigoLimpio.StartsWith("0"))
             {
                 codigosCandidatos.Add(codigoLimpio.TrimStart('0'));
+                codigosCandidatos.Add(codUpper.TrimStart('0'));
             }
         }
         else if (codigoLimpio.StartsWith("0"))
         {
             codigosCandidatos.Add(codigoLimpio.TrimStart('0'));
+            codigosCandidatos.Add(codUpper.TrimStart('0'));
         }
 
         // Búsqueda ultrarrápida indexada en CodigosBarras

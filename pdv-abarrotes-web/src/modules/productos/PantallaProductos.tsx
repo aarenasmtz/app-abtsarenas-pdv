@@ -214,7 +214,7 @@ export const PantallaProductos: React.FC = () => {
       if (productoEnEdicion) {
         const dtoActualizar: ActualizarProductoDto = {
           descripcion: formDescripcion.trim(),
-          codigoBarrasPrincipal: formCodigoBarras.trim(),
+          codigoBarrasPrincipal: formCodigoBarras.trim().toUpperCase(),
           idCategoria: formIdCategoria,
           idMarca: formIdMarca,
           idUnidadMedida: formIdUnidadMedida,
@@ -234,8 +234,8 @@ export const PantallaProductos: React.FC = () => {
       } else {
         const dtoCrear: CrearProductoDto = {
           descripcion: formDescripcion.trim(),
-          codigoProducto: formCodigoProducto.trim(),
-          codigoBarras: formCodigoBarras.trim(),
+          codigoProducto: (formCodigoProducto.trim() || formCodigoBarras.trim()).toUpperCase(),
+          codigoBarras: formCodigoBarras.trim().toUpperCase(),
           idCategoria: formIdCategoria,
           idMarca: formIdMarca,
           idUnidadMedida: formIdUnidadMedida,
@@ -695,8 +695,9 @@ export const PantallaProductos: React.FC = () => {
                     type="text" 
                     className="input-control mono" 
                     placeholder="75010001..." 
+                    style={{ textTransform: 'uppercase' }}
                     value={formCodigoBarras}
-                    onChange={(e) => setFormCodigoBarras(e.target.value)}
+                    onChange={(e) => setFormCodigoBarras(e.target.value.toUpperCase())}
                     required
                   />
                 </div>
@@ -708,8 +709,9 @@ export const PantallaProductos: React.FC = () => {
                     type="text" 
                     className="input-control mono" 
                     placeholder="ART-001" 
+                    style={{ textTransform: 'uppercase' }}
                     value={formCodigoProducto}
-                    onChange={(e) => setFormCodigoProducto(e.target.value)}
+                    onChange={(e) => setFormCodigoProducto(e.target.value.toUpperCase())}
                   />
                 </div>
 

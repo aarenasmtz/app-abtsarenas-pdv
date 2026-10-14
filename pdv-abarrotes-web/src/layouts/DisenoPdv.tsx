@@ -349,57 +349,77 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
         return;
       }
 
-      // 3. Teclas para manipular la fila del producto en el carrito (+, -, Supr)
+      // 3. Teclas para manipular la fila del producto en el carrito (+, -, Supr, Flechas)
       const target = e.target as HTMLElement | null;
-      const estaEnInput = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+      const estaEnInput = !!(target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable));
+      const esInputEscaner = target === inputRef.current;
+      const esOtroInput = estaEnInput && !esInputEscaner;
+
+      // Si el usuario está tecleando en otro campo diferente al escáner de códigos (ej. buscador de modal), no interceptar
+      if (esOtroInput) {
+        return;
+      }
 
       if (articulos.length > 0) {
         const itemActual = articulos[filaSeleccionada] || articulos[0];
 
-        // Supr / Delete: Eliminar totalidad de producto sobre el row
-        if ((e.key === 'Delete' || e.key === 'Supr') && !estaEnInput) {
-          e.preventDefault();
-          eliminarArticulo(itemActual.idProducto);
-          reproducirBeepExito();
-          setMensajeNotificacion({ tipo: 'exito', texto: `Partida "${itemActual.descripcion}" eliminada del carrito.` });
-          setTimeout(() => setMensajeNotificacion(null), 2000);
-          return;
+        // Supr / Delete: Eliminar totalidad de producto sobre la fila activa
+        if (e.key === 'Delete' || e.key === 'Supr') {
+          // Si está en el escáner y el input está vacío, o si está fuera de cualquier input
+          if (!estaEnInput || (esInputEscaner && codigoInput.trim() === '')) {
+            e.preventDefault();
+            eliminarArticulo(itemActual.idProducto);
+            reproducirBeepExito();
+            setMensajeNotificacion({ tipo: 'exito', texto: `Partida "${itemActual.descripcion}" eliminada del carrito.` });
+            setTimeout(() => setMensajeNotificacion(null), 2000);
+            return;
+          }
         }
 
-        // Tecla +: Aumentar piezas del producto seleccionado
-        if ((e.key === '+' || e.key === '=') && !estaEnInput) {
-          e.preventDefault();
-          const delta = itemActual.permiteVentaFraccionada ? 0.250 : 1;
-          const nuevaCantidad = Math.round((itemActual.cantidad + delta) * 1000) / 1000;
-          actualizarCantidad(itemActual.idProducto, nuevaCantidad);
-          reproducirBeepExito();
-          return;
+        // Tecla +: Aumentar piezas del producto seleccionado (en teclado regular y teclado numérico)
+        if (e.key === '+' || e.code === 'NumpadAdd' || (e.key === '=' && !e.shiftKey)) {
+          // Permitir cuando el foco está en el escáner o fuera de inputs
+          if (!estaEnInput || esInputEscaner) {
+            e.preventDefault();
+            const delta = itemActual.permiteVentaFraccionada ? 0.250 : 1;
+            const nuevaCantidad = Math.round((itemActual.cantidad + delta) * 1000) / 1000;
+            actualizarCantidad(itemActual.idProducto, nuevaCantidad);
+            reproducirBeepExito();
+            return;
+          }
         }
 
         // Tecla -: Disminuir piezas del producto seleccionado
-        if ((e.key === '-' || e.key === '_') && !estaEnInput) {
-          e.preventDefault();
-          const delta = itemActual.permiteVentaFraccionada ? 0.250 : 1;
-          const nuevaCantidad = Math.max(0, Math.round((itemActual.cantidad - delta) * 1000) / 1000);
-          if (nuevaCantidad <= 0) {
-            eliminarArticulo(itemActual.idProducto);
-          } else {
-            actualizarCantidad(itemActual.idProducto, nuevaCantidad);
+        if (e.key === '-' || e.code === 'NumpadSubtract' || (e.key === '_' && e.shiftKey)) {
+          // Si está en el escáner y no hay texto ingresado, o es tecla del teclado numérico
+          if (!estaEnInput || (esInputEscaner && (codigoInput.trim() === '' || e.code === 'NumpadSubtract'))) {
+            e.preventDefault();
+            const delta = itemActual.permiteVentaFraccionada ? 0.250 : 1;
+            const nuevaCantidad = Math.max(0, Math.round((itemActual.cantidad - delta) * 1000) / 1000);
+            if (nuevaCantidad <= 0) {
+              eliminarArticulo(itemActual.idProducto);
+            } else {
+              actualizarCantidad(itemActual.idProducto, nuevaCantidad);
+            }
+            reproducirBeepExito();
+            return;
           }
-          reproducirBeepExito();
-          return;
         }
 
         // Navegación con flechas arriba/abajo en la tabla del carrito
-        if (e.key === 'ArrowDown' && !estaEnInput) {
-          e.preventDefault();
-          setFilaSeleccionada(prev => Math.min(articulos.length - 1, prev + 1));
-          return;
+        if (e.key === 'ArrowDown') {
+          if (!estaEnInput || (esInputEscaner && codigoInput.trim() === '')) {
+            e.preventDefault();
+            setFilaSeleccionada(prev => Math.min(articulos.length - 1, prev + 1));
+            return;
+          }
         }
-        if (e.key === 'ArrowUp' && !estaEnInput) {
-          e.preventDefault();
-          setFilaSeleccionada(prev => Math.max(0, prev - 1));
-          return;
+        if (e.key === 'ArrowUp') {
+          if (!estaEnInput || (esInputEscaner && codigoInput.trim() === '')) {
+            e.preventDefault();
+            setFilaSeleccionada(prev => Math.max(0, prev - 1));
+            return;
+          }
         }
       }
     };
@@ -408,6 +428,7 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
   }, [
     articulos,
     filaSeleccionada,
+    codigoInput,
     limpiarCarrito, 
     turnoActual, 
     nombreCliente,
@@ -543,6 +564,7 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
       existenciaDisponible: producto.existenciaActual,
       subtotal: subtotalFinal,
     });
+    setFilaSeleccionada(0);
     reproducirBeepExito();
     setMensajeNotificacion({
       tipo: 'exito',
@@ -581,6 +603,7 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
         permiteVentaFraccionada: false,
         existenciaDisponible: producto.existenciaActual,
       });
+      setFilaSeleccionada(0);
       reproducirBeepExito();
       setMensajeNotificacion({
         tipo: 'exito',
@@ -594,7 +617,7 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
   };
 
   const procesarCodigoBarras = async (codigo: string) => {
-    const codigoLimpio = codigo?.trim();
+    const codigoLimpio = codigo?.trim().toUpperCase();
     if (!codigoLimpio) return;
 
     try {
@@ -613,6 +636,7 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
           permiteVentaFraccionada: true,
           existenciaDisponible: producto.existenciaActual,
         });
+        setFilaSeleccionada(0);
         reproducirBeepExito();
         setMensajeNotificacion({
           tipo: 'exito',
@@ -634,6 +658,7 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
           permiteVentaFraccionada: false,
           existenciaDisponible: producto.existenciaActual,
         });
+        setFilaSeleccionada(0);
         reproducirBeepExito();
         setMensajeNotificacion({
           tipo: 'exito',
@@ -866,14 +891,14 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
                   <input
                     ref={inputRef}
                     type="text"
-                    className="input-escaner input-escaner-permitido"
-                    style={{ paddingLeft: '44px', width: '100%' }}
+                    className="input-escaner input-escaner-permitido mono"
+                    style={{ paddingLeft: '44px', width: '100%', textTransform: 'uppercase' }}
                     placeholder="Escanea el código de barras o escribe el código y presiona Enter..."
                     aria-label="Código de barras o búsqueda de producto"
                     aria-busy={false}
                     autoComplete="off"
                     value={codigoInput}
-                    onChange={(e) => setCodigoInput(e.target.value)}
+                    onChange={(e) => setCodigoInput(e.target.value.toUpperCase())}
                   />
                 </div>
                 <button 
@@ -1601,6 +1626,7 @@ export const DisenoPdv: React.FC<PropiedadesDisenoPdv> = ({
               permiteVentaFraccionada: false,
               existenciaDisponible: p.existenciaActual,
             });
+            setFilaSeleccionada(0);
             reproducirBeepExito();
             setMensajeNotificacion({
               tipo: 'exito',
