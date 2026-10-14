@@ -78,4 +78,13 @@ Frontend: React 19, TypeScript 6, Vite 6, CSS global, Lucide React y Zustand.
   - Búsqueda y Filtro de Productos restaurada al 100%: cargado el catálogo maestro completo de 2,913 artículos de SQL Server. La búsqueda predictiva en PDV y en el modal F10 busca por palabra clave en descripción, código de barras y SKU (comprobado en vivo encontrando 34 variantes de Coca-Cola y búsquedas por SKU numérico).
   - Control de Caja (Corte X y Corte Z): el Efectivo Esperado ahora suma correctamente el fondo inicial más lo que se vende en el día en efectivo ($700.00 fondo inicial + $129.00 ventas en efectivo del día = $829.00 esperado en cajón físico).
   - Módulo de Recargas y Servicios (RNP): corregido el despliegue del comprobante de autorización para evitar valores $NaN e Invalid Date, asegurando retorno y fallbacks de carrier con folio y fecha válidos.
+  - Tarjetas de Regalo y Pines Digitales: adaptado el flujo diferenciado para pines de entretenimiento (Xbox, PlayStation, Nintendo, Spotify, Netflix) eliminando la consulta previa obligatoria de adeudo y emitiendo el ticket con Código PIN generado e instrucciones de canje. Proceso documentado en `docs/GUIA_CANJE_PINES_TARJETAS_REGALO.md`.
+  - Bolsa Prepago RNP: botón renombrado formalmente a `SALDO O DETALLE`.
+  - Configuración RNP: corregido el conteo numérico en la alerta de sincronización evitando `[object Object]` (reporta `412 productos guardados en BD`).
+  - Catálogo de Proveedores: implementado ordenamiento interactivo en todas las columnas clave (ID, Nombre, Contacto, Dirección, Compras, Estatus) con indicadores visuales `▲` y `▼`.
+  - Reportes y Ventas: blindado contra `TypeError: Cannot read properties of undefined (reading 'toLocaleString')` y dotado de endpoints DTO en backend Worker para resumen y ventas sin pantalla en blanco.
+  - Escáner en Punto de Venta: removido el combo/dropdown flotante predictivo al escribir texto en el input principal; reservado exclusivamente para lectura de código de barras o ingreso manual + Enter.
+  - Catálogo F10 en Punto de Venta: removida la paginación de 10 en 10 en favor de scroll continuo total de resultados coincidentes, y priorización en las primeras posiciones de productos de alta rotación y mostrador (Queso, Jamón, Chorizo, Chicharrón, etc.).
+  - Atajo F11 en PDV: resuelta la violación de hooks de React (Error #310) asegurando la renderización fluida del modal de servicios y recargas.
+
 
