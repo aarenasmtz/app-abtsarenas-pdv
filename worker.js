@@ -1050,6 +1050,7 @@ function obtenerRespuestaRescate(targetPath, request, bodyData, url) {
         ],
         errores: null,
       });
+    }
     if (lowerPath.includes('sincronizar')) {
       return responderJson({
         exito: true,
