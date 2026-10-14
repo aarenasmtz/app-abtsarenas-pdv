@@ -1114,7 +1114,7 @@ function obtenerRespuestaRescate(targetPath, request, bodyData, url) {
       }
     };
 
-    if (lowerPath.includes('recarga') || lowerPath.includes('recargas')) {
+    if (lowerPath.endsWith('/recargar') || lowerPath.includes('recargar')) {
       let monto = 50;
       let tel = '4771234567';
       let comp = 'Telcel';
@@ -1270,7 +1270,7 @@ function obtenerRespuestaRescate(targetPath, request, bodyData, url) {
       });
     }
 
-    if (lowerPath.includes('servicio') || lowerPath.includes('servicios')) {
+    if (lowerPath.includes('pagar-servicio') || lowerPath.endsWith('servicio')) {
       let mRec = 100;
       let com = 12;
       let srv = 'CFE';
