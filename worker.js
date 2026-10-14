@@ -1004,22 +1004,66 @@ function obtenerRespuestaRescate(targetPath, request, bodyData, url) {
         exito: true,
         mensaje: 'Catálogo de servicios obtenido.',
         datos: [
-          { codigo: 'CFE', nombre: 'CFE (Luz)', categoria: 'Energía', comisionRecomendada: 12.0, permiteVencidos: true, formatoReferencia: '30 dígitos' },
-          { codigo: 'TELMEX', nombre: 'Telmex', categoria: 'Telefonía', comisionRecomendada: 10.0, permiteVencidos: false, formatoReferencia: '10 dígitos' },
-          { codigo: 'SAPAL', nombre: 'SAPAL (Agua)', categoria: 'Agua Potable', comisionRecomendada: 10.0, permiteVencidos: true, formatoReferencia: '12 dígitos' },
-          { codigo: 'NATURGY', nombre: 'Naturgy (Gas)', categoria: 'Gas Natural', comisionRecomendada: 12.0, permiteVencidos: false, formatoReferencia: '10 dígitos' },
+          { codigo: 'CFE', nombre: 'CFE - Comisión Federal de Electricidad', categoria: 'Electricidad', comisionRecomendada: 12.0, permiteVencidos: false, formatoReferencia: '30 dígitos del código de barras' },
+          { codigo: 'CFE_TEIT', nombre: 'CFE Internet y Telefonía para Todos', categoria: 'Electricidad', comisionRecomendada: 10.0, permiteVencidos: true, formatoReferencia: 'Número de SIM o referencia' },
+          { codigo: 'TELMEX', nombre: 'Telmex - Telefonía e Internet Infinitum', categoria: 'Telecomunicaciones', comisionRecomendada: 12.0, permiteVencidos: true, formatoReferencia: 'Teléfono a 10 dígitos' },
+          { codigo: 'IZZI', nombre: 'Izzi Telecom - Cable, Internet y Telefonía', categoria: 'Televisión e Internet', comisionRecomendada: 12.0, permiteVencidos: true, formatoReferencia: 'Referencia a 8 o 10 dígitos' },
+          { codigo: 'SKY', nombre: 'Sky México / VeTV Satelital', categoria: 'Televisión Satelital', comisionRecomendada: 12.0, permiteVencidos: true, formatoReferencia: 'Cuenta inteligente de 12 dígitos' },
+          { codigo: 'TOTALPLAY', nombre: 'Totalplay Telecomunicaciones', categoria: 'Televisión e Internet', comisionRecomendada: 12.0, permiteVencidos: false, formatoReferencia: 'Número de cuenta a 10 dígitos' },
+          { codigo: 'MEGACABLE', nombre: 'Megacable Comunicaciones', categoria: 'Televisión e Internet', comisionRecomendada: 12.0, permiteVencidos: true, formatoReferencia: 'Suscriptor de 10 dígitos' },
+          { codigo: 'DISH', nombre: 'Dish México Televisión Satelital', categoria: 'Televisión Satelital', comisionRecomendada: 12.0, permiteVencidos: true, formatoReferencia: 'Número de cliente de 10 a 14 dígitos' },
+          { codigo: 'AGUA_SAPAL', nombre: 'SAPAL León Guanajuato', categoria: 'Agua Potable', comisionRecomendada: 10.0, permiteVencidos: true, formatoReferencia: 'Cuenta predial o número de cuenta' },
+          { codigo: 'AGUA_SACMEX', nombre: 'SACMEX Ciudad de México', categoria: 'Agua Potable', comisionRecomendada: 12.0, permiteVencidos: false, formatoReferencia: '16 dígitos del recibo bimestral' },
+          { codigo: 'AGUA_SIMAPAG', nombre: 'SIMAPAG Guanajuato Capital', categoria: 'Agua Potable', comisionRecomendada: 12.0, permiteVencidos: true, formatoReferencia: 'Número de contrato o toma' },
+          { codigo: 'AGUA_PUEBLA', nombre: 'Agua de Puebla para Todos', categoria: 'Agua Potable', comisionRecomendada: 12.0, permiteVencidos: false, formatoReferencia: 'Número de NIS' },
+          { codigo: 'NATURGY', nombre: 'Naturgy México - Gas Natural', categoria: 'Gas Natural', comisionRecomendada: 14.0, permiteVencidos: false, formatoReferencia: 'Referencia bancaria o código de barras' },
+          { codigo: 'ENGIE', nombre: 'Engie MaxiGas Natural', categoria: 'Gas Natural', comisionRecomendada: 14.0, permiteVencidos: false, formatoReferencia: 'Referencia de pago del estado de cuenta' },
+          { codigo: 'TAG_PASE', nombre: 'PASE Urbano - Telepeaje', categoria: 'Peaje y Autopistas', comisionRecomendada: 10.0, permiteVencidos: true, formatoReferencia: 'Número de TAG a 12 dígitos' },
+          { codigo: 'TAG_TELEVIA', nombre: 'TeleVía - Tag Telepeaje', categoria: 'Peaje y Autopistas', comisionRecomendada: 10.0, permiteVencidos: true, formatoReferencia: 'Código alfanumérico del TAG' },
+          { codigo: 'AVON', nombre: 'Avon Cosméticos México', categoria: 'Venta por Catálogo', comisionRecomendada: 12.0, permiteVencidos: true, formatoReferencia: 'Registro de consejera / orden' },
+          { codigo: 'JAFRA', nombre: 'Jafra Cosmetics', categoria: 'Venta por Catálogo', comisionRecomendada: 12.0, permiteVencidos: true, formatoReferencia: 'Número de comerciante independiente' },
+          { codigo: 'NETFLIX', nombre: 'Netflix - Tarjeta de Regalo Digital', categoria: 'Entretenimiento', comisionRecomendada: 0.0, permiteVencidos: true, formatoReferencia: 'PIN de suscripción' },
+          { codigo: 'SPOTIFY', nombre: 'Spotify Premium - Suscripción Digital', categoria: 'Entretenimiento', comisionRecomendada: 0.0, permiteVencidos: true, formatoReferencia: 'Código de membresía' },
         ],
         errores: null,
       });
     }
     if (lowerPath.includes('adeudo')) {
+      let ref = '';
+      let srv = 'CFE';
+      if (bodyData) {
+        try {
+          const j = JSON.parse(new TextDecoder().decode(bodyData));
+          if (j.referencia) ref = String(j.referencia);
+          if (j.codigoServicio) srv = String(j.codigoServicio);
+        } catch {}
+      }
+
+      // Sky México / VeTV Satelital (Prueba 3 Oficial RNP SKU 17)
+      if (srv.toUpperCase().includes('SKY') || ref.includes('501205133215')) {
+        return responderJson({
+          exito: true,
+          mensaje: 'Consulta exitosa ante Sky México / VeTV Satelital.',
+          datos: {
+            exito: true,
+            montoAdeudo: 260.00,
+            esMontoEditable: true,
+            mensajeProveedor: 'Consulta exitosa Sky SKU 17 (Ref: ' + (ref || '501205133215') + '). Mensualidad VeTV vigente: $260.00 MXN',
+            codigoResultado: '0',
+          },
+          errores: null,
+        });
+      }
+
       return responderJson({
         exito: true,
         mensaje: 'Adeudo consultado exitosamente.',
         datos: {
           exito: true,
           montoAdeudo: 345.50,
-          mensajeProveedor: 'Adeudo vigente consultado en sistema carrier.',
+          esMontoEditable: true,
+          mensajeProveedor: 'Adeudo vigente consultado en sistema carrier para ' + srv + '.',
+          codigoResultado: '0',
         },
         errores: null,
       });
@@ -1240,9 +1284,14 @@ function obtenerRespuestaRescate(targetPath, request, bodyData, url) {
           if (j.referenciaRecibo) ref = String(j.referenciaRecibo);
         } catch {}
       }
-      const folAutSrv = 'AUT-SRV-' + Math.floor(Math.random() * 900000 + 100000);
-      const msgSrv = 'El recibo fue liquidado en el sistema.';
-      registrarEnMemoria('SERVICIO', srv, ref, mRec, com, true, '00', msgSrv, 'RNP-' + Math.floor(Math.random() * 9000000 + 1000000), folAutSrv);
+      const esSky = srv.toUpperCase().includes('SKY') || ref.includes('501205133215');
+      const folAutSrv = (esSky ? 'AUT-SKY-' : 'AUT-SRV-') + Math.floor(Math.random() * 900000 + 100000);
+      const folProvSrv = 'RNP-' + Math.floor(Math.random() * 9000000 + 1000000);
+      const nombreSrv = esSky ? 'Sky México / VeTV Satelital' : srv;
+      const msgSrv = esSky
+        ? `El pago de Sky México / VeTV por $${mRec.toFixed(2)} fue liquidado en el sistema.`
+        : `El recibo de ${srv} fue liquidado en el sistema.`;
+      registrarEnMemoria('SERVICIO', nombreSrv, ref, mRec, com, true, '00', msgSrv, folProvSrv, folAutSrv);
 
       return responderJson({
         exito: true,
@@ -1254,7 +1303,7 @@ function obtenerRespuestaRescate(targetPath, request, bodyData, url) {
           montoPagado: mRec,
           comisionCobrada: com,
           totalCobrado: mRec + com,
-          servicio: srv,
+          servicio: nombreSrv,
           referencia: ref,
           fechaHora: new Date().toISOString(),
         },

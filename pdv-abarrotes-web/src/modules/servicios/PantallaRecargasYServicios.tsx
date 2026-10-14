@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Smartphone,
   Receipt,
@@ -20,10 +20,15 @@ import {
 import { servicioRecargasYServicios } from './servicioRecargasYServicios';
 import { COMPANIAS_PREDETERMINADAS, enriquecerCompanias, type CompaniaVisual } from './datosCompanias';
 import { IconoCompania } from './IconoCompania';
+import { IconoServicio } from './IconoServicio';
+import {
+  SERVICIOS_PREDETERMINADOS,
+  combinarCatalogosServicios,
+  type ServicioVisual,
+} from './datosCatalogoServicios';
 import { VentanaMosaicoCatalogo } from './VentanaMosaicoCatalogo';
 import type {
   EstadoIntegracionServiciosDto,
-  CatalogoServicioDto,
   ResultadoRecargaDto,
   ResultadoPagoServicioDto,
   TransaccionServicioDetalleDto,
@@ -41,7 +46,7 @@ export const PantallaRecargasYServicios: React.FC = () => {
 
   // Catálogos
   const [companias, setCompanias] = useState<CompaniaVisual[]>(COMPANIAS_PREDETERMINADAS);
-  const [servicios, setServicios] = useState<CatalogoServicioDto[]>([]);
+  const [servicios, setServicios] = useState<ServicioVisual[]>(SERVICIOS_PREDETERMINADOS);
 
   // Formulario Recargas
   const [companiaSeleccionada, setCompaniaSeleccionada] = useState<string>('TELCEL');
@@ -82,10 +87,12 @@ export const PantallaRecargasYServicios: React.FC = () => {
       setEstadoIntegracion(estado);
       const companiasVisuales = enriquecerCompanias(companiasData);
       setCompanias(companiasVisuales);
-      setServicios(serviciosData);
+      if (serviciosData && serviciosData.length > 0) {
+        setServicios(combinarCatalogosServicios(serviciosData));
+      }
 
       if (serviciosData.length > 0) {
-        setComisionServicio(serviciosData[0].comisionRecomendada);
+        setComisionServicio(serviciosData[0].comisionRecomendada || 12);
       }
     } catch {
       console.warn('Error al conectar con el módulo de recargas y servicios.');
@@ -127,14 +134,37 @@ export const PantallaRecargasYServicios: React.FC = () => {
     ? companiaActual.montosDisponibles
     : [20, 30, 50, 100, 200, 500];
 
-  const servicioActual = servicios.find((s) => s.codigo === servicioSeleccionado);
+  const SERVICIOS_POPULARES = [
+    { codigo: 'CFE', nombreCorto: '⚡ CFE (Luz)' },
+    { codigo: 'SKY', nombreCorto: '📡 Sky / VeTV' },
+    { codigo: 'TELMEX', nombreCorto: '📞 Telmex' },
+    { codigo: 'IZZI', nombreCorto: '📺 Izzi' },
+    { codigo: 'TOTALPLAY', nombreCorto: '🌐 Totalplay' },
+    { codigo: 'AGUA_SAPAL', nombreCorto: '💧 Agua Potable' },
+    { codigo: 'NATURGY', nombreCorto: '🔥 Naturgy Gas' },
+    { codigo: 'TAG_PASE', nombreCorto: '🚗 TAG Telepeaje' },
+  ];
 
-  const manejarCambioServicio = (codigo: string) => {
+  const servicioActual = useMemo<ServicioVisual>(() => {
+    return (
+      servicios.find((s) => s.codigo.toUpperCase() === servicioSeleccionado.toUpperCase()) ||
+      SERVICIOS_PREDETERMINADOS.find((s) => s.codigo.toUpperCase() === servicioSeleccionado.toUpperCase()) ||
+      SERVICIOS_PREDETERMINADOS[0]
+    );
+  }, [servicios, servicioSeleccionado]);
+
+  const seleccionarServicio = (codigo: string) => {
     setServicioSeleccionado(codigo);
     setMensajeAdeudo(null);
-    const s = servicios.find((item) => item.codigo === codigo);
+    setErrorServicio(null);
+    setResultadoServicio(null);
+    setMontoServicio('');
+    setReferenciaRecibo('');
+    const s =
+      servicios.find((item) => item.codigo.toUpperCase() === codigo.toUpperCase()) ||
+      SERVICIOS_PREDETERMINADOS.find((item) => item.codigo.toUpperCase() === codigo.toUpperCase());
     if (s) {
-      setComisionServicio(s.comisionRecomendada);
+      setComisionServicio(s.comisionRecomendada || 12);
     }
   };
 
@@ -793,27 +823,150 @@ export const PantallaRecargasYServicios: React.FC = () => {
             )}
 
             <form onSubmit={ejecutarPagoServicio} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              {/* Selección de Servicio */}
+              {/* Selección de Servicio: Tarjeta Destacada y Chips Rápidos (Sin combo desplegable) */}
               <div className="grupo-formulario">
-                <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Empresa / Servicio a Pagar:</label>
-                <select
-                  className="control-formulario"
-                  value={servicioSeleccionado}
-                  onChange={(e) => manejarCambioServicio(e.target.value)}
-                  style={{ marginTop: '0.35rem' }}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <label className="etiqueta-formulario" style={{ margin: 0 }}>
+                    <span>Servicio o Empresa a Pagar:</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setPestaña('catalogo')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      background: 'rgba(2, 132, 199, 0.08)',
+                      border: '1px solid #bae6fd',
+                      color: '#0284c7',
+                      padding: '0.25rem 0.65rem',
+                      borderRadius: '6px',
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <Layers size={14} />
+                    <span>Explorar Catálogo en Mosaico (412+)</span>
+                  </button>
+                </div>
+
+                {/* Tarjeta del Servicio Seleccionado */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '0.9rem 1.1rem',
+                    backgroundColor: servicioActual.colorFondo || '#f8fafc',
+                    border: `2px solid ${servicioActual.colorBorde || '#cbd5e1'}`,
+                    borderLeft: `5px solid ${servicioActual.colorPrimario || '#0284c7'}`,
+                    borderRadius: '10px',
+                    gap: '1rem',
+                    flexWrap: 'wrap',
+                  }}
                 >
-                  {servicios.map((s) => (
-                    <option key={s.codigo} value={s.codigo}>
-                      {s.nombre} ({s.categoria})
-                    </option>
-                  ))}
-                </select>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                    <div style={{ flexShrink: 0 }}>
+                      <IconoServicio tipo={servicioActual.iconoTipo} size={38} />
+                    </div>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>
+                          {servicioActual.nombre}
+                        </h4>
+                        <span
+                          style={{
+                            fontSize: '0.68rem',
+                            fontWeight: 800,
+                            padding: '0.15rem 0.5rem',
+                            borderRadius: '4px',
+                            backgroundColor: servicioActual.colorPrimario,
+                            color: '#ffffff',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                          }}
+                        >
+                          {servicioActual.categoria}
+                        </span>
+                      </div>
+                      <p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: '#64748b' }}>
+                        {servicioActual.formatoReferencia}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    <span
+                      style={{
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        color: '#059669',
+                        backgroundColor: '#ecfdf5',
+                        padding: '0.35rem 0.65rem',
+                        borderRadius: '6px',
+                        border: '1px solid #a7f3d0',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      Comisión: +${comisionServicio} MXN
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setPestaña('catalogo')}
+                      className="btn btn-secundario"
+                      style={{
+                        padding: '0.35rem 0.65rem',
+                        fontSize: '0.8rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.35rem',
+                        fontWeight: 600,
+                      }}
+                    >
+                      <RefreshCw size={13} />
+                      <span>Cambiar</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Acceso Rápido con Chips a Servicios Populares */}
+                <div style={{ marginTop: '0.65rem' }}>
+                  <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 600, display: 'block', marginBottom: '0.35rem' }}>
+                    Selección Rápida de Servicios Frecuentes:
+                  </span>
+                  <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                    {SERVICIOS_POPULARES.map((sp) => {
+                      const esActivo = servicioActual.codigo.toUpperCase() === sp.codigo.toUpperCase();
+                      return (
+                        <button
+                          key={sp.codigo}
+                          type="button"
+                          onClick={() => seleccionarServicio(sp.codigo)}
+                          style={{
+                            padding: '0.3rem 0.65rem',
+                            borderRadius: '6px',
+                            fontSize: '0.78rem',
+                            fontWeight: esActivo ? 800 : 600,
+                            border: esActivo ? '1px solid var(--color-primario)' : '1px solid #cbd5e1',
+                            backgroundColor: esActivo ? 'var(--color-primario)' : '#ffffff',
+                            color: esActivo ? '#ffffff' : '#334155',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                          }}
+                        >
+                          {sp.nombreCorto}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
 
               {/* Referencia o Código de Barras + Botón Consultar Adeudo */}
               <div className="grupo-formulario">
                 <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>
-                  Referencia o Código de Barras del Recibo:
+                  Referencia / Cuenta de Pago ({servicioActual.nombre}):
                 </label>
                 <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.35rem' }}>
                   <input
@@ -838,7 +991,7 @@ export const PantallaRecargasYServicios: React.FC = () => {
                   </button>
                 </div>
                 <small style={{ color: 'var(--color-texto-secundario)', fontSize: '0.75rem', marginTop: '0.25rem', display: 'block' }}>
-                  Soporta Sky, Izzi, Megacable, CFE, Totalplay y convenios de agua municipal.
+                  Formato esperado: {servicioActual.formatoReferencia}
                 </small>
               </div>
 
@@ -1013,8 +1166,11 @@ export const PantallaRecargasYServicios: React.FC = () => {
           </div>
           <VentanaMosaicoCatalogo
             onSeleccionarServicio={(serv) => {
-              setServicioSeleccionado(serv.codigo);
-              setComisionServicio(serv.comisionRecomendada || 12);
+              setServicios((prev) => {
+                if (prev.some((s) => s.codigo === serv.codigo)) return prev;
+                return [serv, ...prev];
+              });
+              seleccionarServicio(serv.codigo);
               setPestaña('servicios');
             }}
             onSeleccionarCompania={(comp) => {

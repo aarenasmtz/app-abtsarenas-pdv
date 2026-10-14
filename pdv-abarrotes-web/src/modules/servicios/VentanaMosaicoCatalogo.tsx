@@ -421,6 +421,14 @@ export const VentanaMosaicoCatalogo: React.FC<VentanaMosaicoCatalogoProps> = ({
 
                     <button
                       type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (item.esRecarga && companiaAsoc && onSeleccionarCompania) {
+                          onSeleccionarCompania(companiaAsoc);
+                        } else if (onSeleccionarServicio) {
+                          onSeleccionarServicio(item);
+                        }
+                      }}
                       style={{
                         background: item.colorPrimario,
                         border: 'none',

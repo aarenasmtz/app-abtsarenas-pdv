@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Smartphone,
   Receipt,
@@ -13,15 +13,21 @@ import {
   ShieldCheck,
   Search,
   Layers,
+  RefreshCw,
 } from 'lucide-react';
 import { servicioRecargasYServicios } from '../servicios/servicioRecargasYServicios';
 import { COMPANIAS_PREDETERMINADAS, enriquecerCompanias, type CompaniaVisual } from '../servicios/datosCompanias';
 import { IconoCompania } from '../servicios/IconoCompania';
+import { IconoServicio } from '../servicios/IconoServicio';
+import {
+  SERVICIOS_PREDETERMINADOS,
+  combinarCatalogosServicios,
+  type ServicioVisual,
+} from '../servicios/datosCatalogoServicios';
 import { VentanaMosaicoCatalogo } from '../servicios/VentanaMosaicoCatalogo';
 import type {
   ResultadoRecargaDto,
   ResultadoPagoServicioDto,
-  CatalogoServicioDto,
 } from '../servicios/tiposServicios';
 import { reproducirBeepExito, reproducirBeepError } from '../../utils/sonidosPdv';
 
@@ -46,7 +52,7 @@ export const ModalRecargaPdv: React.FC<ModalRecargaPdvProps> = ({
 
   // Catálogos
   const [companias, setCompanias] = useState<CompaniaVisual[]>(COMPANIAS_PREDETERMINADAS);
-  const [servicios, setServicios] = useState<CatalogoServicioDto[]>([]);
+  const [servicios, setServicios] = useState<ServicioVisual[]>(SERVICIOS_PREDETERMINADOS);
 
   // Estado Recarga
   const [companiaSeleccionada, setCompaniaSeleccionada] = useState<CompaniaVisual>(COMPANIAS_PREDETERMINADAS[0]);
@@ -98,10 +104,9 @@ export const ModalRecargaPdv: React.FC<ModalRecargaPdvProps> = ({
           setCompaniaSeleccionada(companiasVisuales[0]);
         }
 
-        if (serviciosApi.length > 0) {
-          setServicios(serviciosApi);
-          setServicioSeleccionado(serviciosApi[0].codigo);
-          setComisionServicio(serviciosApi[0].comisionRecomendada || 12);
+        if (serviciosApi && serviciosApi.length > 0) {
+          const combinados = combinarCatalogosServicios(serviciosApi);
+          setServicios(combinados);
         }
       } catch {
         // Fallback garantizado activo
@@ -277,7 +282,27 @@ export const ModalRecargaPdv: React.FC<ModalRecargaPdvProps> = ({
     return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(val);
   };
 
-  const servicioActual = servicios.find((s) => s.codigo === servicioSeleccionado);
+  const servicioActual = useMemo(() => {
+    const encontrado = servicios.find((s) => s.codigo === servicioSeleccionado);
+    if (encontrado) return encontrado;
+    const predet = SERVICIOS_PREDETERMINADOS.find((s) => s.codigo === servicioSeleccionado);
+    if (predet) return predet;
+    return SERVICIOS_PREDETERMINADOS[0];
+  }, [servicios, servicioSeleccionado]);
+
+  const seleccionarServicio = (codigo: string) => {
+    setServicioSeleccionado(codigo);
+    const s =
+      servicios.find((item) => item.codigo === codigo) ||
+      SERVICIOS_PREDETERMINADOS.find((item) => item.codigo === codigo);
+    if (s) {
+      setComisionServicio(s.comisionRecomendada || 12);
+    }
+    setMensajeAdeudo(null);
+    setErrorServicio(null);
+  };
+
+  const serviciosFrecuentes = ['CFE', 'SKY', 'TELMEX', 'IZZI', 'TOTALPLAY', 'AGUA_SAPAL', 'NATURGY'];
 
   return (
     <div className="modal-overlay" style={{ zIndex: 1300, backdropFilter: 'blur(4px)' }}>
@@ -1016,16 +1041,20 @@ export const ModalRecargaPdv: React.FC<ModalRecargaPdvProps> = ({
                     </div>
                   )}
 
-                  {/* Selector de Servicio */}
+                  {/* Selección de Servicio: Tarjeta Destacada y Chips Rápidos (Sin combo desplegable) */}
                   <div className="grupo-formulario">
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
-                      <label className="etiqueta-formulario" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span>Seleccionar Servicio o Empresa:</span>
-                        {servicioActual && (
-                          <span style={{ fontSize: '0.78rem', color: '#059669', fontWeight: 600 }}>
-                            (Comisión: ${servicioActual.comisionRecomendada || 12} MXN)
-                          </span>
-                        )}
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        marginBottom: '0.4rem',
+                        flexWrap: 'wrap',
+                        gap: '0.5rem',
+                      }}
+                    >
+                      <label className="etiqueta-formulario" style={{ margin: 0 }}>
+                        <span>Servicio o Empresa a Pagar:</span>
                       </label>
                       <button
                         type="button"
@@ -1034,48 +1063,142 @@ export const ModalRecargaPdv: React.FC<ModalRecargaPdvProps> = ({
                           display: 'flex',
                           alignItems: 'center',
                           gap: '0.35rem',
-                          background: '#eff6ff',
-                          border: '1px solid #bfdbfe',
-                          color: '#1d4ed8',
-                          padding: '0.25rem 0.6rem',
+                          background: 'rgba(2, 132, 199, 0.08)',
+                          border: '1px solid #bae6fd',
+                          color: '#0284c7',
+                          padding: '0.25rem 0.65rem',
                           borderRadius: '6px',
-                          fontSize: '0.76rem',
+                          fontSize: '0.78rem',
                           fontWeight: 700,
                           cursor: 'pointer',
                         }}
                       >
                         <Layers size={13} />
-                        <span>Ver Catálogo Completo en Mosaico</span>
+                        <span>Explorar Catálogo en Mosaico (412+)</span>
                       </button>
                     </div>
-                    <select
-                      className="control-formulario"
-                      value={servicioSeleccionado}
-                      onChange={(e) => {
-                        setServicioSeleccionado(e.target.value);
-                        setMensajeAdeudo(null);
-                        const s = servicios.find((item) => item.codigo === e.target.value);
-                        if (s) setComisionServicio(s.comisionRecomendada);
+
+                    {/* Tarjeta del Servicio Seleccionado */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '0.75rem 1rem',
+                        backgroundColor: servicioActual.colorFondo || '#f8fafc',
+                        border: `2px solid ${servicioActual.colorBorde || '#cbd5e1'}`,
+                        borderLeft: `5px solid ${servicioActual.colorPrimario || '#0284c7'}`,
+                        borderRadius: '10px',
+                        gap: '0.75rem',
+                        flexWrap: 'wrap',
                       }}
                     >
-                      {servicios.length > 0 ? (
-                        servicios.map((s) => (
-                          <option key={s.codigo} value={s.codigo}>
-                            {s.nombre} ({s.categoria})
-                          </option>
-                        ))
-                      ) : (
-                        <>
-                          <option value="CFE">CFE (Comisión Federal de Electricidad)</option>
-                          <option value="TELMEX">Telmex (Telefonía e Internet)</option>
-                          <option value="NATURGY">Naturgy (Gas Natural)</option>
-                          <option value="IZZI">Izzi Telecom</option>
-                          <option value="SKY">Sky México</option>
-                          <option value="TOTALPLAY">Totalplay</option>
-                          <option value="AGUA_SAPAL">SAPAL (Agua Potable)</option>
-                        </>
-                      )}
-                    </select>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <div style={{ flexShrink: 0 }}>
+                          <IconoServicio tipo={servicioActual.iconoTipo} size={34} />
+                        </div>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                            <h4 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 800, color: '#0f172a' }}>
+                              {servicioActual.nombre}
+                            </h4>
+                            <span
+                              style={{
+                                fontSize: '0.65rem',
+                                fontWeight: 800,
+                                padding: '0.15rem 0.45rem',
+                                borderRadius: '4px',
+                                backgroundColor: servicioActual.colorPrimario,
+                                color: '#ffffff',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px',
+                              }}
+                            >
+                              {servicioActual.categoria}
+                            </span>
+                          </div>
+                          <p style={{ margin: '0.15rem 0 0', fontSize: '0.75rem', color: '#64748b' }}>
+                            {servicioActual.formatoReferencia}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span
+                          style={{
+                            fontSize: '0.8rem',
+                            fontWeight: 700,
+                            color: '#059669',
+                            backgroundColor: '#ecfdf5',
+                            padding: '0.3rem 0.55rem',
+                            borderRadius: '6px',
+                            border: '1px solid #a7f3d0',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          Comisión: +${comisionServicio} MXN
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setPestanaActiva('catalogo')}
+                          style={{
+                            padding: '0.3rem 0.55rem',
+                            fontSize: '0.78rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.3rem',
+                            fontWeight: 600,
+                            background: '#f1f5f9',
+                            border: '1px solid #cbd5e1',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <RefreshCw size={12} />
+                          <span>Cambiar</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Chips Rápidos de Servicios Frecuentes */}
+                    <div style={{ marginTop: '0.5rem' }}>
+                      <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600, display: 'block', marginBottom: '0.3rem' }}>
+                        Acceso Rápido:
+                      </span>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                        {serviciosFrecuentes.map((cod) => {
+                          const servFrec =
+                            servicios.find((s) => s.codigo === cod) ||
+                            SERVICIOS_PREDETERMINADOS.find((s) => s.codigo === cod);
+                          if (!servFrec) return null;
+                          const esActivo = servicioSeleccionado === cod;
+                          return (
+                            <button
+                              key={cod}
+                              type="button"
+                              onClick={() => seleccionarServicio(cod)}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.3rem',
+                                padding: '0.25rem 0.55rem',
+                                borderRadius: '16px',
+                                border: esActivo ? `2px solid ${servFrec.colorPrimario}` : '1px solid #e2e8f0',
+                                backgroundColor: esActivo ? servFrec.colorFondo : '#ffffff',
+                                color: esActivo ? servFrec.colorPrimario : '#334155',
+                                fontWeight: esActivo ? 800 : 500,
+                                fontSize: '0.74rem',
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease',
+                              }}
+                            >
+                              <IconoServicio tipo={servFrec.iconoTipo} size={14} />
+                              <span>{servFrec.nombre.split('/')[0].split('(')[0].trim()}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
 
                   {/* Referencia o Código de Barras del Recibo */}
@@ -1228,8 +1351,11 @@ export const ModalRecargaPdv: React.FC<ModalRecargaPdvProps> = ({
           {pestanaActiva === 'catalogo' && (
             <VentanaMosaicoCatalogo
               onSeleccionarServicio={(serv) => {
-                setServicioSeleccionado(serv.codigo);
-                setComisionServicio(serv.comisionRecomendada || 12);
+                setServicios((prev) => {
+                  if (prev.some((s) => s.codigo === serv.codigo)) return prev;
+                  return [serv, ...prev];
+                });
+                seleccionarServicio(serv.codigo);
                 setPestanaActiva('servicio');
               }}
               onSeleccionarCompania={(comp) => {
@@ -1240,7 +1366,7 @@ export const ModalRecargaPdv: React.FC<ModalRecargaPdvProps> = ({
                 servicioRecargasYServicios
                   .obtenerCatalogoServicios()
                   .then((cat) => {
-                    if (cat && cat.length > 0) setServicios(cat);
+                    if (cat && cat.length > 0) setServicios(combinarCatalogosServicios(cat));
                   })
                   .catch(() => {});
               }}
